@@ -89,13 +89,18 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
-            'role' => 'required|string|in:mekanik,team_leader,group_leader,coordinator,ast_manager,manager,general_manager',
+            'role' => 'required|string|in:mekanik,team_leader,group_leader,coordinator,ast_manager,manager,general_manager,admin',
             'atasan_id' => 'nullable|exists:users,id',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
         
-        // Validasi atasan sesuai hierarki
-        if ($request->filled('atasan_id')) {
+        // Admin tidak perlu atasan
+        if ($validated['role'] === 'admin') {
+            $validated['atasan_id'] = null;
+        }
+        
+        // Validasi atasan sesuai hierarki (skip untuk admin)
+        if ($validated['role'] !== 'admin' && $request->filled('atasan_id')) {
             $atasan = \App\Models\User::findOrFail($request->atasan_id);
             $roleHierarchy = [
                 'mekanik' => 'team_leader',
@@ -167,14 +172,19 @@ class UserController extends Controller
             'nik' => 'required|string|size:5|unique:users,nik,' . $id . '|regex:/^[0-9]{5}$/',
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $id,
-            'role' => 'required|string|in:mekanik,team_leader,group_leader,coordinator,ast_manager,manager,general_manager',
+            'role' => 'required|string|in:mekanik,team_leader,group_leader,coordinator,ast_manager,manager,general_manager,admin',
             'atasan_id' => 'nullable|exists:users,id',
             'password' => 'nullable|string|min:6',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
         
-        // Validasi atasan sesuai hierarki
-        if ($request->filled('atasan_id')) {
+        // Admin tidak perlu atasan
+        if ($validated['role'] === 'admin') {
+            $validated['atasan_id'] = null;
+        }
+        
+        // Validasi atasan sesuai hierarki (skip untuk admin)
+        if ($validated['role'] !== 'admin' && $request->filled('atasan_id')) {
             $atasan = \App\Models\User::findOrFail($request->atasan_id);
             $roleHierarchy = [
                 'mekanik' => 'team_leader',

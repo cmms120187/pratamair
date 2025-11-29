@@ -45,7 +45,9 @@
                                 data-plant="{{ $roomErp->plant_name ?? '' }}"
                                 data-process="{{ $roomErp->process_name ?? '' }}"
                                 data-line="{{ $roomErp->line_name ?? '' }}"
-                                data-room="{{ $roomErp->name ?? '' }}">
+                                data-room="{{ $roomErp->name ?? '' }}"
+                                data-kode-room="{{ $roomErp->kode_room ?? '' }}"
+                                @if($machineErp->kode_room == $roomErp->kode_room || ($machineErp->plant_name == $roomErp->plant_name && $machineErp->process_name == $roomErp->process_name && $machineErp->line_name == $roomErp->line_name && $machineErp->room_name == $roomErp->name)) selected @endif>
                             {{ $roomErp->kode_room ? $roomErp->kode_room . ' - ' : '' }}{{ $roomErp->name }}
                             @if($roomErp->plant_name)
                                 ({{ $roomErp->plant_name }})
@@ -111,6 +113,9 @@
                     @enderror
                 </div>
             </div>
+
+            <!-- Hidden field for kode_room -->
+            <input type="hidden" name="kode_room" id="kode_room" value="{{ old('kode_room', $machineErp->kode_room) }}">
 
             <div class="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
                 <label for="model_select" class="block text-sm font-semibold text-gray-700 mb-2">
@@ -316,6 +321,22 @@ document.addEventListener('DOMContentLoaded', function() {
             processNameInput.value = selectedOption.dataset.process || '';
             lineNameInput.value = selectedOption.dataset.line || '';
             roomNameInput.value = selectedOption.dataset.room || '';
+            
+            // Set kode_room
+            const kodeRoomInput = document.getElementById('kode_room');
+            if (kodeRoomInput) {
+                kodeRoomInput.value = selectedOption.dataset.kodeRoom || '';
+            }
+        } else {
+            // Clear fields if no selection
+            plantNameInput.value = '';
+            processNameInput.value = '';
+            lineNameInput.value = '';
+            roomNameInput.value = '';
+            const kodeRoomInput = document.getElementById('kode_room');
+            if (kodeRoomInput) {
+                kodeRoomInput.value = '';
+            }
         }
     });
     });

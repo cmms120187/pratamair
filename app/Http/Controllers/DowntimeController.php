@@ -66,6 +66,14 @@ class DowntimeController extends Controller
             });
         }
 
+        // Filter by user role (mekanik only sees their own data)
+        if (DataFilterHelper::shouldFilterRoute(request()->route()->getName())) {
+            $user = auth()->user();
+            if ($user && $user->role === 'mekanik' && $user->id) {
+                $query->where('mekanik_id', $user->id);
+            }
+        }
+
         // Filter by machine type
         if ($request->filled('machine_type_id')) {
             $query->whereHas('machine', function($q) use ($request) {
@@ -354,8 +362,9 @@ class DowntimeController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Request $request, string $id)
     {
+        $page = $request->query('page', 1);
         $downtime = \App\Models\Downtime::with([
             'machine', 
             'machine.plant', 
@@ -388,7 +397,7 @@ class DowntimeController extends Controller
         $lines = \App\Models\Line::all();
         $rooms = \App\Models\Room::all();
         
-        return view('downtimes.edit', compact('downtime', 'machines', 'problems', 'problemMms', 'reasons', 'actions', 'mechanics', 'users', 'parts', 'plants', 'processes', 'lines', 'rooms'));
+        return view('downtimes.edit', compact('downtime', 'machines', 'problems', 'problemMms', 'reasons', 'actions', 'mechanics', 'users', 'parts', 'plants', 'processes', 'lines', 'rooms', 'page'));
     }
 
     /**
@@ -465,7 +474,11 @@ class DowntimeController extends Controller
             $downtime->parts()->detach();
         }
         
-        return redirect()->route('downtimes.index')->with('success', 'Downtime updated successfully.');
+        // Get page from request or default to 1
+        $page = $request->input('page', 1);
+        
+        return redirect()->route('downtimes.index', ['page' => $page])
+            ->with('success', 'Downtime updated successfully.');
     }
 
     /**

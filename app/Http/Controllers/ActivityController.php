@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\MachineErp;
 use App\Models\RoomErp;
 use App\Helpers\ImageHelper;
+use App\Helpers\DataFilterHelper;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -20,8 +21,22 @@ class ActivityController extends Controller
      */
     public function index()
     {
-        $activities = Activity::orderBy('date', 'desc')->orderBy('start', 'desc')->paginate(12);
-        return view('activities.index', compact('activities'));
+        $query = Activity::query();
+        
+        // Filter by user role (mekanik only sees their own data)
+        if (DataFilterHelper::shouldFilterRoute(request()->route()->getName())) {
+            DataFilterHelper::filterByUserRole($query, auth()->user(), 'id_mekanik');
+        }
+        
+        $activities = $query->orderBy('date', 'desc')->orderBy('start', 'desc')->paginate(10);
+        
+        // Get Room ERPs for bulk edit dropdown (only for admin)
+        $roomErps = [];
+        if (auth()->user()->role === 'admin') {
+            $roomErps = RoomErp::orderBy('name', 'asc')->get();
+        }
+        
+        return view('activities.index', compact('activities', 'roomErps'));
     }
 
     /**
@@ -99,6 +114,7 @@ class ActivityController extends Controller
     {
         $validated = $request->validate([
             'date' => 'required|date',
+            'kode_room' => 'nullable|string|max:255',
             'plant' => 'nullable|string|max:255',
             'process' => 'nullable|string|max:255',
             'line' => 'nullable|string|max:255',
@@ -153,9 +169,10 @@ class ActivityController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Request $request, string $id)
     {
         $activity = Activity::findOrFail($id);
+        $page = $request->query('page', 1);
         
         // Get all mekanik (team member) users for auto-complete
         $mekaniksQuery = User::where('role', 'mekanik')
@@ -194,7 +211,7 @@ class ActivityController extends Controller
         // Get RoomErp for dropdown (same format as MachineErp)
         $roomErps = RoomErp::orderBy('name', 'asc')->get();
         
-        return view('activities.edit', compact('activity', 'mekaniks', 'machines', 'roomErps'));
+        return view('activities.edit', compact('activity', 'mekaniks', 'machines', 'roomErps', 'page'));
     }
 
     /**
@@ -204,6 +221,7 @@ class ActivityController extends Controller
     {
         $validated = $request->validate([
             'date' => 'required|date',
+            'kode_room' => 'nullable|string|max:255',
             'plant' => 'nullable|string|max:255',
             'process' => 'nullable|string|max:255',
             'line' => 'nullable|string|max:255',
@@ -248,7 +266,7 @@ class ActivityController extends Controller
                 $newPhotos[] = $photoPath;
             }
         }
-        
+            
         // Merge kept existing photos with new photos (limit to 3 total)
         $allPhotos = array_merge($keptExistingPhotos, $newPhotos);
         $validated['photos'] = !empty($allPhotos) ? array_slice($allPhotos, 0, 3) : [];
@@ -265,7 +283,12 @@ class ActivityController extends Controller
         }
 
         $activity->update($validated);
-        return redirect()->route('activities.index')->with('success', 'Activity updated successfully.');
+        
+        // Get page from request or default to 1
+        $page = $request->input('page', 1);
+        
+        return redirect()->route('activities.index', ['page' => $page])
+            ->with('success', 'Activity updated successfully.');
     }
 
     /**
@@ -610,5 +633,58 @@ class ActivityController extends Controller
                 return null;
             }
         }
+    }
+    
+    /**
+     * Batch update location for multiple activities
+     */
+    public function batchUpdateLocation(Request $request)
+    {
+        // Only admin can batch update
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Unauthorized');
+        }
+        
+        $validated = $request->validate([
+            'activity_ids' => 'required|array|min:1',
+            'activity_ids.*' => 'exists:activities,id',
+            'kode_room' => 'nullable|string|max:255',
+            'plant' => 'nullable|string|max:255',
+            'process' => 'nullable|string|max:255',
+            'line' => 'nullable|string|max:255',
+            'room_name' => 'nullable|string|max:255',
+        ]);
+        
+        $activityIds = $validated['activity_ids'];
+        $activities = Activity::whereIn('id', $activityIds)->get();
+        
+        $updatedCount = 0;
+        foreach ($activities as $activity) {
+            // Only update fields that are provided (not empty)
+            if ($request->filled('kode_room')) {
+                $activity->kode_room = $validated['kode_room'];
+            }
+            if ($request->filled('plant')) {
+                $activity->plant = $validated['plant'];
+            }
+            if ($request->filled('process')) {
+                $activity->process = $validated['process'];
+            }
+            if ($request->filled('line')) {
+                $activity->line = $validated['line'];
+            }
+            if ($request->filled('room_name')) {
+                $activity->room_name = $validated['room_name'];
+            }
+            
+            $activity->save();
+            $updatedCount++;
+        }
+        
+        // Get page from request or default to 1
+        $page = $request->input('page', 1);
+        
+        return redirect()->route('activities.index', ['page' => $page])
+            ->with('success', "Successfully updated location for {$updatedCount} activity(ies).");
     }
 }

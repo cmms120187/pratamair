@@ -317,6 +317,9 @@
         <form action="{{ route('downtimes.update', $downtime->id) }}" method="POST">
             @method('PUT')
             @csrf
+            @if(isset($page))
+                <input type="hidden" name="page" value="{{ $page }}">
+            @endif
             <!-- Hidden input untuk machine_id -->
             <input type="hidden" name="machine_id" x-model="machineId" required>
             

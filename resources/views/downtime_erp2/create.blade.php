@@ -50,6 +50,9 @@
                         @error('roomName')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
                 </div>
+                
+                <!-- Hidden field for kode_room -->
+                <input type="hidden" name="kode_room" id="kode_room" value="{{ old('kode_room') }}">
                 <div class="mt-4">
                     <label class="flex items-center">
                         <input type="checkbox" 
@@ -573,6 +576,7 @@ machineSearch.addEventListener('input', function() {
                  data-machine-process="${(m.process || '').replace(/"/g, '&quot;')}"
                  data-machine-line="${(m.line || '').replace(/"/g, '&quot;')}"
                  data-machine-room="${(m.roomName || '').replace(/"/g, '&quot;')}"
+                 data-machine-kode-room="${(m.kodeRoom || '').replace(/"/g, '&quot;')}"
                  style="user-select: none; -webkit-user-select: none;">
                 <div class="font-semibold text-gray-900">${m.idMachine || ''}</div>
                 <div class="text-xs text-gray-600">${m.typeMachine || ''} - ${m.brandMachine || ''} ${m.modelMachine || ''}</div>
@@ -595,7 +599,8 @@ machineSearch.addEventListener('input', function() {
             const machineProcess = this.getAttribute('data-machine-process');
             const machineLine = this.getAttribute('data-machine-line');
             const machineRoom = this.getAttribute('data-machine-room');
-            selectMachine(machineId, machineIdMachine, machineType, machineModel, machineBrand, machinePlant, machineProcess, machineLine, machineRoom);
+            const machineKodeRoom = this.getAttribute('data-machine-kode-room');
+            selectMachine(machineId, machineIdMachine, machineType, machineModel, machineBrand, machinePlant, machineProcess, machineLine, machineRoom, machineKodeRoom);
         });
     });
     
@@ -603,7 +608,7 @@ machineSearch.addEventListener('input', function() {
 });
 
 // Select machine
-function selectMachine(id, idMachine, type, model, brand, plantVal, processVal, lineVal, roomVal) {
+function selectMachine(id, idMachine, type, model, brand, plantVal, processVal, lineVal, roomVal, kodeRoomVal) {
     machineIdInput.value = idMachine || '';
     machineSearch.value = idMachine || '';
     selectedMachineInfo.innerHTML = `
@@ -625,6 +630,12 @@ function selectMachine(id, idMachine, type, model, brand, plantVal, processVal, 
     if (process) process.value = processVal || '';
     if (line) line.value = lineVal || '';
     if (roomName) roomName.value = roomVal || '';
+    
+    // Set kode_room if hidden field exists
+    const kodeRoomInput = document.getElementById('kode_room');
+    if (kodeRoomInput) {
+        kodeRoomInput.value = kodeRoomVal || '';
+    }
 }
 
 // Clear machine
@@ -722,7 +733,8 @@ manualBarcodeInput.addEventListener('keypress', function(e) {
                     machine.plant,
                     machine.process,
                     machine.line,
-                    machine.roomName
+                    machine.roomName,
+                    machine.kodeRoom
                 );
                 closeBarcodeModal();
             } else {
@@ -748,7 +760,8 @@ machineSearch.addEventListener('paste', function(e) {
                     machine.plant,
                     machine.process,
                     machine.line,
-                    machine.roomName
+                    machine.roomName,
+                    machine.kodeRoom
                 );
             }
         }

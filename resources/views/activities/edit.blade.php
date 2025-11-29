@@ -16,6 +16,9 @@
         <form action="{{ route('activities.update', $activity->id) }}" method="POST" id="activityForm" enctype="multipart/form-data">
             @csrf
             @method('PUT')
+            @if(isset($page))
+                <input type="hidden" name="page" value="{{ $page }}">
+            @endif
             
             <div class="mb-4">
                 <label for="date" class="block text-sm font-semibold text-gray-700 mb-2">Date <span class="text-red-500">*</span></label>
@@ -36,7 +39,8 @@
                                 data-process="{{ $roomErp->process_name ?? '' }}"
                                 data-line="{{ $roomErp->line_name ?? '' }}"
                                 data-room="{{ $roomErp->name ?? '' }}"
-                                @if($activity->plant == $roomErp->plant_name && $activity->process == $roomErp->process_name && $activity->line == $roomErp->line_name && $activity->room_name == $roomErp->name) selected @endif>
+                                data-kode-room="{{ $roomErp->kode_room ?? '' }}"
+                                @if($activity->kode_room == $roomErp->kode_room || ($activity->plant == $roomErp->plant_name && $activity->process == $roomErp->process_name && $activity->line == $roomErp->line_name && $activity->room_name == $roomErp->name)) selected @endif>
                             {{ $roomErp->kode_room ? $roomErp->kode_room . ' - ' : '' }}{{ $roomErp->name }}
                             @if($roomErp->plant_name)
                                 ({{ $roomErp->plant_name }})
@@ -70,6 +74,9 @@
                 <input type="text" name="room_name" id="room_name" value="{{ old('room_name', $activity->room_name) }}" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('room_name') border-red-500 @enderror" placeholder="Akan terisi otomatis dari Room ERP" readonly>
                 @error('room_name')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
             </div>
+
+            <!-- Hidden field for kode_room -->
+            <input type="hidden" name="kode_room" id="kode_room" value="{{ old('kode_room', $activity->kode_room) }}">
 
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
@@ -321,12 +328,14 @@ if (roomErpSelect) {
             document.getElementById('process').value = selectedOption.dataset.process || '';
             document.getElementById('line').value = selectedOption.dataset.line || '';
             document.getElementById('room_name').value = selectedOption.dataset.room || '';
+            document.getElementById('kode_room').value = selectedOption.dataset.kodeRoom || '';
         } else {
             // Clear fields if no selection
             document.getElementById('plant').value = '';
             document.getElementById('process').value = '';
             document.getElementById('line').value = '';
             document.getElementById('room_name').value = '';
+            document.getElementById('kode_room').value = '';
         }
     });
     
@@ -337,17 +346,31 @@ if (roomErpSelect) {
         const currentLine = '{{ $activity->line }}';
         const currentRoomName = '{{ $activity->room_name }}';
         
-        if (currentPlant || currentProcess || currentLine || currentRoomName) {
+        const currentKodeRoom = '{{ $activity->kode_room ?? '' }}';
+        if (currentKodeRoom || currentPlant || currentProcess || currentLine || currentRoomName) {
             // Try to find matching Room ERP
             for (let i = 0; i < roomErpSelect.options.length; i++) {
                 const option = roomErpSelect.options[i];
-                if (option.value && 
-                    option.dataset.plant === currentPlant &&
-                    option.dataset.process === currentProcess &&
-                    option.dataset.line === currentLine &&
-                    option.dataset.room === currentRoomName) {
-                    roomErpSelect.value = option.value;
-                    break;
+                if (option.value) {
+                    // First try to match by kode_room
+                    if (currentKodeRoom && option.dataset.kodeRoom === currentKodeRoom) {
+                        roomErpSelect.value = option.value;
+                        // Also set kode_room field
+                        document.getElementById('kode_room').value = currentKodeRoom;
+                        break;
+                    }
+                    // Fallback: match by plant, process, line, room
+                    if (option.dataset.plant === currentPlant &&
+                        option.dataset.process === currentProcess &&
+                        option.dataset.line === currentLine &&
+                        option.dataset.room === currentRoomName) {
+                        roomErpSelect.value = option.value;
+                        // Set kode_room if available
+                        if (option.dataset.kodeRoom) {
+                            document.getElementById('kode_room').value = option.dataset.kodeRoom;
+                        }
+                        break;
+                    }
                 }
             }
         }

@@ -173,6 +173,12 @@
                             <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</label>
                             <p class="mt-1 text-sm font-medium text-gray-900">{{ Auth::user()->name }}</p>
                         </div>
+                        @if(Auth::user()->nik)
+                        <div>
+                            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">NIK</label>
+                            <p class="mt-1 text-sm font-medium text-gray-900">{{ Auth::user()->nik }}</p>
+                        </div>
+                        @endif
                         <div>
                             <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</label>
                             <p class="mt-1 text-sm font-medium text-gray-900">{{ Auth::user()->email }}</p>

@@ -17,7 +17,7 @@ class StandardController extends Controller
     {
         $standards = Standard::with('machineTypes', 'photos')
             ->orderBy('name', 'asc')
-            ->paginate(20);
+            ->paginate(8);
         
         return view('standards.index', compact('standards'));
     }

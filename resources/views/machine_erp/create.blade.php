@@ -41,7 +41,8 @@
                                 data-plant="{{ $roomErp->plant_name ?? '' }}"
                                 data-process="{{ $roomErp->process_name ?? '' }}"
                                 data-line="{{ $roomErp->line_name ?? '' }}"
-                                data-room="{{ $roomErp->name ?? '' }}">
+                                data-room="{{ $roomErp->name ?? '' }}"
+                                data-kode-room="{{ $roomErp->kode_room ?? '' }}">
                             {{ $roomErp->kode_room ? $roomErp->kode_room . ' - ' : '' }}{{ $roomErp->name }}
                             @if($roomErp->plant_name)
                                 ({{ $roomErp->plant_name }})
@@ -93,19 +94,21 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                    <label for="room_name" class="block text-sm font-semibold text-gray-700 mb-2">Room Name</label>
-                    <input type="text" 
-                           name="room_name" 
-                           id="room_name" 
-                           class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('room_name') border-red-500 @enderror" 
-                           value="{{ old('room_name') }}" 
-                           placeholder="Enter room name">
-                    @error('room_name')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
+            <div class="mb-4">
+                <label for="room_name" class="block text-sm font-semibold text-gray-700 mb-2">Room Name</label>
+                <input type="text" 
+                       name="room_name" 
+                       id="room_name" 
+                       class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('room_name') border-red-500 @enderror" 
+                       value="{{ old('room_name') }}" 
+                       placeholder="Enter room name">
+                @error('room_name')
+                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Hidden field for kode_room -->
+            <input type="hidden" name="kode_room" id="kode_room" value="{{ old('kode_room') }}">
 
                 <div class="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
                     <label for="model_select" class="block text-sm font-semibold text-gray-700 mb-2">
@@ -289,6 +292,14 @@ if (roomErpSelect) {
             document.getElementById('process_name').value = selectedOption.dataset.process || '';
             document.getElementById('line_name').value = selectedOption.dataset.line || '';
             document.getElementById('room_name').value = selectedOption.dataset.room || '';
+            document.getElementById('kode_room').value = selectedOption.dataset.kodeRoom || '';
+        } else {
+            // Clear fields if no selection
+            document.getElementById('plant_name').value = '';
+            document.getElementById('process_name').value = '';
+            document.getElementById('line_name').value = '';
+            document.getElementById('room_name').value = '';
+            document.getElementById('kode_room').value = '';
         }
     });
 }

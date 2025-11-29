@@ -34,7 +34,8 @@
                                 data-plant="{{ $roomErp->plant_name ?? '' }}"
                                 data-process="{{ $roomErp->process_name ?? '' }}"
                                 data-line="{{ $roomErp->line_name ?? '' }}"
-                                data-room="{{ $roomErp->name ?? '' }}">
+                                data-room="{{ $roomErp->name ?? '' }}"
+                                data-kode-room="{{ $roomErp->kode_room ?? '' }}">
                             {{ $roomErp->kode_room ? $roomErp->kode_room . ' - ' : '' }}{{ $roomErp->name }}
                             @if($roomErp->plant_name)
                                 ({{ $roomErp->plant_name }})

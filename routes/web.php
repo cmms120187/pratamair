@@ -47,30 +47,37 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Resource Routes for Different Controllers
-    Route::resource('plants', PlantController::class);
-    Route::post('plants/import-from-room-erp', [PlantController::class, 'importFromRoomErp'])->name('plants.import-from-room-erp');
-    Route::resource('processes', ProcessController::class);
-    Route::post('processes/import-from-room-erp', [ProcessController::class, 'importFromRoomErp'])->name('processes.import-from-room-erp');
-    Route::resource('lines', LineController::class);
-    Route::post('lines/import-from-room-erp', [LineController::class, 'importFromRoomErp'])->name('lines.import-from-room-erp');
-    // Room ERP Routes
-    Route::post('room-erp/upload', [\App\Http\Controllers\RoomErpController::class, 'upload'])->name('room-erp.upload');
-    Route::get('room-erp/download', [\App\Http\Controllers\RoomErpController::class, 'download'])->name('room-erp.download');
-    Route::resource('room-erp', \App\Http\Controllers\RoomErpController::class);
+    // Location routes - Coordinator and above
+    Route::middleware('role:coordinator,ast_manager,manager,general_manager')->group(function () {
+        Route::resource('plants', PlantController::class);
+        Route::post('plants/import-from-room-erp', [PlantController::class, 'importFromRoomErp'])->name('plants.import-from-room-erp');
+        Route::resource('processes', ProcessController::class);
+        Route::post('processes/import-from-room-erp', [ProcessController::class, 'importFromRoomErp'])->name('processes.import-from-room-erp');
+        Route::resource('lines', LineController::class);
+        Route::post('lines/import-from-room-erp', [LineController::class, 'importFromRoomErp'])->name('lines.import-from-room-erp');
+        // Room ERP Routes
+        Route::post('room-erp/upload', [\App\Http\Controllers\RoomErpController::class, 'upload'])->name('room-erp.upload');
+        Route::get('room-erp/download', [\App\Http\Controllers\RoomErpController::class, 'download'])->name('room-erp.download');
+        Route::resource('room-erp', \App\Http\Controllers\RoomErpController::class);
+    });
     
-    // Machine ERP Routes
-    Route::post('machine-erp/upload', [\App\Http\Controllers\MachineErpController::class, 'upload'])->name('machine-erp.upload');
-    Route::get('machine-erp/download', [\App\Http\Controllers\MachineErpController::class, 'download'])->name('machine-erp.download');
-    Route::post('machine-erp/synchronize', [\App\Http\Controllers\MachineErpController::class, 'synchronize'])->name('machine-erp.synchronize');
-    Route::resource('machine-erp', \App\Http\Controllers\MachineErpController::class);
+    // Machine ERP Routes - Group Leader and above
+    Route::middleware('role:group_leader,coordinator,ast_manager,manager,general_manager')->group(function () {
+        Route::post('machine-erp/upload', [\App\Http\Controllers\MachineErpController::class, 'upload'])->name('machine-erp.upload');
+        Route::get('machine-erp/download', [\App\Http\Controllers\MachineErpController::class, 'download'])->name('machine-erp.download');
+        Route::post('machine-erp/synchronize', [\App\Http\Controllers\MachineErpController::class, 'synchronize'])->name('machine-erp.synchronize');
+        Route::resource('machine-erp', \App\Http\Controllers\MachineErpController::class);
+        
+        // Mutasi Routes
+        Route::resource('mutasi', \App\Http\Controllers\MutasiController::class);
+    });
     
-    // Mutasi Routes
-    Route::resource('mutasi', \App\Http\Controllers\MutasiController::class);
-    
-    // Part ERP Routes
-    Route::post('part-erp/upload', [\App\Http\Controllers\PartErpController::class, 'upload'])->name('part-erp.upload');
-    Route::get('part-erp/download', [\App\Http\Controllers\PartErpController::class, 'download'])->name('part-erp.download');
-    Route::resource('part-erp', \App\Http\Controllers\PartErpController::class);
+    // Part ERP Routes - Coordinator and above
+    Route::middleware('role:coordinator,ast_manager,manager,general_manager')->group(function () {
+        Route::post('part-erp/upload', [\App\Http\Controllers\PartErpController::class, 'upload'])->name('part-erp.upload');
+        Route::get('part-erp/download', [\App\Http\Controllers\PartErpController::class, 'download'])->name('part-erp.download');
+        Route::resource('part-erp', \App\Http\Controllers\PartErpController::class);
+    });
     
     // Downtime ERP2 Routes
     Route::post('downtime-erp2/upload', [\App\Http\Controllers\DowntimeErp2Controller::class, 'upload'])->name('downtime-erp2.upload');
@@ -81,6 +88,7 @@ Route::middleware('auth')->group(function () {
     Route::post('activities/upload', [\App\Http\Controllers\ActivityController::class, 'upload'])->name('activities.upload');
     Route::get('activities/download', [\App\Http\Controllers\ActivityController::class, 'download'])->name('activities.download');
     Route::get('activities/search-mechanic', [\App\Http\Controllers\ActivityController::class, 'searchMechanic'])->name('activities.search-mechanic');
+    Route::post('activities/batch-update-location', [\App\Http\Controllers\ActivityController::class, 'batchUpdateLocation'])->name('activities.batch-update-location')->middleware('role:admin');
     Route::resource('activities', \App\Http\Controllers\ActivityController::class);
     
     // Custom routes for rooms (must be BEFORE resource route)
@@ -104,14 +112,24 @@ Route::middleware('auth')->group(function () {
     Route::get('machines/get-lines-by-plant', [MachineController::class, 'getLinesByPlant'])->name('machines.get-lines-by-plant');
     Route::get('machines/get-rooms-by-plant-and-line', [MachineController::class, 'getRoomsByPlantAndLine'])->name('machines.get-rooms-by-plant-and-line');
     Route::resource('machines', MachineController::class);
-    // Custom routes for users (must be BEFORE resource route)
-    Route::post('users/batch-update', [UserController::class, 'batchUpdate'])->name('users.batch-update');
-    Route::get('users/organizational-structure', [\App\Http\Controllers\OrganizationalStructureController::class, 'index'])->name('users.organizational-structure.index');
-    Route::get('users/organizational-structure/chart', [\App\Http\Controllers\OrganizationalStructureController::class, 'chart'])->name('users.organizational-structure.chart');
-    Route::get('pareto-machine', [\App\Http\Controllers\ParetoMachineController::class, 'index'])->name('pareto-machine.index');
-    Route::get('root-cause-analysis', [\App\Http\Controllers\RootCauseAnalysisController::class, 'index'])->name('root-cause-analysis.index');
-    Route::resource('work-orders', \App\Http\Controllers\WorkOrderController::class);
-    Route::resource('users', UserController::class);
+    // Custom routes for users (must be BEFORE resource route) - Coordinator and above
+    Route::middleware('role:coordinator,ast_manager,manager,general_manager')->group(function () {
+        Route::post('users/batch-update', [UserController::class, 'batchUpdate'])->name('users.batch-update');
+        Route::get('users/organizational-structure', [\App\Http\Controllers\OrganizationalStructureController::class, 'index'])->name('users.organizational-structure.index');
+        Route::get('users/organizational-structure/chart', [\App\Http\Controllers\OrganizationalStructureController::class, 'chart'])->name('users.organizational-structure.chart');
+        Route::resource('users', UserController::class);
+    });
+    
+    // Work Orders - Team Leader and above
+    Route::middleware('role:team_leader,group_leader,coordinator,ast_manager,manager,general_manager')->group(function () {
+        Route::resource('work-orders', \App\Http\Controllers\WorkOrderController::class);
+    });
+    
+    // Reports - Group Leader and above
+    Route::middleware('role:group_leader,coordinator,ast_manager,manager,general_manager')->group(function () {
+        Route::get('pareto-machine', [\App\Http\Controllers\ParetoMachineController::class, 'index'])->name('pareto-machine.index');
+        Route::get('root-cause-analysis', [\App\Http\Controllers\RootCauseAnalysisController::class, 'index'])->name('root-cause-analysis.index');
+    });
     // Custom routes for downtimes (MUST be BEFORE resource route to avoid route conflicts)
     Route::post('downtimes/search-machine', [DowntimeController::class, 'searchMachine'])->name('downtimes.search-machine');
     Route::get('downtimes/search-mechanic', [DowntimeController::class, 'searchMechanic'])->name('downtimes.search-mechanic');
@@ -192,22 +210,36 @@ Route::middleware('auth')->group(function () {
         Route::get('reporting/performance', [PredictiveReportingController::class, 'performanceReport'])->name('reporting.performance');
     });
     
-    // Standards CRUD
-    Route::resource('standards', \App\Http\Controllers\StandardController::class);
+    // Standards CRUD - Group Leader and above
+    Route::middleware('role:group_leader,coordinator,ast_manager,manager,general_manager')->group(function () {
+        Route::resource('standards', \App\Http\Controllers\StandardController::class);
+    });
+    
+    // Permissions Management - Admin only
+    Route::middleware('role:admin')->group(function () {
+        Route::get('permissions', [\App\Http\Controllers\PermissionController::class, 'index'])->name('permissions.index');
+        Route::put('permissions', [\App\Http\Controllers\PermissionController::class, 'update'])->name('permissions.update');
+    });
 });
 
 // Downtime ERP Routes
 Route::resource('downtime_erp', DowntimeErpController::class);
 Route::post('downtime_erp/import', [DowntimeErpController::class, 'import'])->name('downtime_erp.import');
 
-// MTTR & MTBF Routes
-Route::get('mttr-mtbf', [\App\Http\Controllers\MTTRMTBFController::class, 'index'])->middleware('auth')->name('mttr_mtbf.index');
+// MTTR & MTBF Routes - Group Leader and above
+Route::get('mttr-mtbf', [\App\Http\Controllers\MTTRMTBFController::class, 'index'])
+    ->middleware(['auth', 'role:group_leader,coordinator,ast_manager,manager,general_manager'])
+    ->name('mttr_mtbf.index');
 
-// Summary Downtime Routes
-Route::get('summary-downtime', [\App\Http\Controllers\SummaryDowntimeController::class, 'index'])->middleware('auth')->name('summary_downtime.index');
+// Summary Downtime Routes - Group Leader and above
+Route::get('summary-downtime', [\App\Http\Controllers\SummaryDowntimeController::class, 'index'])
+    ->middleware(['auth', 'role:group_leader,coordinator,ast_manager,manager,general_manager'])
+    ->name('summary_downtime.index');
 
-// Mechanic Performance Routes
-Route::get('mechanic-performance', [\App\Http\Controllers\MechanicPerformanceController::class, 'index'])->middleware('auth')->name('mechanic_performance.index');
+// Mechanic Performance Routes - Group Leader and above
+Route::get('mechanic-performance', [\App\Http\Controllers\MechanicPerformanceController::class, 'index'])
+    ->middleware(['auth', 'role:group_leader,coordinator,ast_manager,manager,general_manager'])
+    ->name('mechanic_performance.index');
 
 // Contact Form Route
 Route::post('/contact', [\App\Http\Controllers\ContactController::class, 'send'])->name('contact.send');

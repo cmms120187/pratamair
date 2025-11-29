@@ -15,6 +15,7 @@ class MaintenancePoint extends Model
         'name',
         'instruction',
         'sequence',
+        'duration',
         'photo',
     ];
 

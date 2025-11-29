@@ -5,6 +5,7 @@ namespace App\Http\Requests\Auth;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -27,7 +28,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
+            'email' => ['required', 'string'], // Changed from 'email' to 'string' to accept email or NIK
             'password' => ['required', 'string'],
         ];
     }
@@ -41,15 +42,34 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $credentials = $this->only('email', 'password');
+        $remember = $this->boolean('remember');
+        
+        // Determine if the input is an email or NIK
+        $identifier = $credentials['email'];
+        $isEmail = filter_var($identifier, FILTER_VALIDATE_EMAIL);
+        
+        // Try to find user by email or NIK
+        $user = null;
+        if ($isEmail) {
+            $user = \App\Models\User::where('email', $identifier)->first();
+        } else {
+            $user = \App\Models\User::where('nik', $identifier)->first();
+        }
+        
+        // If user found, attempt authentication
+        if ($user && Hash::check($credentials['password'], $user->password)) {
+            Auth::login($user, $remember);
+            RateLimiter::clear($this->throttleKey());
+            return;
+        }
+        
+        // Authentication failed
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
             ]);
-        }
-
-        RateLimiter::clear($this->throttleKey());
     }
 
     /**
@@ -80,6 +100,7 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        $identifier = $this->string('email');
+        return Str::transliterate(Str::lower($identifier).'|'.$this->ip());
     }
 }

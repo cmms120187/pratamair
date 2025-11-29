@@ -16,6 +16,9 @@
         <form action="{{ route('downtime-erp2.update', $downtimeErp2->id) }}" method="POST">
             @csrf
             @method('PUT')
+            @if(isset($page))
+                <input type="hidden" name="page" value="{{ $page }}">
+            @endif
             
             <!-- Basic Information -->
             <div class="mb-6">

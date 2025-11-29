@@ -150,8 +150,9 @@ class MachineTypeController extends Controller
         
         $groups = Group::with('systems')->orderBy('name')->get();
         $systems = System::orderBy('nama_sistem')->get();
+        $standards = Standard::active()->orderBy('name')->get();
         
-        return view('machinary.group.edit', compact('machineType', 'points', 'groups', 'systems'));
+        return view('machinary.group.edit', compact('machineType', 'points', 'groups', 'systems', 'standards'));
     }
 
     /**
@@ -238,6 +239,7 @@ class MachineTypeController extends Controller
                             'name' => $point['name'],
                             'instruction' => $point['instruction'] ?? null,
                             'sequence' => $point['sequence'] ?? 0,
+                            'duration' => $point['duration'] ?? null,
                         ]);
                     }
                 }
@@ -269,6 +271,7 @@ class MachineTypeController extends Controller
             'name' => 'required|string|max:255',
             'instruction' => 'nullable|string',
             'sequence' => 'nullable|integer|min:0',
+            'duration' => 'nullable|integer|min:0',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
@@ -290,6 +293,7 @@ class MachineTypeController extends Controller
             'name' => $validated['name'],
             'instruction' => $validated['instruction'] ?? null,
             'sequence' => $validated['sequence'] ?? 0,
+            'duration' => $validated['duration'] ?? null,
             'photo' => $photoPath,
         ]);
 
@@ -311,11 +315,13 @@ class MachineTypeController extends Controller
     {
         $validated = $request->validate([
             'category' => 'required|in:autonomous,preventive,predictive',
+            'standard_id' => 'nullable|exists:standards,id',
             'frequency_type' => 'nullable|in:daily,weekly,monthly,quarterly,yearly,custom',
             'frequency_value' => 'nullable|integer|min:1',
             'name' => 'required|string|max:255',
             'instruction' => 'nullable|string',
             'sequence' => 'nullable|integer|min:0',
+            'duration' => 'nullable|integer|min:0',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
@@ -333,7 +339,7 @@ class MachineTypeController extends Controller
         }
         
         // Only set standard_id if category is predictive
-        if ($validated['category'] === 'predictive' && isset($validated['standard_id'])) {
+        if ($validated['category'] === 'predictive' && !empty($validated['standard_id'])) {
             $validated['standard_id'] = $validated['standard_id'];
         } else {
             $validated['standard_id'] = null;

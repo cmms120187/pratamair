@@ -11,9 +11,9 @@
         <form method="POST" action="{{ route('login') }}" class="space-y-6">
             @csrf
 
-            <!-- Email Address -->
+            <!-- Email / ID Mekanik -->
             <div class="animate-fade-in-up" style="animation-delay: 0.1s;">
-                <x-input-label for="email" :value="__('Email')" class="text-gray-700 font-semibold mb-2" />
+                <x-input-label for="email" value="Email / ID Mekanik" class="text-gray-700 font-semibold mb-2" />
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -23,15 +23,16 @@
                     <x-text-input 
                         id="email" 
                         class="block mt-1 w-full pl-10 input-focus transition-all duration-300" 
-                        type="email" 
+                        type="text" 
                         name="email" 
                         :value="old('email')" 
                         required 
                         autofocus 
                         autocomplete="username"
-                        placeholder="nama@email.com"
+                        placeholder="nama@email.com atau ID Mekanik"
                     />
                 </div>
+                <p class="mt-1 text-xs text-gray-500">Masukkan email atau ID Mekanik (NIK) Anda</p>
                 <x-input-error :messages="$errors->get('email')" class="mt-2" />
             </div>
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PredictiveMaintenanceExecution;
 use App\Models\PredictiveMaintenanceSchedule;
 use App\Models\User;
+use App\Helpers\DataFilterHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -17,10 +18,18 @@ class UpdatingController extends Controller
     public function index()
     {
         // Get executions with status pending or in_progress
-        $executionsRaw = PredictiveMaintenanceExecution::whereIn('status', ['pending', 'in_progress'])
-            ->with(['schedule.machine.machineType', 'schedule.machine.plant', 'schedule.machine.line', 'schedule.standard', 'performedBy', 'schedule'])
-            ->orderBy('scheduled_date', 'asc')
-            ->get();
+        $query = PredictiveMaintenanceExecution::whereIn('status', ['pending', 'in_progress'])
+            ->with(['schedule.machine.machineType', 'schedule.machine.plant', 'schedule.machine.line', 'schedule.standard', 'performedBy', 'schedule']);
+        
+        // Filter by user role (mekanik only sees their own assigned executions)
+        if (DataFilterHelper::shouldFilterRoute(request()->route()->getName())) {
+            $user = auth()->user();
+            if ($user && $user->role === 'mekanik' && $user->id) {
+                $query->where('performed_by', $user->id);
+            }
+        }
+        
+        $executionsRaw = $query->orderBy('scheduled_date', 'asc')->get();
         
         // Group by (machine_id, scheduled_date) to get unique jadwal
         $jadwalData = [];

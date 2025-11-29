@@ -8,6 +8,7 @@ use App\Models\MachineErp;
 use App\Models\RoomErp;
 use App\Models\User;
 use App\Models\Group;
+use App\Helpers\DataFilterHelper;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -19,7 +20,14 @@ class DowntimeErp2Controller extends Controller
      */
     public function index()
     {
-        $downtimeErp2s = DowntimeErp2::orderBy('date', 'desc')->paginate(12);
+        $query = DowntimeErp2::query();
+        
+        // Filter by user role (mekanik only sees their own data)
+        if (DataFilterHelper::shouldFilterRoute(request()->route()->getName())) {
+            DataFilterHelper::filterByUserRole($query, auth()->user(), 'idMekanik');
+        }
+        
+        $downtimeErp2s = $query->orderBy('date', 'desc')->paginate(12);
         return view('downtime_erp2.index', compact('downtimeErp2s'));
     }
 
@@ -76,6 +84,7 @@ class DowntimeErp2Controller extends Controller
                 'process' => $machine->process_name ?? '',
                 'line' => $machine->line_name ?? '',
                 'roomName' => $machine->room_name ?? '',
+                'kodeRoom' => $machine->kode_room ?? '',
             ];
         }
         
@@ -89,6 +98,7 @@ class DowntimeErp2Controller extends Controller
     {
         $validated = $request->validate([
             'date' => 'required|date',
+            'kode_room' => 'nullable|string|max:255',
             'plant' => 'required|string|max:255',
             'process' => 'required|string|max:255',
             'line' => 'required|string|max:255',
@@ -181,9 +191,10 @@ class DowntimeErp2Controller extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Request $request, string $id)
     {
         $downtimeErp2 = DowntimeErp2::findOrFail($id);
+        $page = $request->query('page', 1);
         
         // Extract time from datetime fields for form display
         $stopTime = $this->extractTime($downtimeErp2->stopProduction);
@@ -243,7 +254,7 @@ class DowntimeErp2Controller extends Controller
             ];
         }
         
-        return view('downtime_erp2.edit', compact('downtimeErp2', 'stopTime', 'responTime', 'startTime', 'mekaniks', 'groups', 'groupsData'));
+        return view('downtime_erp2.edit', compact('downtimeErp2', 'stopTime', 'responTime', 'startTime', 'mekaniks', 'groups', 'groupsData', 'page'));
     }
     
     /**
@@ -290,6 +301,7 @@ class DowntimeErp2Controller extends Controller
     {
         $validated = $request->validate([
             'date' => 'required|date',
+            'kode_room' => 'nullable|string|max:255',
             'plant' => 'required|string|max:255',
             'process' => 'required|string|max:255',
             'line' => 'required|string|max:255',
@@ -338,7 +350,12 @@ class DowntimeErp2Controller extends Controller
 
         $downtimeErp2 = DowntimeErp2::findOrFail($id);
         $downtimeErp2->update($validated);
-        return redirect()->route('downtime-erp2.index')->with('success', 'Downtime ERP2 updated successfully.');
+        
+        // Get page from request or default to 1
+        $page = $request->input('page', 1);
+        
+        return redirect()->route('downtime-erp2.index', ['page' => $page])
+            ->with('success', 'Downtime ERP2 updated successfully.');
     }
 
     /**

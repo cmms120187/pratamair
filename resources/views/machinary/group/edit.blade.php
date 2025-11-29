@@ -196,6 +196,11 @@
                             <label class="block text-sm font-medium text-gray-700 mb-2">Urutan</label>
                             <input type="number" x-model="newPoint.sequence" class="w-full border rounded px-3 py-2" min="0" value="0">
                         </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Duration (menit)</label>
+                            <input type="number" x-model="newPoint.duration" class="w-full border rounded px-3 py-2" min="0" placeholder="Waktu pengerjaan">
+                            <p class="text-xs text-gray-500 mt-1">Waktu pengerjaan dalam menit</p>
+                        </div>
                         <div class="md:col-span-12">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Instruksi</label>
                             <textarea x-model="newPoint.instruction" class="w-full border rounded px-3 py-2" rows="2" placeholder="Masukkan instruksi"></textarea>
@@ -248,11 +253,14 @@
                                                                 <span class="text-sm text-blue-600 font-medium">Standard: {{ $point->standard->name }}</span>
                                                             @endif
                                                             <span class="text-sm text-gray-400">Urutan: {{ $point->sequence }}</span>
+                                                            @if($point->duration)
+                                                                <span class="text-sm text-gray-400">Duration: {{ $point->duration }} menit</span>
+                                                            @endif
                                                         </div>
                                                     </div>
                                                     <div class="flex gap-1 flex-shrink-0">
                                                         <button type="button" 
-                                                            onclick="openEditModal({{ $point->id }}, '{{ $point->category }}', @js($point->name), @js($point->instruction ?? ''), {{ $point->sequence }}, '{{ $point->frequency_type ?? '' }}', {{ $point->frequency_value ?? 1 }}, '{{ $point->photo ? Storage::url($point->photo) : '' }}', {{ $point->standard_id ?? 'null' }})"
+                                                            onclick="openEditModal({{ $point->id }}, '{{ $point->category }}', @js($point->name), @js($point->instruction ?? ''), {{ $point->sequence }}, '{{ $point->frequency_type ?? '' }}', {{ $point->frequency_value ?? 1 }}, '{{ $point->photo ? Storage::url($point->photo) : '' }}', {{ $point->standard_id ?: 'null' }}, {{ $point->duration ?: 'null' }})"
                                                             class="bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded text-xs">
                                                             Edit
                                                         </button>
@@ -350,6 +358,11 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Urutan</label>
                         <input type="number" name="sequence" id="edit_sequence" class="w-full border rounded px-3 py-2" min="0">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Duration (menit)</label>
+                        <input type="number" name="duration" id="edit_duration" class="w-full border rounded px-3 py-2" min="0" placeholder="Waktu pengerjaan">
+                        <p class="text-xs text-gray-500 mt-1">Waktu pengerjaan dalam menit</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Instruksi</label>
@@ -468,6 +481,7 @@ function maintenancePointsData() {
             name: '',
             instruction: '',
             sequence: 0,
+            duration: '',
             photoFile: null,
             photoPreview: null
         },
@@ -482,6 +496,7 @@ function maintenancePointsData() {
                 name: '',
                 instruction: '',
                 sequence: 0,
+                duration: '',
                 photoFile: null,
                 photoPreview: null
             };
@@ -515,6 +530,7 @@ function maintenancePointsData() {
             formData.append('name', this.newPoint.name);
             formData.append('instruction', this.newPoint.instruction || '');
             formData.append('sequence', this.newPoint.sequence || 0);
+            formData.append('duration', this.newPoint.duration || '');
             if (this.newPoint.photoFile) {
                 formData.append('photo', this.newPoint.photoFile);
             }
@@ -552,6 +568,7 @@ function maintenancePointsData() {
                 name: '',
                 instruction: '',
                 sequence: 0,
+                duration: '',
                 photoFile: null,
                 photoPreview: null
             };
@@ -583,18 +600,29 @@ function toggleEditStandardField() {
     }
 }
 
-function openEditModal(id, category, name, instruction, sequence, frequencyType = '', frequencyValue = 1, currentPhoto = '', standardId = '') {
+function openEditModal(id, category, name, instruction, sequence, frequencyType = '', frequencyValue = 1, currentPhoto = '', standardId = '', duration = '') {
     document.getElementById('editForm').action = '{{ url('machine-types/maintenance-points') }}/' + id;
     document.getElementById('edit_category').value = category;
     document.getElementById('edit_name').value = name;
     document.getElementById('edit_instruction').value = instruction;
     document.getElementById('edit_sequence').value = sequence;
+    document.getElementById('edit_duration').value = duration || '';
     document.getElementById('edit_frequency_type').value = frequencyType || '';
     document.getElementById('edit_frequency_value').value = frequencyValue || 1;
-    if (standardId) {
-        document.getElementById('edit_standard_id').value = standardId;
-    }
+    
+    // Toggle standard field first based on category
     toggleEditStandardField();
+    
+    // Then set standard_id if provided and valid (not null or empty string)
+    // Convert to string for comparison and setting value
+    const standardIdStr = String(standardId);
+    if (standardIdStr && standardIdStr !== 'null' && standardIdStr !== 'undefined' && standardIdStr !== '') {
+        const standardSelect = document.getElementById('edit_standard_id');
+        // Check if the option exists before setting
+        if (standardSelect.querySelector(`option[value="${standardIdStr}"]`)) {
+            standardSelect.value = standardIdStr;
+        }
+    }
     document.getElementById('edit_photo').value = '';
     
     // Show current photo if exists

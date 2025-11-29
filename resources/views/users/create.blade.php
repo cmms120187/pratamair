@@ -153,6 +153,9 @@
                             <option value="ast_manager" {{ old('role') == 'ast_manager' ? 'selected' : '' }}>Assistant Manager</option>
                             <option value="manager" {{ old('role') == 'manager' ? 'selected' : '' }}>Manager</option>
                             <option value="general_manager" {{ old('role') == 'general_manager' ? 'selected' : '' }}>General Manager</option>
+                            @if(auth()->user()->isAdmin())
+                            <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Admin (Full Access)</option>
+                            @endif
                         </select>
                         @error('role')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>

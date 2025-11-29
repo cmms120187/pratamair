@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\WorkOrder;
 use App\Models\Machine;
 use App\Models\User;
+use App\Helpers\DataFilterHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -41,6 +42,17 @@ class WorkOrderController extends Controller
 
         if ($request->filled('date_to')) {
             $query->whereDate('order_date', '<=', $request->date_to);
+        }
+
+        // Filter by user role (mekanik only sees their own assigned work orders)
+        if (DataFilterHelper::shouldFilterRoute(request()->route()->getName())) {
+            $user = auth()->user();
+            if ($user && $user->role === 'mekanik' && $user->id) {
+                $query->where(function($q) use ($user) {
+                    $q->where('assigned_to', $user->id)
+                      ->orWhere('created_by', $user->id);
+                });
+            }
         }
 
         $workOrders = $query->orderBy('order_date', 'desc')

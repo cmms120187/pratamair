@@ -176,6 +176,9 @@
                             <option value="ast_manager" {{ old('role', $user->role) == 'ast_manager' ? 'selected' : '' }}>Assistant Manager</option>
                             <option value="manager" {{ old('role', $user->role) == 'manager' ? 'selected' : '' }}>Manager</option>
                             <option value="general_manager" {{ old('role', $user->role) == 'general_manager' ? 'selected' : '' }}>General Manager</option>
+                            @if(auth()->user()->isAdmin())
+                            <option value="admin" {{ old('role', $user->role) == 'admin' ? 'selected' : '' }}>Admin (Full Access)</option>
+                            @endif
                         </select>
                         @error('role')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -189,7 +192,7 @@
                                 id="atasan_id" 
                                 x-model="atasanId"
                                 class="w-full border rounded px-3 py-2 @error('atasan_id') border-red-500 @enderror"
-                                :disabled="role === 'general_manager' || role === ''"
+                                :disabled="role === 'general_manager' || role === 'admin' || role === ''"
                                 x-ref="atasanSelect">
                             <option value="">Tidak ada atasan</option>
                             <!-- Team Leader (untuk Mekanik) -->
