@@ -24,24 +24,24 @@ class ControllingController extends Controller
         $startDate = \Carbon\Carbon::create($filterYear, $filterMonth, 1)->startOfMonth();
         $endDate = \Carbon\Carbon::create($filterYear, $filterMonth, 1)->endOfMonth();
         
-        // Get all active schedules grouped by machine, filtered by month and year
+        // Get all active schedules grouped by machine, filtered by month and year - now using MachineErp
         $schedules = PreventiveMaintenanceSchedule::where('status', 'active')
             ->whereBetween('start_date', [$startDate->toDateString(), $endDate->toDateString()])
-            ->with(['machine.plant', 'machine.line', 'machine.machineType', 'assignedUser', 'executions'])
+            ->with(['machineErp.roomErp', 'machineErp.machineType', 'assignedUser', 'executions'])
             ->orderBy('start_date', 'asc')
             ->get();
         
-        // Get unique machines
-        $uniqueMachineIds = $schedules->pluck('machine_id')->unique();
-        $machines = \App\Models\Machine::whereIn('id', $uniqueMachineIds)
-            ->with(['plant', 'line', 'machineType'])
+        // Get unique machines from MachineErp
+        $uniqueMachineErpIds = $schedules->pluck('machine_erp_id')->unique();
+        $machines = \App\Models\MachineErp::whereIn('id', $uniqueMachineErpIds)
+            ->with(['roomErp', 'machineType'])
             ->get()
             ->keyBy('id');
         
-        // Group schedules by machine_id
+        // Group schedules by machine_erp_id
         $machinesData = [];
         foreach ($schedules as $schedule) {
-            $machineId = $schedule->machine_id;
+            $machineId = $schedule->machine_erp_id;
             
             if (!isset($machines[$machineId])) {
                 continue;
@@ -165,10 +165,10 @@ class ControllingController extends Controller
         // Calculate stats
         $today = now()->toDateString();
         
-        // Get all machines that have schedules
-        $allMachineIds = PreventiveMaintenanceSchedule::where('status', 'active')
+        // Get all machines that have schedules - now using MachineErp
+        $allMachineErpIds = PreventiveMaintenanceSchedule::where('status', 'active')
             ->distinct()
-            ->pluck('machine_id')
+            ->pluck('machine_erp_id')
             ->toArray();
         
         // Count completed machines and plan machines (machines where all schedules up to today are still pending)
@@ -177,9 +177,9 @@ class ControllingController extends Controller
         $pendingExecutionsCount = PreventiveMaintenanceExecution::where('status', 'pending')->count();
         $inProgressExecutionsCount = PreventiveMaintenanceExecution::where('status', 'in_progress')->count();
         
-        foreach ($allMachineIds as $machineId) {
+        foreach ($allMachineErpIds as $machineErpId) {
             // Get all schedules for this machine that are <= today
-            $schedulesUpToToday = PreventiveMaintenanceSchedule::where('machine_id', $machineId)
+            $schedulesUpToToday = PreventiveMaintenanceSchedule::where('machine_erp_id', $machineErpId)
                 ->where('status', 'active')
                 ->where('start_date', '<=', $today)
                 ->get();
@@ -270,22 +270,22 @@ class ControllingController extends Controller
         }
         
         try {
-            // Get machine IDs that have active schedules
-            $machineIdsWithSchedules = PreventiveMaintenanceSchedule::where('status', 'active')
+            // Get machine IDs that have active schedules - now using MachineErp
+            $machineErpIdsWithSchedules = PreventiveMaintenanceSchedule::where('status', 'active')
                 ->distinct()
-                ->pluck('machine_id')
+                ->pluck('machine_erp_id')
                 ->toArray();
             
             // Get machines by type that have active schedules
-            $machines = \App\Models\Machine::where('type_id', $typeId)
-                ->whereIn('id', $machineIdsWithSchedules)
-                ->with(['plant', 'process', 'line', 'machineType'])
+            $machines = \App\Models\MachineErp::where('machine_type_id', $typeId)
+                ->whereIn('id', $machineErpIdsWithSchedules)
+                ->with(['roomErp', 'machineType'])
                 ->get()
                 ->map(function($machine) {
                     return [
                         'id' => $machine->id,
                         'idMachine' => $machine->idMachine,
-                        'name' => $machine->idMachine . ' - ' . ($machine->machineType->name ?? '-') . ' (' . ($machine->plant->name ?? '-') . '/' . ($machine->process->name ?? '-') . '/' . ($machine->line->name ?? '-') . ')'
+                        'name' => $machine->idMachine . ' - ' . ($machine->machineType->name ?? $machine->type_name ?? '-') . ' (' . ($machine->plant_name ?? '-') . '/' . ($machine->process_name ?? '-') . '/' . ($machine->line_name ?? '-') . ')'
                     ];
                 });
             
@@ -309,13 +309,13 @@ class ControllingController extends Controller
         }
         
         try {
-            // Get machine
-            $machine = \App\Models\Machine::findOrFail($machineId);
+            // Get machine - now using MachineErp
+            $machine = \App\Models\MachineErp::findOrFail($machineId);
             
             // Get schedules for this machine that match the criteria:
             // 1. start_date = scheduled_date (jadwal untuk tanggal yang diset)
             // 2. OR start_date < scheduled_date (terlewat) BUT belum ada execution dengan status completed
-            $schedules = PreventiveMaintenanceSchedule::where('machine_id', $machineId)
+            $schedules = PreventiveMaintenanceSchedule::where('machine_erp_id', $machineId)
                 ->where('status', 'active')
                 ->where(function($query) use ($scheduledDate) {
                     // Jadwal untuk tanggal yang diset
@@ -413,7 +413,7 @@ class ControllingController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'machine_id' => 'required|exists:machines,id',
+            'machine_id' => 'required|exists:machine_erp,id',
             'scheduled_date' => 'required|date',
             'performed_by' => 'nullable|exists:users,id',
             'executions' => 'required|array|min:1',

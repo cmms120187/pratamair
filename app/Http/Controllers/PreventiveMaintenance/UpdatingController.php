@@ -16,9 +16,9 @@ class UpdatingController extends Controller
      */
     public function index()
     {
-        // Get executions with status pending or in_progress
+        // Get executions with status pending or in_progress - now using MachineErp
         $query = PreventiveMaintenanceExecution::whereIn('status', ['pending', 'in_progress'])
-            ->with(['schedule.machine.machineType', 'schedule.machine.plant', 'schedule.machine.line', 'performedBy', 'schedule']);
+            ->with(['schedule.machineErp.machineType', 'schedule.machineErp.roomErp', 'performedBy', 'schedule']);
         
         // Filter by user role (mekanik only sees their own assigned executions)
         if (DataFilterHelper::shouldFilterRoute(request()->route()->getName())) {
@@ -30,10 +30,10 @@ class UpdatingController extends Controller
         
         $executionsRaw = $query->orderBy('scheduled_date', 'asc')->get();
         
-        // Group by (machine_id, scheduled_date) to get unique jadwal
+        // Group by (machine_erp_id, scheduled_date) to get unique jadwal
         $jadwalData = [];
         foreach ($executionsRaw as $execution) {
-            $machineId = $execution->schedule->machine_id;
+            $machineId = $execution->schedule->machine_erp_id;
             $scheduledDate = $execution->scheduled_date;
             if (is_string($scheduledDate)) {
                 $dateFormatted = $scheduledDate;
@@ -45,7 +45,7 @@ class UpdatingController extends Controller
             if (!isset($jadwalData[$key])) {
                 $jadwalData[$key] = [
                     'machine_id' => $machineId,
-                    'machine' => $execution->schedule->machine,
+                    'machine' => $execution->schedule->machineErp,
                     'scheduled_date' => $dateFormatted,
                     'executions' => [],
                     'status' => 'pending', // Default
@@ -74,15 +74,15 @@ class UpdatingController extends Controller
         
         // Get completed executions for information only - grouped by jadwal
         $completedExecutionsRaw = PreventiveMaintenanceExecution::where('status', 'completed')
-            ->with(['schedule.machine.machineType', 'schedule.machine.plant', 'schedule.machine.line', 'performedBy', 'schedule'])
+            ->with(['schedule.machineErp.machineType', 'schedule.machineErp.roomErp', 'performedBy', 'schedule'])
             ->orderBy('actual_end_time', 'desc')
             ->limit(100) // Get more to group
             ->get();
         
-        // Group completed by (machine_id, scheduled_date)
+        // Group completed by (machine_erp_id, scheduled_date)
         $completedJadwal = [];
         foreach ($completedExecutionsRaw as $execution) {
-            $machineId = $execution->schedule->machine_id;
+            $machineId = $execution->schedule->machine_erp_id;
             $scheduledDate = $execution->scheduled_date;
             if (is_string($scheduledDate)) {
                 $dateFormatted = $scheduledDate;
@@ -94,7 +94,7 @@ class UpdatingController extends Controller
             if (!isset($completedJadwal[$key])) {
                 $completedJadwal[$key] = [
                     'machine_id' => $machineId,
-                    'machine' => $execution->schedule->machine,
+                    'machine' => $execution->schedule->machineErp,
                     'scheduled_date' => $dateFormatted,
                     'executions' => [],
                     'latest_end_time' => $execution->actual_end_time,
@@ -124,10 +124,10 @@ class UpdatingController extends Controller
             ->with(['schedule'])
             ->get();
         
-        // Group completed executions by (machine_id, scheduled_date) to get unique jadwal
+        // Group completed executions by (machine_erp_id, scheduled_date) to get unique jadwal
         $completedJadwalForStats = [];
         foreach ($completedExecutionsForStats as $execution) {
-            $machineId = $execution->schedule->machine_id;
+            $machineId = $execution->schedule->machine_erp_id;
             $scheduledDate = $execution->scheduled_date;
             if (is_string($scheduledDate)) {
                 $dateFormatted = $scheduledDate;
@@ -166,8 +166,8 @@ class UpdatingController extends Controller
         }
         
         try {
-            // Get schedules for this machine and date
-            $schedules = \App\Models\PreventiveMaintenanceSchedule::where('machine_id', $machineId)
+            // Get schedules for this machine and date - now using MachineErp
+            $schedules = \App\Models\PreventiveMaintenanceSchedule::where('machine_erp_id', $machineId)
                 ->where('start_date', $scheduledDate)
                 ->where('status', 'active')
                 ->with(['maintenancePoint', 'assignedUser', 'executions'])

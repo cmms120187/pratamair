@@ -28,11 +28,11 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-500 mb-1">Machine</label>
-                        <p class="text-sm font-semibold text-gray-900">{{ $execution->schedule->machine->idMachine ?? '-' }}</p>
-                        <p class="text-xs text-gray-500">{{ $execution->schedule->machine->machineType->name ?? '-' }}</p>
+                        <p class="text-sm font-semibold text-gray-900">{{ $execution->schedule->machineErp->idMachine ?? '-' }}</p>
+                        <p class="text-xs text-gray-500">{{ $execution->schedule->machineErp->machineType->name ?? '-' }}</p>
                         <p class="text-xs text-gray-400">
-                            {{ $execution->schedule->machine->room->plant->name ?? '-' }} /
-                            {{ $execution->schedule->machine->room->line->name ?? '-' }}
+                            {{ $execution->schedule->machineErp->plant_name ?? '-' }} /
+                            {{ $execution->schedule->machineErp->line_name ?? '-' }}
                         </p>
                     </div>
                     @if($execution->schedule->standard)

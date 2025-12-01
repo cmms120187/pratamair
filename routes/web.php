@@ -189,16 +189,22 @@ Route::middleware('auth')->group(function () {
     
     // Predictive Maintenance Routes
     Route::prefix('predictive-maintenance')->name('predictive-maintenance.')->group(function () {
-        // Scheduling
+        // Scheduling - Custom routes must be defined BEFORE resource routes
+        Route::post('scheduling/update-pic', [PredictiveSchedulingController::class, 'updatePic'])->name('scheduling.update-pic');
+        Route::post('scheduling/reschedule', [PredictiveSchedulingController::class, 'reschedule'])->name('scheduling.reschedule');
         Route::resource('scheduling', PredictiveSchedulingController::class);
         
-        // Controlling
+        // Controlling - Custom routes must be defined BEFORE resource routes
+        Route::get('controlling/get-machines-by-type', [PredictiveControllingController::class, 'getMachinesByType'])->name('controlling.get-machines-by-type');
+        Route::get('controlling/get-maintenance-points-by-machine-and-date', [PredictiveControllingController::class, 'getMaintenancePointsByMachineAndDate'])->name('controlling.get-maintenance-points-by-machine-and-date');
+        Route::get('controlling/machine-condition/{machineId}', [PredictiveControllingController::class, 'showMachineCondition'])->name('controlling.machine-condition');
         Route::resource('controlling', PredictiveControllingController::class);
         
         // Monitoring
         Route::get('monitoring', [PredictiveMonitoringController::class, 'index'])->name('monitoring.index');
         
-        // Updating
+        // Updating - Custom routes must be defined BEFORE resource routes
+        Route::get('updating/get-maintenance-points-by-machine-and-date', [PredictiveUpdatingController::class, 'getMaintenancePointsByMachineAndDate'])->name('updating.get-maintenance-points-by-machine-and-date');
         Route::get('updating', [PredictiveUpdatingController::class, 'index'])->name('updating.index');
         Route::get('updating/{id}/edit', [PredictiveUpdatingController::class, 'edit'])->name('updating.edit');
         Route::put('updating/{id}', [PredictiveUpdatingController::class, 'update'])->name('updating.update');

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\PredictiveMaintenance;
 use App\Http\Controllers\Controller;
 use App\Models\PredictiveMaintenanceExecution;
 use App\Models\PredictiveMaintenanceSchedule;
+use App\Models\MachineErp;
 use App\Models\Standard;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -19,8 +20,15 @@ class ControllingController extends Controller
     public function index(Request $request)
     {
         // Get filter parameters (default: current month and year)
-        $filterMonth = $request->get('month', now()->month);
-        $filterYear = $request->get('year', now()->year);
+        // Priority: query parameter > session > current month/year
+        $filterMonth = $request->get('month', session('predictive_controlling_filter_month', now()->month));
+        $filterYear = $request->get('year', session('predictive_controlling_filter_year', now()->year));
+        
+        // Save filter to session for persistence
+        session([
+            'predictive_controlling_filter_month' => $filterMonth,
+            'predictive_controlling_filter_year' => $filterYear,
+        ]);
         
         // Calculate start and end date for the selected month
         $startDate = Carbon::create($filterYear, $filterMonth, 1)->startOfMonth();
@@ -29,21 +37,21 @@ class ControllingController extends Controller
         // Get all active schedules grouped by machine, filtered by month and year
         $schedules = PredictiveMaintenanceSchedule::where('status', 'active')
             ->whereBetween('start_date', [$startDate->toDateString(), $endDate->toDateString()])
-            ->with(['machine.plant', 'machine.line', 'machine.machineType', 'standard', 'assignedUser', 'executions'])
+            ->with(['machineErp.roomErp', 'machineErp.machineType', 'standard', 'assignedUser', 'executions'])
             ->orderBy('start_date', 'asc')
             ->get();
         
-        // Get unique machines
-        $uniqueMachineIds = $schedules->pluck('machine_id')->unique();
-        $machines = \App\Models\Machine::whereIn('id', $uniqueMachineIds)
-            ->with(['plant', 'line', 'machineType'])
+        // Get unique machines from MachineErp
+        $uniqueMachineErpIds = $schedules->pluck('machine_erp_id')->unique();
+        $machines = \App\Models\MachineErp::whereIn('id', $uniqueMachineErpIds)
+            ->with(['roomErp', 'machineType'])
             ->get()
             ->keyBy('id');
         
-        // Group schedules by machine_id
+        // Group schedules by machine_erp_id
         $machinesData = [];
         foreach ($schedules as $schedule) {
-            $machineId = $schedule->machine_id;
+            $machineId = $schedule->machine_erp_id;
             
             if (!isset($machines[$machineId])) {
                 continue;
@@ -71,12 +79,12 @@ class ControllingController extends Controller
                 $machinesData[$machineId]['schedule_dates'][] = $scheduleDate;
             }
             
-            // Check execution status
-            $hasExecution = $schedule->executions()->exists();
+            // Check execution status - use eager loaded executions
+            $hasExecution = $schedule->executions->isNotEmpty();
             $isOverdue = !$hasExecution && $schedule->start_date < now()->toDateString() && $schedule->status == 'active';
             
             if ($hasExecution) {
-                $execution = $schedule->executions()->latest()->first();
+                $execution = $schedule->executions->sortByDesc('created_at')->first();
                 if ($execution && $execution->status == 'completed') {
                     $machinesData[$machineId]['completed_schedules']++;
                 } else {
@@ -100,25 +108,25 @@ class ControllingController extends Controller
             
             // Check each date to see if all schedules for that date are completed
             foreach ($scheduleDates as $date) {
-                $schedulesForDate = collect($data['schedules'])->filter(function($s) use ($date) {
-                    return $s->start_date->format('Y-m-d') == $date;
+                $schedulesForDate = collect($data['schedules'])->filter(function($schedule) use ($date) {
+                    return $schedule->start_date->format('Y-m-d') === $date;
                 });
                 
-                $allCompleted = true;
-                foreach ($schedulesForDate as $s) {
-                    $hasExecution = $s->executions()->exists();
-                    if (!$hasExecution) {
-                        $allCompleted = false;
-                        break;
-                    }
-                    $execution = $s->executions()->latest()->first();
-                    if (!$execution || $execution->status != 'completed') {
-                        $allCompleted = false;
+                // Check if all schedules for this date have completed execution
+                $allCompletedForDate = true;
+                foreach ($schedulesForDate as $schedule) {
+                    // Use eager loaded executions instead of querying again
+                    $hasCompletedExecution = $schedule->executions
+                        ->where('status', 'completed')
+                        ->isNotEmpty();
+                    
+                    if (!$hasCompletedExecution) {
+                        $allCompletedForDate = false;
                         break;
                     }
                 }
                 
-                if ($allCompleted) {
+                if ($allCompletedForDate && $schedulesForDate->count() > 0) {
                     $completedJadwal++;
                 }
             }
@@ -132,13 +140,43 @@ class ControllingController extends Controller
                 $machinesData[$machineId]['completion_percentage'] = 0;
             }
             
+            // Determine machine condition based on latest completed executions
+            // Priority: critical > warning > normal > no data
+            $machineCondition = 'no_data'; // default: no measurement data
+            $latestExecutions = [];
+            
+            foreach ($data['schedules'] as $schedule) {
+                // Get latest completed execution for this schedule
+                $latestExecution = $schedule->executions
+                    ->where('status', 'completed')
+                    ->sortByDesc('created_at')
+                    ->first();
+                
+                if ($latestExecution && $latestExecution->measurement_status) {
+                    $latestExecutions[] = $latestExecution->measurement_status;
+                }
+            }
+            
+            // Determine worst condition (critical > warning > normal)
+            if (!empty($latestExecutions)) {
+                if (in_array('critical', $latestExecutions)) {
+                    $machineCondition = 'critical';
+                } elseif (in_array('warning', $latestExecutions)) {
+                    $machineCondition = 'warning';
+                } else {
+                    $machineCondition = 'normal';
+                }
+            }
+            
+            $machinesData[$machineId]['machine_condition'] = $machineCondition;
+            
             // Sort schedule dates
             sort($machinesData[$machineId]['schedule_dates']);
         }
         
         // Calculate statistics
         $today = now()->toDateString();
-        $allMachineIds = $schedules->pluck('machine_id')->unique();
+        $allMachineErpIds = $schedules->pluck('machine_erp_id')->unique();
         
         $pendingExecutionsCount = PredictiveMaintenanceExecution::whereHas('schedule', function($q) use ($startDate, $endDate) {
             $q->where('status', 'active')
@@ -156,11 +194,12 @@ class ControllingController extends Controller
         
         // Count machines where all schedules up to today are completed
         $completedMachinesCount = 0;
-        foreach ($allMachineIds as $machineId) {
-            $schedulesUpToToday = PredictiveMaintenanceSchedule::where('machine_id', $machineId)
+        foreach ($allMachineErpIds as $machineErpId) {
+            $schedulesUpToToday = PredictiveMaintenanceSchedule::where('machine_erp_id', $machineErpId)
                 ->where('status', 'active')
                 ->where('start_date', '<=', $today)
                 ->whereBetween('start_date', [$startDate->toDateString(), $endDate->toDateString()])
+                ->with('executions')
                 ->get();
             
             if ($schedulesUpToToday->count() == 0) {
@@ -169,12 +208,13 @@ class ControllingController extends Controller
             
             $allCompleted = true;
             foreach ($schedulesUpToToday as $schedule) {
-                $hasExecution = $schedule->executions()->exists();
+                // Use eager loaded executions
+                $hasExecution = $schedule->executions->isNotEmpty();
                 if (!$hasExecution) {
                     $allCompleted = false;
                     break;
                 }
-                $execution = $schedule->executions()->latest()->first();
+                $execution = $schedule->executions->sortByDesc('created_at')->first();
                 if (!$execution || $execution->status != 'completed') {
                     $allCompleted = false;
                     break;
@@ -190,11 +230,12 @@ class ControllingController extends Controller
         $overdueCount = 0;
         foreach ($schedules as $schedule) {
             if ($schedule->start_date->format('Y-m-d') < $today) {
-                $hasExecution = $schedule->executions()->exists();
+                // Use eager loaded executions
+                $hasExecution = $schedule->executions->isNotEmpty();
                 if (!$hasExecution) {
                     $overdueCount++;
                 } else {
-                    $execution = $schedule->executions()->latest()->first();
+                    $execution = $schedule->executions->sortByDesc('created_at')->first();
                     if (!$execution || $execution->status != 'completed') {
                         $overdueCount++;
                     }
@@ -204,11 +245,12 @@ class ControllingController extends Controller
         
         // Count plan machines (machines where all schedules up to today are still pending)
         $planMachinesCount = 0;
-        foreach ($allMachineIds as $machineId) {
-            $schedulesUpToToday = PredictiveMaintenanceSchedule::where('machine_id', $machineId)
+        foreach ($allMachineErpIds as $machineErpId) {
+            $schedulesUpToToday = PredictiveMaintenanceSchedule::where('machine_erp_id', $machineErpId)
                 ->where('status', 'active')
                 ->where('start_date', '<=', $today)
                 ->whereBetween('start_date', [$startDate->toDateString(), $endDate->toDateString()])
+                ->with('executions')
                 ->get();
             
             if ($schedulesUpToToday->count() == 0) {
@@ -217,9 +259,10 @@ class ControllingController extends Controller
             
             $allPending = true;
             foreach ($schedulesUpToToday as $schedule) {
-                $hasExecution = $schedule->executions()->exists();
+                // Use eager loaded executions
+                $hasExecution = $schedule->executions->isNotEmpty();
                 if ($hasExecution) {
-                    $execution = $schedule->executions()->latest()->first();
+                    $execution = $schedule->executions->sortByDesc('created_at')->first();
                     if ($execution && $execution->status != 'pending') {
                         $allPending = false;
                         break;
@@ -270,7 +313,7 @@ class ControllingController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'machine_id' => 'required|exists:machines,id',
+            'machine_id' => 'required|exists:machine_erp,id',
             'scheduled_date' => 'required|date',
             'performed_by' => 'nullable|exists:users,id',
             'executions' => 'required|array|min:1',
@@ -293,9 +336,12 @@ class ControllingController extends Controller
                 $measurementStatus = $schedule->standard->getMeasurementStatus($measuredValue);
             }
             
-            if ($executionData['execution_id']) {
+            // Check if execution_id exists and is not empty
+            $executionId = $executionData['execution_id'] ?? null;
+            
+            if ($executionId) {
                 // Update existing execution
-                $execution = PredictiveMaintenanceExecution::findOrFail($executionData['execution_id']);
+                $execution = PredictiveMaintenanceExecution::findOrFail($executionId);
                 $execution->update([
                     'status' => $executionData['status'],
                     'measured_value' => $measuredValue,
@@ -317,8 +363,14 @@ class ControllingController extends Controller
             }
         }
 
-        return redirect()->route('predictive-maintenance.controlling.index')
-            ->with('success', "Berhasil membuat/update {$executionsCreated} execution(s).");
+        // Get filter from session or use scheduled_date month/year
+        $redirectMonth = session('predictive_controlling_filter_month', Carbon::parse($validated['scheduled_date'])->month);
+        $redirectYear = session('predictive_controlling_filter_year', Carbon::parse($validated['scheduled_date'])->year);
+        
+        return redirect()->route('predictive-maintenance.controlling.index', [
+            'month' => $redirectMonth,
+            'year' => $redirectYear
+        ])->with('success', "Berhasil membuat/update {$executionsCreated} execution(s).");
     }
 
     /**
@@ -326,8 +378,13 @@ class ControllingController extends Controller
      */
     public function show(string $id)
     {
-        $execution = PredictiveMaintenanceExecution::with(['schedule.machine', 'schedule.standard', 'performedBy'])
-            ->findOrFail($id);
+        $execution = PredictiveMaintenanceExecution::with([
+            'schedule.machineErp.machineType',
+            'schedule.machineErp.roomErp',
+            'schedule.maintenancePoint',
+            'schedule.standard',
+            'performedBy'
+        ])->findOrFail($id);
         
         return view('predictive-maintenance.controlling.show', compact('execution'));
     }
@@ -337,7 +394,13 @@ class ControllingController extends Controller
      */
     public function edit(string $id)
     {
-        $execution = PredictiveMaintenanceExecution::findOrFail($id);
+        $execution = PredictiveMaintenanceExecution::with([
+            'schedule.machineErp.machineType',
+            'schedule.machineErp.roomErp',
+            'schedule.maintenancePoint',
+            'schedule.standard',
+            'performedBy'
+        ])->findOrFail($id);
         $users = User::whereIn('role', ['mekanik', 'team_leader', 'group_leader', 'coordinator'])->get();
         
         return view('predictive-maintenance.controlling.edit', compact('execution', 'users'));
@@ -374,8 +437,14 @@ class ControllingController extends Controller
         
         $execution->update($validated);
 
-        return redirect()->route('predictive-maintenance.controlling.index')
-            ->with('success', 'Execution berhasil diupdate.');
+        // Get filter from session or use execution scheduled_date month/year
+        $redirectMonth = session('predictive_controlling_filter_month', Carbon::parse($execution->scheduled_date)->month);
+        $redirectYear = session('predictive_controlling_filter_year', Carbon::parse($execution->scheduled_date)->year);
+        
+        return redirect()->route('predictive-maintenance.controlling.index', [
+            'month' => $redirectMonth,
+            'year' => $redirectYear
+        ])->with('success', 'Execution berhasil diupdate.');
     }
 
     /**
@@ -384,9 +453,258 @@ class ControllingController extends Controller
     public function destroy(string $id)
     {
         $execution = PredictiveMaintenanceExecution::findOrFail($id);
+        
+        // Get filter from session before deleting
+        $redirectMonth = session('predictive_controlling_filter_month', Carbon::parse($execution->scheduled_date)->month);
+        $redirectYear = session('predictive_controlling_filter_year', Carbon::parse($execution->scheduled_date)->year);
+        
         $execution->delete();
 
-        return redirect()->route('predictive-maintenance.controlling.index')
-            ->with('success', 'Execution berhasil dihapus.');
+        return redirect()->route('predictive-maintenance.controlling.index', [
+            'month' => $redirectMonth,
+            'year' => $redirectYear
+        ])->with('success', 'Execution berhasil dihapus.');
+    }
+    
+    /**
+     * Show machine condition details
+     */
+    public function showMachineCondition(Request $request, $machineId)
+    {
+        $filterMonth = $request->get('month', session('predictive_controlling_filter_month', now()->month));
+        $filterYear = $request->get('year', session('predictive_controlling_filter_year', now()->year));
+        
+        // Calculate start and end date for the selected month
+        $startDate = Carbon::create($filterYear, $filterMonth, 1)->startOfMonth();
+        $endDate = Carbon::create($filterYear, $filterMonth, 1)->endOfMonth();
+        
+        // Get machine
+        $machine = MachineErp::with(['roomErp', 'machineType'])->findOrFail($machineId);
+        
+        // Get all schedules for this machine in the selected month
+        $schedules = PredictiveMaintenanceSchedule::where('machine_erp_id', $machineId)
+            ->where('status', 'active')
+            ->whereBetween('start_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->with(['maintenancePoint', 'standard', 'executions' => function($query) {
+                $query->where('status', 'completed')
+                      ->with('performedBy')
+                      ->orderBy('created_at', 'desc');
+            }])
+            ->orderBy('start_date', 'asc')
+            ->orderBy('maintenance_point_id')
+            ->get();
+        
+        // Group schedules by maintenance point and get latest execution for each
+        $maintenancePointsData = [];
+        foreach ($schedules as $schedule) {
+            $pointId = $schedule->maintenance_point_id ?? 'no_point_' . $schedule->id;
+            
+            if (!isset($maintenancePointsData[$pointId])) {
+                $maintenancePointsData[$pointId] = [
+                    'maintenance_point' => $schedule->maintenancePoint,
+                    'point_name' => $schedule->maintenancePoint ? $schedule->maintenancePoint->name : $schedule->title,
+                    'standard' => $schedule->standard,
+                    'schedules' => [],
+                    'latest_execution' => null,
+                    'condition' => 'no_data',
+                ];
+            }
+            
+            $maintenancePointsData[$pointId]['schedules'][] = $schedule;
+            
+            // Get latest completed execution
+            $latestExecution = $schedule->executions
+                ->where('status', 'completed')
+                ->sortByDesc('created_at')
+                ->first();
+            
+            if ($latestExecution) {
+                // Update latest execution if this one is newer
+                if (!$maintenancePointsData[$pointId]['latest_execution'] || 
+                    $latestExecution->created_at > $maintenancePointsData[$pointId]['latest_execution']->created_at) {
+                    $maintenancePointsData[$pointId]['latest_execution'] = $latestExecution;
+                    $maintenancePointsData[$pointId]['condition'] = $latestExecution->measurement_status ?? 'no_data';
+                }
+            }
+        }
+        
+        // Determine overall machine condition (worst case)
+        $overallCondition = 'no_data';
+        foreach ($maintenancePointsData as $pointData) {
+            $pointCondition = $pointData['condition'];
+            if ($pointCondition == 'critical') {
+                $overallCondition = 'critical';
+                break; // Critical is worst, no need to check further
+            } elseif ($pointCondition == 'warning' && $overallCondition != 'critical') {
+                $overallCondition = 'warning';
+            } elseif ($pointCondition == 'normal' && $overallCondition == 'no_data') {
+                $overallCondition = 'normal';
+            }
+        }
+        
+        return view('predictive-maintenance.controlling.machine-condition', [
+            'machine' => $machine,
+            'maintenancePointsData' => $maintenancePointsData,
+            'overallCondition' => $overallCondition,
+            'filterMonth' => $filterMonth,
+            'filterYear' => $filterYear,
+        ]);
+    }
+    
+    /**
+     * Get machines by type for AJAX (using MachineErp)
+     */
+    public function getMachinesByType(Request $request)
+    {
+        $typeId = $request->input('type_id');
+        
+        if (!$typeId) {
+            return response()->json(['machines' => []]);
+        }
+        
+        try {
+            // Get machine IDs that have active schedules - using MachineErp
+            $machineErpIdsWithSchedules = PredictiveMaintenanceSchedule::where('status', 'active')
+                ->distinct()
+                ->pluck('machine_erp_id')
+                ->toArray();
+            
+            // Get machines by type that have active schedules
+            $machines = MachineErp::where('machine_type_id', $typeId)
+                ->whereIn('id', $machineErpIdsWithSchedules)
+                ->with(['roomErp', 'machineType'])
+                ->get()
+                ->map(function($machine) {
+                    return [
+                        'id' => $machine->id,
+                        'idMachine' => $machine->idMachine,
+                        'name' => $machine->idMachine . ' - ' . ($machine->machineType->name ?? $machine->type_name ?? '-') . ' (' . ($machine->plant_name ?? '-') . '/' . ($machine->process_name ?? '-') . '/' . ($machine->line_name ?? '-') . ')'
+                    ];
+                });
+            
+            return response()->json(['machines' => $machines]);
+        } catch (\Exception $e) {
+            \Log::error('Error in getMachinesByType (Predictive)', ['error' => $e->getMessage()]);
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+    
+    /**
+     * Get maintenance points by machine and date for AJAX
+     */
+    public function getMaintenancePointsByMachineAndDate(Request $request)
+    {
+        $machineId = $request->input('machine_id');
+        $scheduledDate = $request->input('scheduled_date');
+        
+        if (!$machineId || !$scheduledDate) {
+            return response()->json(['maintenance_points' => []]);
+        }
+        
+        try {
+            // Get machine - using MachineErp
+            $machine = MachineErp::findOrFail($machineId);
+            
+            // Get schedules for this machine that match the criteria:
+            // 1. start_date = scheduled_date (jadwal untuk tanggal yang diset)
+            // 2. OR start_date < scheduled_date (terlewat) BUT belum ada execution dengan status completed
+            $schedules = PredictiveMaintenanceSchedule::where('machine_erp_id', $machineId)
+                ->where('status', 'active')
+                ->where(function($query) use ($scheduledDate) {
+                    // Jadwal untuk tanggal yang diset
+                    $query->where('start_date', $scheduledDate)
+                        // ATAU jadwal yang terlewat (start_date < scheduled_date)
+                        ->orWhere(function($q) use ($scheduledDate) {
+                            $q->where('start_date', '<', $scheduledDate)
+                                // TAPI belum ada execution dengan status completed
+                                ->whereDoesntHave('executions', function($execQuery) {
+                                    $execQuery->where('status', 'completed');
+                                });
+                        });
+                })
+                ->with(['maintenancePoint', 'standard', 'assignedUser', 'executions'])
+                ->orderBy('start_date', 'asc')
+                ->orderBy('maintenance_point_id')
+                ->get();
+            
+            // Additional filter: untuk jadwal terlewat, pastikan belum ada execution completed
+            // Use eager loaded executions
+            $schedules = $schedules->filter(function($schedule) use ($scheduledDate) {
+                // Jika start_date < scheduled_date (terlewat), cek apakah sudah completed
+                if ($schedule->start_date < $scheduledDate) {
+                    // Cek apakah ada execution dengan status completed untuk schedule ini
+                    $hasCompletedExecution = $schedule->executions
+                        ->where('status', 'completed')
+                        ->isNotEmpty();
+                    
+                    // Jika sudah completed, jangan tampilkan
+                    if ($hasCompletedExecution) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            });
+            
+            // Get PIC from first schedule (all schedules for same machine should have same PIC)
+            $picId = null;
+            $picName = null;
+            if ($schedules->count() > 0) {
+                $firstSchedule = $schedules->first();
+                $picId = $firstSchedule->assigned_to;
+                $picName = $firstSchedule->assignedUser ? $firstSchedule->assignedUser->name : null;
+            }
+            
+            $points = $schedules->map(function($schedule) use ($scheduledDate) {
+                // Tentukan apakah ini jadwal terlewat
+                $isOverdue = $schedule->start_date < $scheduledDate;
+                
+                // Cek execution untuk tanggal yang dipilih - use eager loaded executions
+                $execution = $schedule->executions
+                    ->where('scheduled_date', $scheduledDate)
+                    ->sortByDesc('created_at')
+                    ->first();
+                
+                $hasExecution = $execution !== null;
+                
+                // Jika tidak ada execution untuk tanggal yang dipilih dan ini adalah overdue,
+                // cek execution terakhir untuk schedule ini (mungkin dari tanggal asli)
+                if (!$hasExecution && $isOverdue) {
+                    $execution = $schedule->executions
+                        ->sortByDesc('created_at')
+                        ->first();
+                    $hasExecution = $execution !== null;
+                }
+                
+                return [
+                    'schedule_id' => $schedule->id,
+                    'maintenance_point_id' => $schedule->maintenance_point_id,
+                    'maintenance_point_name' => $schedule->maintenancePoint ? $schedule->maintenancePoint->name : $schedule->title,
+                    'standard_name' => $schedule->standard ? $schedule->standard->name : '-',
+                    'standard_unit' => $schedule->standard ? $schedule->standard->unit : '-',
+                    'standard_min' => $schedule->standard ? $schedule->standard->min_value : null,
+                    'standard_max' => $schedule->standard ? $schedule->standard->max_value : null,
+                    'standard_target' => $schedule->standard ? $schedule->standard->target_value : null,
+                    'instruction' => $schedule->description ?? ($schedule->maintenancePoint ? $schedule->maintenancePoint->instruction : ''),
+                    'photo' => $schedule->maintenancePoint && $schedule->maintenancePoint->photo ? Storage::url($schedule->maintenancePoint->photo) : null,
+                    'has_execution' => $hasExecution,
+                    'execution_id' => $execution ? $execution->id : null,
+                    'execution_status' => $execution ? $execution->status : 'pending',
+                    'measured_value' => $execution ? $execution->measured_value : null,
+                    'measurement_status' => $execution ? $execution->measurement_status : null,
+                    'is_overdue' => $isOverdue,
+                    'original_start_date' => $schedule->start_date->format('Y-m-d'),
+                ];
+            });
+            
+            return response()->json([
+                'maintenance_points' => $points,
+                'pic_id' => $picId,
+                'pic_name' => $picName,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in getMaintenancePointsByMachineAndDate (Predictive)', ['error' => $e->getMessage()]);
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }

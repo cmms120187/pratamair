@@ -92,7 +92,7 @@
                                     <div class="font-semibold text-gray-900">{{ $jadwal['machine']->idMachine ?? '-' }}</div>
                                     <div class="text-gray-500">{{ $jadwal['machine']->machineType->name ?? '-' }}</div>
                                     <div class="text-xs text-gray-400">
-                                        {{ $jadwal['machine']->room->plant->name ?? '-' }} / {{ $jadwal['machine']->room->line->name ?? '-' }}
+                                        {{ $jadwal['machine']->plant_name ?? '-' }} / {{ $jadwal['machine']->line_name ?? '-' }}
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 text-sm">

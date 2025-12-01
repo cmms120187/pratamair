@@ -81,7 +81,10 @@ class ActivityController extends Controller
         // Get RoomErp for dropdown (same format as MachineErp)
         $roomErps = RoomErp::orderBy('name', 'asc')->get();
         
-        return view('activities.create', compact('mekaniks', 'machines', 'roomErps'));
+        // Get current logged in user
+        $currentUser = auth()->user();
+        
+        return view('activities.create', compact('mekaniks', 'machines', 'roomErps', 'currentUser'));
     }
 
     /**

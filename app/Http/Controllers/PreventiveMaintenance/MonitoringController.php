@@ -24,28 +24,28 @@ class MonitoringController extends Controller
         $endDate = Carbon::create($filterYear, $filterMonth, 1)->endOfMonth();
         $today = now()->toDateString();
         
-        // Get all active schedules for the selected month
+        // Get all active schedules for the selected month - now using MachineErp
         $schedulesForMonth = PreventiveMaintenanceSchedule::where('status', 'active')
             ->whereBetween('start_date', [$startDate->toDateString(), $endDate->toDateString()])
-            ->with(['machine', 'assignedUser', 'executions'])
+            ->with(['machineErp', 'assignedUser', 'executions'])
             ->get();
         
         // Get unique machine IDs that have schedules in this month
-        $uniqueMachineIds = $schedulesForMonth->pluck('machine_id')->unique();
+        $uniqueMachineIds = $schedulesForMonth->pluck('machine_erp_id')->unique();
         $totalMesinTerjadwal = $uniqueMachineIds->count();
         
-        // Upcoming schedules (within selected month) - grouped by (machine_id, date) to show jadwal, not individual points
+        // Upcoming schedules (within selected month) - grouped by (machine_erp_id, date) to show jadwal, not individual points
         $upcomingSchedulesRaw = PreventiveMaintenanceSchedule::where('status', 'active')
             ->whereBetween('start_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->where('start_date', '>=', $today)
-            ->with(['machine', 'assignedUser'])
+            ->with(['machineErp', 'assignedUser'])
             ->orderBy('start_date', 'asc')
             ->get();
         
-        // Group by (machine_id, date) to get unique jadwal
+        // Group by (machine_erp_id, date) to get unique jadwal
         $upcomingJadwal = [];
         foreach ($upcomingSchedulesRaw as $schedule) {
-            $machineId = $schedule->machine_id;
+            $machineId = $schedule->machine_erp_id;
             $date = $schedule->start_date;
             if (is_string($date)) {
                 $dateFormatted = $date;
@@ -59,7 +59,7 @@ class MonitoringController extends Controller
             if (!isset($upcomingJadwal[$key])) {
                 $upcomingJadwal[$key] = [
                     'machine_id' => $machineId,
-                    'machine' => $schedule->machine,
+                    'machine' => $schedule->machineErp,
                     'start_date' => $dateFormatted,
                     'assignedUser' => $schedule->assignedUser,
                     'schedule' => $schedule, // Keep one schedule instance for reference
@@ -90,7 +90,7 @@ class MonitoringController extends Controller
             ->whereHas('schedule', function($query) use ($startDate, $endDate) {
                 $query->whereBetween('start_date', [$startDate->toDateString(), $endDate->toDateString()]);
             })
-            ->with(['schedule.machine', 'performedBy'])
+            ->with(['schedule.machineErp', 'performedBy'])
             ->orderBy('scheduled_date', 'asc')
             ->get();
         
@@ -100,7 +100,7 @@ class MonitoringController extends Controller
             ->whereHas('schedule', function($query) use ($startDate, $endDate) {
                 $query->whereBetween('start_date', [$startDate->toDateString(), $endDate->toDateString()]);
             })
-            ->with(['schedule.machine', 'performedBy'])
+            ->with(['schedule.machineErp', 'performedBy'])
             ->orderBy('scheduled_date', 'asc')
             ->get();
         
@@ -114,10 +114,10 @@ class MonitoringController extends Controller
             ->get();
         
         // Statistics for selected month
-        // Calculate total jadwal (machine_id + date combinations) from active schedules
+        // Calculate total jadwal (machine_erp_id + date combinations) from active schedules
         $jadwalCombinations = [];
         foreach ($schedulesForMonth as $schedule) {
-            $machineId = $schedule->machine_id;
+            $machineId = $schedule->machine_erp_id;
             $date = $schedule->start_date;
             if (is_string($date)) {
                 $dateFormatted = $date;
@@ -164,10 +164,10 @@ class MonitoringController extends Controller
             return $scheduleDateObj->format('Y-m-d') <= $today;
         });
         
-        // Group by machine_id and start_date (setiap kombinasi mesin+tanggal = 1 jadwal)
+        // Group by machine_erp_id and start_date (setiap kombinasi mesin+tanggal = 1 jadwal)
         $jadwalByMachineAndDateToday = [];
         foreach ($schedulesUpToToday as $schedule) {
-            $machineId = $schedule->machine_id;
+            $machineId = $schedule->machine_erp_id;
             $date = $schedule->start_date;
             if (is_string($date)) {
                 $dateFormatted = $date;
@@ -245,11 +245,11 @@ class MonitoringController extends Controller
             'total' => $totalJadwalToday,
         ];
         
-        // Status overview per month - based on jadwal (machine_id + date combination)
-        // Group schedules by machine_id and start_date (setiap kombinasi mesin+tanggal = 1 jadwal)
+        // Status overview per month - based on jadwal (machine_erp_id + date combination)
+        // Group schedules by machine_erp_id and start_date (setiap kombinasi mesin+tanggal = 1 jadwal)
         $jadwalByMachineAndDate = [];
         foreach ($schedulesForMonth as $schedule) {
-            $machineId = $schedule->machine_id;
+            $machineId = $schedule->machine_erp_id;
             $date = $schedule->start_date;
             if (is_string($date)) {
                 $dateFormatted = $date;

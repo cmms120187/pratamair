@@ -161,11 +161,11 @@
                             'menu_key' => 'predictive-maintenance',
                             'children' => [
                                 ['name' => 'Standards', 'route' => '/standards', 'icon' => 'clipboard-check', 'menu_key' => 'standards'],
-                                ['name' => 'Scheduling', 'route' => '/predictive-maintenance/scheduling', 'icon' => 'calendar', 'menu_key' => 'predictive-scheduling'],
-                                ['name' => 'Controlling', 'route' => '/predictive-maintenance/controlling', 'icon' => 'cog', 'menu_key' => 'predictive-controlling'],
-                                ['name' => 'Monitoring', 'route' => '/predictive-maintenance/monitoring', 'icon' => 'chart', 'menu_key' => 'predictive-monitoring'],
-                                ['name' => 'Updating', 'route' => '/predictive-maintenance/updating', 'icon' => 'edit', 'menu_key' => 'predictive-updating'],
-                                ['name' => 'Reporting', 'route' => '/predictive-maintenance/reporting', 'icon' => 'document', 'menu_key' => 'predictive-reporting'],
+                                ['name' => 'Scheduling PdM', 'route' => '/predictive-maintenance/scheduling', 'icon' => 'calendar', 'menu_key' => 'predictive-scheduling'],
+                                ['name' => 'Controlling PdM', 'route' => '/predictive-maintenance/controlling', 'icon' => 'cog', 'menu_key' => 'predictive-controlling'],
+                                ['name' => 'Monitoring PdM', 'route' => '/predictive-maintenance/monitoring', 'icon' => 'chart', 'menu_key' => 'predictive-monitoring'],
+                                ['name' => 'Updating PdM', 'route' => '/predictive-maintenance/updating', 'icon' => 'edit', 'menu_key' => 'predictive-updating'],
+                                ['name' => 'Reporting PdM', 'route' => '/predictive-maintenance/reporting', 'icon' => 'document', 'menu_key' => 'predictive-reporting'],
                             ]
                         ],
                         [
@@ -218,11 +218,19 @@
                         if (!isset($group['children'])) return false;
                         foreach ($group['children'] as $child) {
                             $routePath = trim($child['route'], '/');
-                            $routeName = strtolower(str_replace([' ', '-'], '', $child['name']));
-                            if ($currentUrl === $routePath || 
-                                Str::contains($currentUrl, $routePath) ||
-                                Str::contains($currentUrl, $routeName)) {
+                            // Use exact match or ensure the URL starts with the route path
+                            // This prevents 'predictive-maintenance' from matching 'preventive-maintenance'
+                            if ($currentUrl === $routePath) {
                                 return true;
+                            }
+                            // Check if current URL starts with route path followed by / or ? or end of string
+                            $routeLength = strlen($routePath);
+                            if (strlen($currentUrl) >= $routeLength && 
+                                substr($currentUrl, 0, $routeLength) === $routePath) {
+                                $nextChar = strlen($currentUrl) > $routeLength ? $currentUrl[$routeLength] : '';
+                                if ($nextChar === '' || $nextChar === '/' || $nextChar === '?') {
+                                    return true;
+                                }
                             }
                         }
                         return false;
@@ -231,10 +239,20 @@
                     // Check if menu item is active
                     function isMenuActive($route, $name, $currentUrl) {
                         $routePath = trim($route, '/');
-                        $routeName = strtolower(str_replace([' ', '-'], '', $name));
-                        return $currentUrl === $routePath || 
-                               Str::contains($currentUrl, $routePath) ||
-                               Str::contains($currentUrl, $routeName);
+                        // Use exact match
+                        if ($currentUrl === $routePath) {
+                            return true;
+                        }
+                        // Check if current URL starts with route path followed by / or ? or end of string
+                        $routeLength = strlen($routePath);
+                        if (strlen($currentUrl) >= $routeLength && 
+                            substr($currentUrl, 0, $routeLength) === $routePath) {
+                            $nextChar = strlen($currentUrl) > $routeLength ? $currentUrl[$routeLength] : '';
+                            if ($nextChar === '' || $nextChar === '/' || $nextChar === '?') {
+                                return true;
+                            }
+                        }
+                        return false;
                     }
                 @endphp
                 

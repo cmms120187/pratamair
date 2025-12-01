@@ -27,25 +27,25 @@ class MonitoringController extends Controller
         // Get all active schedules for the selected month
         $schedulesForMonth = PredictiveMaintenanceSchedule::where('status', 'active')
             ->whereBetween('start_date', [$startDate->toDateString(), $endDate->toDateString()])
-            ->with(['machine', 'standard', 'assignedUser', 'executions'])
+            ->with(['machineErp', 'standard', 'assignedUser', 'executions'])
             ->get();
         
         // Get unique machine IDs that have schedules in this month
-        $uniqueMachineIds = $schedulesForMonth->pluck('machine_id')->unique();
+        $uniqueMachineIds = $schedulesForMonth->pluck('machine_erp_id')->unique();
         $totalMesinTerjadwal = $uniqueMachineIds->count();
         
-        // Upcoming schedules (within selected month) - grouped by (machine_id, date) to show jadwal
+        // Upcoming schedules (within selected month) - grouped by (machine_erp_id, date) to show jadwal
         $upcomingSchedulesRaw = PredictiveMaintenanceSchedule::where('status', 'active')
             ->whereBetween('start_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->where('start_date', '>=', $today)
-            ->with(['machine', 'assignedUser'])
+            ->with(['machineErp', 'assignedUser'])
             ->orderBy('start_date', 'asc')
             ->get();
         
-        // Group by (machine_id, date) to get unique jadwal
+        // Group by (machine_erp_id, date) to get unique jadwal
         $upcomingJadwal = [];
         foreach ($upcomingSchedulesRaw as $schedule) {
-            $machineId = $schedule->machine_id;
+            $machineId = $schedule->machine_erp_id;
             $date = $schedule->start_date;
             if (is_string($date)) {
                 $dateFormatted = $date;
@@ -59,7 +59,7 @@ class MonitoringController extends Controller
             if (!isset($upcomingJadwal[$key])) {
                 $upcomingJadwal[$key] = [
                     'machine_id' => $machineId,
-                    'machine' => $schedule->machine,
+                    'machine' => $schedule->machineErp,
                     'start_date' => $dateFormatted,
                     'assignedUser' => $schedule->assignedUser,
                     'schedule' => $schedule,
@@ -86,7 +86,7 @@ class MonitoringController extends Controller
             ->whereHas('schedule', function($query) use ($startDate, $endDate) {
                 $query->whereBetween('start_date', [$startDate->toDateString(), $endDate->toDateString()]);
             })
-            ->with(['schedule.machine', 'schedule.standard', 'performedBy'])
+            ->with(['schedule.machineErp', 'schedule.standard', 'performedBy'])
             ->orderBy('scheduled_date', 'asc')
             ->get();
         
@@ -96,7 +96,7 @@ class MonitoringController extends Controller
             ->whereHas('schedule', function($query) use ($startDate, $endDate) {
                 $query->whereBetween('start_date', [$startDate->toDateString(), $endDate->toDateString()]);
             })
-            ->with(['schedule.machine', 'schedule.standard', 'performedBy'])
+            ->with(['schedule.machineErp', 'schedule.standard', 'performedBy'])
             ->orderBy('scheduled_date', 'asc')
             ->get();
         
@@ -105,15 +105,15 @@ class MonitoringController extends Controller
             ->whereHas('schedule', function($query) use ($startDate, $endDate) {
                 $query->whereBetween('start_date', [$startDate->toDateString(), $endDate->toDateString()]);
             })
-            ->with(['schedule.machine', 'schedule.standard', 'performedBy'])
+            ->with(['schedule.machineErp', 'schedule.standard', 'performedBy'])
             ->orderBy('actual_start_time', 'desc')
             ->get();
         
         // Statistics for selected month
-        // Calculate total jadwal (machine_id + date combinations)
+        // Calculate total jadwal (machine_erp_id + date combinations)
         $jadwalCombinations = [];
         foreach ($schedulesForMonth as $schedule) {
-            $machineId = $schedule->machine_id;
+            $machineId = $schedule->machine_erp_id;
             $date = $schedule->start_date;
             if (is_string($date)) {
                 $dateFormatted = $date;
@@ -135,10 +135,10 @@ class MonitoringController extends Controller
             return $scheduleDate <= $today;
         });
         
-        // Group by (machine_id, date) for status today
+        // Group by (machine_erp_id, date) for status today
         $jadwalByMachineAndDateToday = [];
         foreach ($schedulesUpToToday as $schedule) {
-            $machineId = $schedule->machine_id;
+            $machineId = $schedule->machine_erp_id;
             $date = $schedule->start_date;
             if (is_string($date)) {
                 $dateFormatted = $date;
@@ -215,10 +215,10 @@ class MonitoringController extends Controller
             'total' => count($jadwalByMachineAndDateToday),
         ];
         
-        // Status overview per month - based on jadwal (machine_id + date combination)
+        // Status overview per month - based on jadwal (machine_erp_id + date combination)
         $jadwalByMachineAndDate = [];
         foreach ($schedulesForMonth as $schedule) {
-            $machineId = $schedule->machine_id;
+            $machineId = $schedule->machine_erp_id;
             $date = $schedule->start_date;
             if (is_string($date)) {
                 $dateFormatted = $date;
@@ -332,10 +332,10 @@ class MonitoringController extends Controller
             ->with('executions')
             ->get();
         
-        // Group by (machine_id, date) to get unique jadwal
+        // Group by (machine_erp_id, date) to get unique jadwal
         $jadwalByMachineAndDate = [];
         foreach ($schedules as $schedule) {
-            $machineId = $schedule->machine_id;
+            $machineId = $schedule->machine_erp_id;
             $date = $schedule->start_date;
             if (is_string($date)) {
                 $dateFormatted = $date;

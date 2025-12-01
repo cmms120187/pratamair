@@ -19,7 +19,7 @@ class UpdatingController extends Controller
     {
         // Get executions with status pending or in_progress
         $query = PredictiveMaintenanceExecution::whereIn('status', ['pending', 'in_progress'])
-            ->with(['schedule.machine.machineType', 'schedule.machine.plant', 'schedule.machine.line', 'schedule.standard', 'performedBy', 'schedule']);
+            ->with(['schedule.machineErp.machineType', 'schedule.machineErp.roomErp', 'schedule.standard', 'performedBy', 'schedule']);
         
         // Filter by user role (mekanik only sees their own assigned executions)
         if (DataFilterHelper::shouldFilterRoute(request()->route()->getName())) {
@@ -31,10 +31,10 @@ class UpdatingController extends Controller
         
         $executionsRaw = $query->orderBy('scheduled_date', 'asc')->get();
         
-        // Group by (machine_id, scheduled_date) to get unique jadwal
+        // Group by (machine_erp_id, scheduled_date) to get unique jadwal
         $jadwalData = [];
         foreach ($executionsRaw as $execution) {
-            $machineId = $execution->schedule->machine_id;
+            $machineId = $execution->schedule->machine_erp_id;
             $scheduledDate = $execution->scheduled_date;
             if (is_string($scheduledDate)) {
                 $dateFormatted = $scheduledDate;
@@ -46,7 +46,7 @@ class UpdatingController extends Controller
             if (!isset($jadwalData[$key])) {
                 $jadwalData[$key] = [
                     'machine_id' => $machineId,
-                    'machine' => $execution->schedule->machine,
+                    'machine' => $execution->schedule->machineErp,
                     'scheduled_date' => $dateFormatted,
                     'executions' => [],
                     'status' => 'pending',
@@ -74,15 +74,15 @@ class UpdatingController extends Controller
         
         // Get completed executions for information only - grouped by jadwal
         $completedExecutionsRaw = PredictiveMaintenanceExecution::where('status', 'completed')
-            ->with(['schedule.machine.machineType', 'schedule.machine.plant', 'schedule.machine.line', 'schedule.standard', 'performedBy', 'schedule'])
+            ->with(['schedule.machineErp.machineType', 'schedule.machineErp.roomErp', 'schedule.standard', 'performedBy', 'schedule'])
             ->orderBy('actual_end_time', 'desc')
             ->limit(100)
             ->get();
         
-        // Group completed by (machine_id, scheduled_date)
+        // Group completed by (machine_erp_id, scheduled_date)
         $completedJadwal = [];
         foreach ($completedExecutionsRaw as $execution) {
-            $machineId = $execution->schedule->machine_id;
+            $machineId = $execution->schedule->machine_erp_id;
             $scheduledDate = $execution->scheduled_date;
             if (is_string($scheduledDate)) {
                 $dateFormatted = $scheduledDate;
@@ -94,7 +94,7 @@ class UpdatingController extends Controller
             if (!isset($completedJadwal[$key])) {
                 $completedJadwal[$key] = [
                     'machine_id' => $machineId,
-                    'machine' => $execution->schedule->machine,
+                    'machine' => $execution->schedule->machineErp,
                     'scheduled_date' => $dateFormatted,
                     'executions' => [],
                     'latest_end_time' => $execution->actual_end_time,
@@ -164,7 +164,7 @@ class UpdatingController extends Controller
         }
         
         $executions = PredictiveMaintenanceExecution::whereHas('schedule', function ($query) use ($machineId, $scheduledDate) {
-            $query->where('machine_id', $machineId)
+            $query->where('machine_erp_id', $machineId)
                   ->whereDate('start_date', $scheduledDate);
         })
         ->with(['schedule.maintenancePoint', 'schedule.standard', 'performedBy'])
@@ -200,7 +200,7 @@ class UpdatingController extends Controller
      */
     public function edit(string $id)
     {
-        $execution = PredictiveMaintenanceExecution::with(['schedule.machine', 'schedule.standard', 'schedule.maintenancePoint', 'performedBy'])
+        $execution = PredictiveMaintenanceExecution::with(['schedule.machineErp.machineType', 'schedule.machineErp.roomErp', 'schedule.standard', 'schedule.maintenancePoint', 'performedBy'])
             ->findOrFail($id);
         $users = User::whereIn('role', ['mekanik', 'team_leader', 'group_leader', 'coordinator'])->get();
         

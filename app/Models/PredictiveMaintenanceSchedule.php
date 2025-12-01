@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class PredictiveMaintenanceSchedule extends Model
 {
     protected $fillable = [
-        'machine_id',
+        'machine_erp_id',
         'maintenance_point_id',
         'standard_id',
         'title',
@@ -29,9 +29,15 @@ class PredictiveMaintenanceSchedule extends Model
     ];
 
     // Relationships
+    public function machineErp()
+    {
+        return $this->belongsTo(MachineErp::class, 'machine_erp_id');
+    }
+    
+    // Keep machine() for backward compatibility (deprecated)
     public function machine()
     {
-        return $this->belongsTo(Machine::class);
+        return $this->belongsTo(MachineErp::class, 'machine_erp_id');
     }
 
     public function maintenancePoint()

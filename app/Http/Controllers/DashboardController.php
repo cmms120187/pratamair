@@ -122,8 +122,8 @@ class DashboardController extends Controller
         
         $machinesWithPM = PreventiveMaintenanceSchedule::whereYear('start_date', $currentYear)
             ->whereMonth('start_date', $currentMonth)
-            ->distinct('machine_id')
-            ->count('machine_id');
+            ->distinct('machine_erp_id')
+            ->count('machine_erp_id');
 
         // ========== USERS STATISTICS ==========
         $totalUsers = User::count();

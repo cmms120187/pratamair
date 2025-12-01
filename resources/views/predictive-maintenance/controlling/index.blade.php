@@ -127,6 +127,7 @@
                         <th class="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 200px;">Nama Mesin</th>
                         <th class="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 100px;">Plant</th>
                         <th class="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 100px;">Line</th>
+                        <th class="px-3 py-3 text-center text-xs font-medium text-white uppercase tracking-wider" style="width: 120px;">Kondisi Mesin</th>
                         <th class="px-3 py-3 text-center text-xs font-medium text-white uppercase tracking-wider" style="width: 100px;">Status (%)</th>
                         <th class="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 250px;">Tanggal Schedule</th>
                         <th class="px-3 py-3 text-center text-xs font-medium text-white uppercase tracking-wider" style="width: 120px;">Actions</th>
@@ -150,10 +151,38 @@
                             {{ $machine->machineType->name ?? '-' }}
                         </td>
                         <td class="px-3 py-3 text-sm text-gray-500" style="word-wrap: break-word; overflow-wrap: break-word;">
-                            {{ $machine->room->plant->name ?? '-' }}
+                            {{ $machine->plant_name ?? '-' }}
                         </td>
                         <td class="px-3 py-3 text-sm text-gray-500" style="word-wrap: break-word; overflow-wrap: break-word;">
-                            {{ $machine->room->line->name ?? '-' }}
+                            {{ $machine->line_name ?? '-' }}
+                        </td>
+                        <td class="px-3 py-3 text-center">
+                            @php
+                                $machineCondition = $data['machine_condition'] ?? 'no_data';
+                            @endphp
+                            <div class="flex flex-col items-center">
+                                @if($machineCondition == 'normal')
+                                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 border border-green-300">
+                                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                                        <span class="text-xs font-semibold text-green-800">Aman</span>
+                                    </div>
+                                @elseif($machineCondition == 'warning')
+                                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-100 border border-yellow-300">
+                                        <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                        <span class="text-xs font-semibold text-yellow-800">Perlu Perhatian</span>
+                                    </div>
+                                @elseif($machineCondition == 'critical')
+                                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-100 border border-red-300">
+                                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                        <span class="text-xs font-semibold text-red-800">Kritis</span>
+                                    </div>
+                                @else
+                                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 border border-gray-300">
+                                        <div class="w-3 h-3 rounded-full bg-gray-400"></div>
+                                        <span class="text-xs font-semibold text-gray-600">Belum Ada Data</span>
+                                    </div>
+                                @endif
+                            </div>
                         </td>
                         <td class="px-3 py-3 text-center">
                             <div class="flex flex-col items-center">
@@ -183,22 +212,23 @@
                                             $isFuture = $dateObj->isFuture();
 
                                             // Cek status completion untuk schedule dengan start_date = tanggal ini
+                                            // Use data from $data['schedules'] instead of querying again
                                             $hasCompletedExecution = false;
                                             $hasPartialCompletion = false;
                                             if ($isPast) {
-                                                $schedulesForDate = \App\Models\PredictiveMaintenanceSchedule::where('machine_id', $machine->id)
-                                                    ->where('start_date', $date)
-                                                    ->where('status', 'active')
-                                                    ->get();
+                                                $schedulesForDate = collect($data['schedules'])->filter(function($schedule) use ($date) {
+                                                    return $schedule->start_date->format('Y-m-d') === $date;
+                                                });
 
                                                 if ($schedulesForDate->count() > 0) {
                                                     $completedCount = 0;
                                                     $totalSchedules = $schedulesForDate->count();
 
                                                     foreach ($schedulesForDate as $schedule) {
-                                                        $hasCompleted = $schedule->executions()
+                                                        // Use eager loaded executions
+                                                        $hasCompleted = $schedule->executions
                                                             ->where('status', 'completed')
-                                                            ->exists();
+                                                            ->isNotEmpty();
                                                         if ($hasCompleted) {
                                                             $completedCount++;
                                                         }
@@ -235,6 +265,14 @@
                         </td>
                         <td class="px-3 py-3 whitespace-nowrap text-sm text-center">
                             <div class="flex flex-row justify-center items-center gap-2">
+                                <a href="{{ route('predictive-maintenance.controlling.machine-condition', ['machineId' => $machine->id, 'month' => $filterMonth, 'year' => $filterYear]) }}"
+                                   class="inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white p-2 rounded shadow transition duration-150 ease-in-out"
+                                   title="View Machine Condition">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                </a>
                                 <a href="{{ route('predictive-maintenance.controlling.create', ['machine_id' => $machine->id, 'type_machine_id' => $machine->machine_type_id]) }}"
                                    class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white p-2 rounded shadow transition duration-150 ease-in-out"
                                    title="Create Execution">

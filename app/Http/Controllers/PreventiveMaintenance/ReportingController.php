@@ -5,7 +5,7 @@ namespace App\Http\Controllers\PreventiveMaintenance;
 use App\Http\Controllers\Controller;
 use App\Models\PreventiveMaintenanceSchedule;
 use App\Models\PreventiveMaintenanceExecution;
-use App\Models\Machine;
+use App\Models\MachineErp;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -29,11 +29,11 @@ class ReportingController extends Controller
         $machineId = $request->get('machine_id');
         $status = $request->get('status');
         
-        $query = PreventiveMaintenanceSchedule::with(['machine', 'assignedUser', 'maintenancePoint'])
+        $query = PreventiveMaintenanceSchedule::with(['machineErp', 'assignedUser', 'maintenancePoint'])
             ->whereBetween('start_date', [$startDate, $endDate]);
         
         if ($machineId) {
-            $query->where('machine_id', $machineId);
+            $query->where('machine_erp_id', $machineId);
         }
         
         if ($status) {
@@ -41,12 +41,12 @@ class ReportingController extends Controller
         }
         
         $schedulesRaw = $query->orderBy('start_date', 'asc')->get();
-        $machines = Machine::all();
+        $machines = MachineErp::all();
         
-        // Group schedules by (machine_id, start_date) to get unique jadwal
+        // Group schedules by (machine_erp_id, start_date) to get unique jadwal
         $jadwalData = [];
         foreach ($schedulesRaw as $schedule) {
-            $machineId = $schedule->machine_id;
+            $machineId = $schedule->machine_erp_id;
             $scheduleDate = $schedule->start_date;
             if (is_string($scheduleDate)) {
                 $dateFormatted = $scheduleDate;
@@ -58,7 +58,7 @@ class ReportingController extends Controller
             if (!isset($jadwalData[$key])) {
                 $jadwalData[$key] = [
                     'machine_id' => $machineId,
-                    'machine' => $schedule->machine,
+                    'machine' => $schedule->machineErp,
                     'start_date' => $dateFormatted,
                     'schedules' => [],
                     'assignedUser' => $schedule->assignedUser,
@@ -102,7 +102,7 @@ class ReportingController extends Controller
         
         try {
             // Get schedules for this machine and date
-            $schedules = PreventiveMaintenanceSchedule::where('machine_id', $machineId)
+            $schedules = PreventiveMaintenanceSchedule::where('machine_erp_id', $machineId)
                 ->where('start_date', $scheduleDate)
                 ->where('status', 'active')
                 ->with(['maintenancePoint', 'assignedUser'])
@@ -138,12 +138,12 @@ class ReportingController extends Controller
         $machineId = $request->get('machine_id');
         $status = $request->get('status');
         
-        $query = PreventiveMaintenanceExecution::with(['schedule.machine', 'performedBy'])
+        $query = PreventiveMaintenanceExecution::with(['schedule.machineErp', 'performedBy'])
             ->whereBetween('scheduled_date', [$startDate, $endDate]);
         
         if ($machineId) {
             $query->whereHas('schedule', function($q) use ($machineId) {
-                $q->where('machine_id', $machineId);
+                $q->where('machine_erp_id', $machineId);
             });
         }
         
@@ -153,12 +153,12 @@ class ReportingController extends Controller
         
         $executions = $query->orderBy('scheduled_date', 'desc')->paginate(12);
         $executions->appends($request->except('page'));
-        $machines = Machine::all();
+        $machines = MachineErp::all();
         
-        // Group executions by (machine_id, scheduled_date) to get unique jadwal for statistics
+        // Group executions by (machine_erp_id, scheduled_date) to get unique jadwal for statistics
         $jadwalData = [];
         foreach ($executions as $execution) {
-            $machineId = $execution->schedule->machine_id;
+            $machineId = $execution->schedule->machine_erp_id;
             $scheduledDate = $execution->scheduled_date;
             if (is_string($scheduledDate)) {
                 $dateFormatted = $scheduledDate;

@@ -73,4 +73,9 @@ class Machine extends Model
     {
         return $this->hasMany(WorkOrder::class);
     }
+
+    public function machineErp()
+    {
+        return $this->hasOne(MachineErp::class, 'idMachine', 'idMachine');
+    }
 }

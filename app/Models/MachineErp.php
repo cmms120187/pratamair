@@ -31,6 +31,11 @@ class MachineErp extends Model
         return $this->belongsTo(MachineType::class, 'machine_type_id');
     }
 
+    public function roomErp()
+    {
+        return $this->belongsTo(RoomErp::class, 'kode_room', 'kode_room');
+    }
+
     /**
      * Get photo from model if machine_erp photo is not available
      * Priority: machine_erp photo > model photo > machine_type photo

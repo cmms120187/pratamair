@@ -104,21 +104,36 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div class="relative">
                     <label for="mekanik_search" class="block text-sm font-semibold text-gray-700 mb-2">ID Mekanik / Nama Mekanik <span class="text-red-500">*</span></label>
+                    @php
+                        $isTeamMember = auth()->check() && (auth()->user()->role === 'team_member' || auth()->user()->role === 'mekanik');
+                        $currentUserNik = auth()->check() ? (auth()->user()->nik ?? '') : '';
+                        $currentUserName = auth()->check() ? (auth()->user()->name ?? '') : '';
+                        // For team member, auto-fill with current user. For others, use old value or empty
+                        $oldIdMekanik = old('id_mekanik', $isTeamMember ? $currentUserNik : '');
+                        $oldNamaMekanik = old('nama_mekanik', $isTeamMember ? $currentUserName : '');
+                        $displayValue = $oldIdMekanik ? ($oldIdMekanik . ' - ' . $oldNamaMekanik) : $oldNamaMekanik;
+                    @endphp
                     <input type="text" 
                            id="mekanik_search" 
+                           value="{{ $displayValue }}"
                            placeholder="Ketik NIK atau nama mekanik"
-                           class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('id_mekanik') border-red-500 @enderror"
-                           autocomplete="off">
-                    <input type="hidden" name="id_mekanik" id="id_mekanik" value="{{ old('id_mekanik') }}" required>
-                    <input type="hidden" name="nama_mekanik" id="nama_mekanik" value="{{ old('nama_mekanik') }}" required>
+                           class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('id_mekanik') border-red-500 @enderror {{ $isTeamMember ? 'bg-gray-100 cursor-not-allowed' : '' }}"
+                           autocomplete="off"
+                           {{ $isTeamMember ? 'readonly' : '' }}>
+                    <input type="hidden" name="id_mekanik" id="id_mekanik" value="{{ $oldIdMekanik }}" required>
+                    <input type="hidden" name="nama_mekanik" id="nama_mekanik" value="{{ $oldNamaMekanik }}" required>
                     
-                    <!-- Suggestions dropdown -->
+                    @if($isTeamMember)
+                        <p class="text-xs text-gray-500 mt-1">Otomatis terisi sesuai user yang login (terkunci)</p>
+                    @endif
+                    
+                    <!-- Suggestions dropdown (only show for admin) -->
                     <div id="mekanik_dropdown" class="hidden absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
                         <!-- Suggestions will be populated by JavaScript -->
                     </div>
                     
-                    <div id="selected_mekanik" class="mt-2 text-sm text-green-600 font-medium hidden">
-                        <span id="selected_mekanik_info"></span>
+                    <div id="selected_mekanik" class="mt-2 text-sm text-green-600 font-medium {{ $oldIdMekanik || $oldNamaMekanik ? '' : 'hidden' }}">
+                        <span id="selected_mekanik_info">{{ $displayValue }}</span>
                     </div>
                     
                     @error('id_mekanik')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
@@ -263,8 +278,8 @@
                             </button>
                         </div>
                         <div class="mb-4">
-                            <video id="barcode_video" class="w-full rounded-lg" autoplay playsinline></video>
-                            <canvas id="barcode_canvas" class="hidden"></canvas>
+                            <video id="barcode_video" class="w-full rounded-lg bg-black" autoplay playsinline style="display: none;"></video>
+                            <div id="barcode_status" class="text-sm text-gray-600 text-center py-2"></div>
                         </div>
                         <div class="mb-4">
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Atau masukkan manual:</label>
@@ -274,7 +289,7 @@
                                    placeholder="Masukkan ID Mesin">
                         </div>
                         <div class="flex items-center gap-3">
-                            <button type="button" onclick="startBarcodeScan()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition">Mulai Scan</button>
+                            <button type="button" id="start_barcode_btn" onclick="startBarcodeScan()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition">Mulai Scan</button>
                             <button type="button" onclick="stopBarcodeScan()" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-6 rounded-lg transition">Stop</button>
                             <button type="button" onclick="closeBarcodeModal()" class="text-gray-600 hover:text-gray-800">Batal</button>
                         </div>
@@ -325,8 +340,11 @@ const machineDropdown = document.getElementById('machine_dropdown');
 const selectedMachine = document.getElementById('selected_machine');
 const selectedMachineInfo = document.getElementById('selected_machine_info');
 
-// Mekanik search functionality
-if (mekanikSearch) {
+// Check if user is team member (for mekanik search functionality)
+const isTeamMember = {{ auth()->check() && (auth()->user()->role === 'team_member' || auth()->user()->role === 'mekanik') ? 'true' : 'false' }};
+
+// Mekanik search functionality (available for all except team member)
+if (mekanikSearch && !isTeamMember) {
     let searchTimeout;
     
     mekanikSearch.addEventListener('input', function() {
@@ -382,6 +400,12 @@ if (mekanikSearch) {
         if (this.value.trim().length >= 2) {
             mekanikDropdown.classList.remove('hidden');
         }
+    });
+} else if (mekanikSearch && isTeamMember) {
+    // For team member, disable search functionality
+    mekanikSearch.addEventListener('focus', function(e) {
+        e.preventDefault();
+        this.blur();
     });
 }
 
@@ -491,16 +515,29 @@ function clearMachine() {
     selectedMachine.classList.add('hidden');
 }
 
-// Barcode Scanner functionality
-let barcodeStream = null;
+// Barcode Scanner functionality using ZXing
+let barcodeCodeReader = null;
 let barcodeVideo = null;
-let barcodeCanvas = null;
+let barcodeStatus = null;
+let startBarcodeBtn = null;
+
+// Initialize ZXing when available
+if (typeof ZXing !== 'undefined') {
+    barcodeCodeReader = new ZXing.BrowserMultiFormatReader();
+}
 
 function openBarcodeModal() {
     const modal = document.getElementById('barcode_modal');
     modal.classList.remove('hidden');
     barcodeVideo = document.getElementById('barcode_video');
-    barcodeCanvas = document.getElementById('barcode_canvas');
+    barcodeStatus = document.getElementById('barcode_status');
+    startBarcodeBtn = document.getElementById('start_barcode_btn');
+    
+    // Reset video display
+    if (barcodeVideo) {
+        barcodeVideo.style.display = 'none';
+        barcodeVideo.srcObject = null;
+    }
 }
 
 function closeBarcodeModal() {
@@ -509,58 +546,161 @@ function closeBarcodeModal() {
     modal.classList.add('hidden');
 }
 
-function startBarcodeScan() {
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ 
-            video: { 
-                facingMode: 'environment' // Use back camera on mobile
-            } 
-        })
-        .then(function(mediaStream) {
-            barcodeStream = mediaStream;
-            barcodeVideo.srcObject = mediaStream;
-            barcodeVideo.style.display = 'block';
+async function startBarcodeScan() {
+    if (!barcodeCodeReader) {
+        if (barcodeStatus) {
+            barcodeStatus.textContent = 'Barcode scanner tidak tersedia. Pastikan koneksi internet aktif dan library ZXing sudah dimuat.';
+        } else {
+            alert('Barcode scanner tidak tersedia. Pastikan koneksi internet aktif.');
+        }
+        return;
+    }
+
+    try {
+        // List available video input devices
+        const videoInputDevices = await barcodeCodeReader.listVideoInputDevices();
+
+        if (videoInputDevices.length === 0) {
+            if (barcodeStatus) {
+                barcodeStatus.textContent = 'Tidak ada kamera ditemukan.';
+            } else {
+                alert('Tidak ada kamera ditemukan.');
+            }
+            return;
+        }
+
+        if (barcodeStatus) {
+            barcodeStatus.textContent = 'Mengaktifkan kamera...';
+        }
+        if (startBarcodeBtn) {
+            startBarcodeBtn.disabled = true;
+        }
+
+        // Prefer back camera on mobile devices (Android/iOS)
+        let selectedDeviceId = null;
+        for (let device of videoInputDevices) {
+            // Look for back camera (environment facing)
+            if (device.label.toLowerCase().includes('back') || 
+                device.label.toLowerCase().includes('rear') ||
+                device.label.toLowerCase().includes('environment')) {
+                selectedDeviceId = device.deviceId;
+                break;
+            }
+        }
+        // If no back camera found, use first available camera
+        if (!selectedDeviceId) {
+            selectedDeviceId = videoInputDevices[0].deviceId;
+        }
+
+        // Start decoding from video device
+        barcodeCodeReader.decodeFromVideoDevice(selectedDeviceId, 'barcode_video', (result, err) => {
+            if (result) {
+                const scannedCode = result.getText();
+                if (barcodeStatus) {
+                    barcodeStatus.textContent = 'Barcode terdeteksi: ' + scannedCode;
+                }
+                
+                // Set machine search value
+                if (machineSearch) {
+                    machineSearch.value = scannedCode;
+                }
+                if (machineIdInput) {
+                    machineIdInput.value = scannedCode;
+                }
+                
+                // Try to find and select machine
+                const machine = machines.find(m => m.idMachine === scannedCode);
+                if (machine) {
+                    selectMachine(machine.idMachine, machine.typeMachine, machine.modelMachine, machine.brandMachine);
+                } else {
+                    // Machine not found, but still set the value
+                    if (selectedMachineInfo) {
+                        selectedMachineInfo.innerHTML = `<div class="font-semibold">${scannedCode}</div>`;
+                    }
+                    if (selectedMachine) {
+                        selectedMachine.classList.remove('hidden');
+                    }
+                }
+                
+                // Stop scanning and close modal
+                stopBarcodeScan();
+                closeBarcodeModal();
+            }
             
-            // Manual input fallback
-            const manualInput = document.getElementById('manual_barcode_input');
-            if (manualInput) {
-                manualInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        const value = this.value.trim();
-                        if (value) {
+            if (err && !(err instanceof ZXing.NotFoundException)) {
+                // NotFoundException is expected when no barcode is detected, ignore it
+                console.error('Barcode scan error:', err);
+            }
+        });
+
+        if (barcodeStatus) {
+            barcodeStatus.textContent = 'Arahkan kamera ke barcode/QR code...';
+        }
+        if (barcodeVideo) {
+            barcodeVideo.style.display = 'block';
+        }
+        
+        // Manual input fallback
+        const manualInput = document.getElementById('manual_barcode_input');
+        if (manualInput) {
+            // Remove existing listeners to avoid duplicates
+            const newManualInput = manualInput.cloneNode(true);
+            manualInput.parentNode.replaceChild(newManualInput, manualInput);
+            
+            newManualInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const value = this.value.trim();
+                    if (value) {
+                        if (machineSearch) {
                             machineSearch.value = value;
+                        }
+                        if (machineIdInput) {
                             machineIdInput.value = value;
-                            // Try to find and select machine
-                            const machine = machines.find(m => m.idMachine === value);
-                            if (machine) {
-                                selectMachine(machine.idMachine, machine.typeMachine, machine.modelMachine, machine.brandMachine);
-                            } else {
+                        }
+                        // Try to find and select machine
+                        const machine = machines.find(m => m.idMachine === value);
+                        if (machine) {
+                            selectMachine(machine.idMachine, machine.typeMachine, machine.modelMachine, machine.brandMachine);
+                        } else {
+                            if (selectedMachineInfo) {
                                 selectedMachineInfo.innerHTML = `<div class="font-semibold">${value}</div>`;
+                            }
+                            if (selectedMachine) {
                                 selectedMachine.classList.remove('hidden');
                             }
-                            closeBarcodeModal();
                         }
+                        closeBarcodeModal();
                     }
-                });
-            }
-        })
-        .catch(function(err) {
-            console.error('Error accessing camera:', err);
-            alert('Tidak dapat mengakses kamera. Pastikan izin kamera sudah diberikan.');
-        });
-    } else {
-        alert('Browser tidak mendukung akses kamera.');
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error starting barcode scanner:', error);
+        if (barcodeStatus) {
+            barcodeStatus.textContent = 'Error: ' + error.message;
+        } else {
+            alert('Error: ' + error.message);
+        }
+        if (startBarcodeBtn) {
+            startBarcodeBtn.disabled = false;
+        }
     }
 }
 
 function stopBarcodeScan() {
-    if (barcodeStream) {
-        barcodeStream.getTracks().forEach(track => track.stop());
-        barcodeStream = null;
+    if (barcodeCodeReader) {
+        barcodeCodeReader.reset();
     }
-    if (barcodeVideo) {
+    if (barcodeVideo && barcodeVideo.srcObject) {
+        barcodeVideo.srcObject.getTracks().forEach(track => track.stop());
         barcodeVideo.srcObject = null;
         barcodeVideo.style.display = 'none';
+    }
+    if (barcodeStatus) {
+        barcodeStatus.textContent = '';
+    }
+    if (startBarcodeBtn) {
+        startBarcodeBtn.disabled = false;
     }
 }
 
@@ -723,9 +863,27 @@ function capturePhoto() {
 
 // Duration calculation
 document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.getElementById('date');
     const startInput = document.getElementById('start');
     const stopInput = document.getElementById('stop');
     const durationInput = document.getElementById('duration');
+    
+    // Set current date and time from device system (not server)
+    // Only set if no old value exists (to preserve user input on validation errors)
+    if (dateInput && !dateInput.value) {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        dateInput.value = `${year}-${month}-${day}`;
+    }
+    
+    if (startInput && !startInput.value) {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        startInput.value = `${hours}:${minutes}`;
+    }
     
     function calculateDuration() {
         const start = startInput.value;
@@ -759,13 +917,64 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Pre-fill mekanik if old values exist
-    const oldIdMekanik = '{{ old("id_mekanik") }}';
-    const oldNamaMekanik = '{{ old("nama_mekanik") }}';
-    if (oldIdMekanik && oldNamaMekanik && mekanikSearch) {
-        mekanikSearch.value = oldIdMekanik ? `${oldIdMekanik} - ${oldNamaMekanik}` : oldNamaMekanik;
-        selectedMekanikInfo.textContent = oldIdMekanik ? `${oldIdMekanik} - ${oldNamaMekanik}` : oldNamaMekanik;
-        selectedMekanik.classList.remove('hidden');
+    // Pre-fill mekanik from current user (for team member only)
+    @php
+        $isTeamMember = auth()->check() && (auth()->user()->role === 'team_member' || auth()->user()->role === 'mekanik');
+        $currentUserNik = auth()->check() ? (auth()->user()->nik ?? '') : '';
+        $currentUserName = auth()->check() ? (auth()->user()->name ?? '') : '';
+        $oldIdMekanik = old('id_mekanik', $isTeamMember ? $currentUserNik : '');
+        $oldNamaMekanik = old('nama_mekanik', $isTeamMember ? $currentUserName : '');
+    @endphp
+    const currentUserNik = '{{ $oldIdMekanik }}';
+    const currentUserName = '{{ $oldNamaMekanik }}';
+    
+    // Ensure values are set (in case JavaScript runs before PHP renders)
+    // Only auto-fill for team member
+    if (isTeamMember && (currentUserNik || currentUserName)) {
+        if (mekanikId) mekanikId.value = currentUserNik;
+        if (mekanikName) mekanikName.value = currentUserName;
+        if (mekanikSearch) {
+            const displayValue = currentUserNik ? `${currentUserNik} - ${currentUserName}` : currentUserName;
+            if (!mekanikSearch.value) {
+                mekanikSearch.value = displayValue;
+            }
+        }
+        if (selectedMekanikInfo) {
+            const displayValue = currentUserNik ? `${currentUserNik} - ${currentUserName}` : currentUserName;
+            selectedMekanikInfo.textContent = displayValue;
+        }
+        if (selectedMekanik && (currentUserNik || currentUserName)) {
+            selectedMekanik.classList.remove('hidden');
+        }
+    } else if (!isTeamMember && (currentUserNik || currentUserName)) {
+        // For non-team member, show selected mekanik if exists
+        if (mekanikId) mekanikId.value = currentUserNik;
+        if (mekanikName) mekanikName.value = currentUserName;
+        if (mekanikSearch && currentUserNik) {
+            const displayValue = currentUserNik ? `${currentUserNik} - ${currentUserName}` : currentUserName;
+            mekanikSearch.value = displayValue;
+        }
+        if (selectedMekanikInfo && (currentUserNik || currentUserName)) {
+            const displayValue = currentUserNik ? `${currentUserNik} - ${currentUserName}` : currentUserName;
+            selectedMekanikInfo.textContent = displayValue;
+        }
+        if (selectedMekanik && (currentUserNik || currentUserName)) {
+            selectedMekanik.classList.remove('hidden');
+        }
+    }
+    
+    // For team member, prevent any changes to mekanik field
+    if (isTeamMember && mekanikSearch) {
+        mekanikSearch.addEventListener('keydown', function(e) {
+            // Allow backspace and delete for clearing, but prevent other edits
+            if (e.key !== 'Backspace' && e.key !== 'Delete' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+            }
+        });
+        
+        mekanikSearch.addEventListener('paste', function(e) {
+            e.preventDefault();
+        });
     }
     
     // Pre-fill machine if old values exist

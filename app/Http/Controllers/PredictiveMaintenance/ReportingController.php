@@ -5,7 +5,7 @@ namespace App\Http\Controllers\PredictiveMaintenance;
 use App\Http\Controllers\Controller;
 use App\Models\PredictiveMaintenanceSchedule;
 use App\Models\PredictiveMaintenanceExecution;
-use App\Models\Machine;
+use App\Models\MachineErp;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -29,11 +29,11 @@ class ReportingController extends Controller
         $machineId = $request->get('machine_id');
         $status = $request->get('status');
         
-        $query = PredictiveMaintenanceSchedule::with(['machine', 'standard', 'assignedUser', 'maintenancePoint'])
+        $query = PredictiveMaintenanceSchedule::with(['machineErp', 'standard', 'assignedUser', 'maintenancePoint'])
             ->whereBetween('start_date', [$startDate, $endDate]);
         
         if ($machineId) {
-            $query->where('machine_id', $machineId);
+            $query->where('machine_erp_id', $machineId);
         }
         
         if ($status) {
@@ -41,12 +41,12 @@ class ReportingController extends Controller
         }
         
         $schedulesRaw = $query->orderBy('start_date', 'asc')->get();
-        $machines = Machine::all();
+        $machines = MachineErp::all();
         
-        // Group schedules by (machine_id, start_date) to get unique jadwal
+        // Group schedules by (machine_erp_id, start_date) to get unique jadwal
         $jadwalData = [];
         foreach ($schedulesRaw as $schedule) {
-            $machineId = $schedule->machine_id;
+            $machineId = $schedule->machine_erp_id;
             $scheduleDate = $schedule->start_date;
             if (is_string($scheduleDate)) {
                 $dateFormatted = $scheduleDate;
@@ -58,7 +58,7 @@ class ReportingController extends Controller
             if (!isset($jadwalData[$key])) {
                 $jadwalData[$key] = [
                     'machine_id' => $machineId,
-                    'machine' => $schedule->machine,
+                    'machine' => $schedule->machineErp,
                     'start_date' => $dateFormatted,
                     'schedules' => [],
                     'assignedUser' => $schedule->assignedUser,
@@ -99,7 +99,7 @@ class ReportingController extends Controller
             return response()->json(['maintenance_points' => []]);
         }
         
-        $schedules = PredictiveMaintenanceSchedule::where('machine_id', $machineId)
+        $schedules = PredictiveMaintenanceSchedule::where('machine_erp_id', $machineId)
             ->whereDate('start_date', $scheduleDate)
             ->with(['maintenancePoint', 'standard', 'assignedUser'])
             ->orderBy('id', 'asc')
@@ -134,12 +134,12 @@ class ReportingController extends Controller
         $machineId = $request->get('machine_id');
         $status = $request->get('status');
         
-        $query = PredictiveMaintenanceExecution::with(['schedule.machine', 'schedule.standard', 'performedBy'])
+        $query = PredictiveMaintenanceExecution::with(['schedule.machineErp', 'schedule.standard', 'performedBy'])
             ->whereBetween('scheduled_date', [$startDate, $endDate]);
         
         if ($machineId) {
             $query->whereHas('schedule', function($q) use ($machineId) {
-                $q->where('machine_id', $machineId);
+                $q->where('machine_erp_id', $machineId);
             });
         }
         
@@ -147,12 +147,12 @@ class ReportingController extends Controller
             $query->where('status', $status);
         }
         
-        // Group executions by (machine_id, scheduled_date) to calculate statistics based on jadwal
+        // Group executions by (machine_erp_id, scheduled_date) to calculate statistics based on jadwal
         $executionsRaw = $query->get();
         
         $jadwalByMachineAndDate = [];
         foreach ($executionsRaw as $execution) {
-            $machineId = $execution->schedule->machine_id;
+            $machineId = $execution->schedule->machine_erp_id;
             $scheduledDate = $execution->scheduled_date;
             if (is_string($scheduledDate)) {
                 $dateFormatted = $scheduledDate;
@@ -205,12 +205,12 @@ class ReportingController extends Controller
         }
         
         // For cost and duration, still use individual executions (get all, not paginated)
-        $allExecutionsQuery = PredictiveMaintenanceExecution::with(['schedule.machine', 'schedule.standard', 'performedBy'])
+        $allExecutionsQuery = PredictiveMaintenanceExecution::with(['schedule.machineErp', 'schedule.standard', 'performedBy'])
             ->whereBetween('scheduled_date', [$startDate, $endDate]);
         
         if ($machineId) {
             $allExecutionsQuery->whereHas('schedule', function($q) use ($machineId) {
-                $q->where('machine_id', $machineId);
+                $q->where('machine_erp_id', $machineId);
             });
         }
         
@@ -239,7 +239,7 @@ class ReportingController extends Controller
         $executions = $query->orderBy('scheduled_date', 'desc')->paginate(12);
         $executions->appends($request->except('page'));
         
-        $machines = Machine::all();
+        $machines = MachineErp::all();
         
         return view('predictive-maintenance.reporting.execution', compact('executions', 'stats', 'machines', 'startDate', 'endDate', 'machineId', 'status'));
     }
@@ -266,10 +266,10 @@ class ReportingController extends Controller
                 ->with('executions')
                 ->get();
             
-            // Group by (machine_id, date) to get unique jadwal
+            // Group by (machine_erp_id, date) to get unique jadwal
             $jadwalByMachineAndDate = [];
             foreach ($schedules as $schedule) {
-                $machineId = $schedule->machine_id;
+                $machineId = $schedule->machine_erp_id;
                 $date = $schedule->start_date;
                 if (is_string($date)) {
                     $dateFormatted = $date;
@@ -326,15 +326,15 @@ class ReportingController extends Controller
             ->with('executions')
             ->get();
         
-        // Group by machine_id
+        // Group by machine_erp_id
         $machinePerformance = [];
         foreach ($schedules as $schedule) {
-            $machineId = $schedule->machine_id;
+            $machineId = $schedule->machine_erp_id;
             
             if (!isset($machinePerformance[$machineId])) {
                 $machinePerformance[$machineId] = [
                     'machine_id' => $machineId,
-                    'machine' => $schedule->machine,
+                    'machine' => $schedule->machineErp,
                     'jadwal' => [],
                 ];
             }

@@ -5,7 +5,7 @@ namespace App\Http\Controllers\PreventiveMaintenance;
 use App\Http\Controllers\Controller;
 use App\Models\PreventiveMaintenanceSchedule;
 use App\Models\PreventiveMaintenanceExecution;
-use App\Models\Machine;
+use App\Models\MachineErp;
 use App\Models\MaintenancePoint;
 use App\Models\User;
 use App\Models\MachineType;
@@ -28,8 +28,8 @@ class SchedulingController extends Controller
         $machineTypeId = request()->get('machine_type');
         $searchIdMachine = request()->get('search_id_machine');
         
-        // Build query
-        $query = PreventiveMaintenanceSchedule::with(['machine.plant', 'machine.line', 'machine.machineType', 'maintenancePoint', 'assignedUser', 'executions']);
+        // Build query - now using MachineErp
+        $query = PreventiveMaintenanceSchedule::with(['machineErp.roomErp', 'machineErp.machineType', 'maintenancePoint', 'assignedUser', 'executions']);
         
         // Apply period filter
         if ($periodType == 'month') {
@@ -39,41 +39,47 @@ class SchedulingController extends Controller
             $query->whereYear('start_date', $periodYear);
         }
         
-        // Apply plant filter
+        // Apply plant filter - filter by MachineErp plant_name
         if ($plantId) {
-            $query->whereHas('machine', function($q) use ($plantId) {
-                $q->where('plant_id', $plantId);
-            });
+            $plant = \App\Models\Plant::find($plantId);
+            if ($plant) {
+                $query->whereHas('machineErp', function($q) use ($plant) {
+                    $q->where('plant_name', $plant->name);
+                });
+            }
         }
         
-        // Apply line filter
+        // Apply line filter - filter by MachineErp line_name
         if ($lineId) {
-            $query->whereHas('machine', function($q) use ($lineId) {
-                $q->where('line_id', $lineId);
-            });
+            $line = \App\Models\Line::find($lineId);
+            if ($line) {
+                $query->whereHas('machineErp', function($q) use ($line) {
+                    $q->where('line_name', $line->name);
+                });
+            }
         }
         
         // Apply machine type filter
         if ($machineTypeId) {
-            $query->whereHas('machine', function($q) use ($machineTypeId) {
-                $q->where('type_id', $machineTypeId);
+            $query->whereHas('machineErp', function($q) use ($machineTypeId) {
+                $q->where('machine_type_id', $machineTypeId);
             });
         }
         
         // Apply search ID machine filter
         if ($searchIdMachine) {
-            $query->whereHas('machine', function($q) use ($searchIdMachine) {
+            $query->whereHas('machineErp', function($q) use ($searchIdMachine) {
                 $q->where('idMachine', 'like', '%' . $searchIdMachine . '%');
             });
         }
         
-        // Get all schedules grouped by machine - ensure unique machine_id
+        // Get all schedules grouped by machine - ensure unique machine_erp_id
         $schedules = $query->orderBy('start_date', 'asc')->get();
         
-        // Ensure we have unique machines loaded
-        $uniqueMachineIds = $schedules->pluck('machine_id')->unique();
-        $machines = Machine::whereIn('id', $uniqueMachineIds)
-            ->with(['plant', 'line', 'machineType'])
+        // Ensure we have unique machines loaded from MachineErp
+        $uniqueMachineErpIds = $schedules->pluck('machine_erp_id')->unique();
+        $machines = MachineErp::whereIn('id', $uniqueMachineErpIds)
+            ->with(['roomErp', 'machineType'])
             ->get()
             ->keyBy('id');
         
@@ -82,10 +88,10 @@ class SchedulingController extends Controller
         $lines = \App\Models\Line::orderBy('name')->get();
         $machineTypes = MachineType::orderBy('name')->get();
         
-        // Group schedules by machine_id
+        // Group schedules by machine_erp_id
         $machinesData = [];
         foreach ($schedules as $schedule) {
-            $machineId = $schedule->machine_id;
+            $machineId = $schedule->machine_erp_id;
             
             // Skip if machine not found
             if (!isset($machines[$machineId])) {
@@ -267,14 +273,14 @@ class SchedulingController extends Controller
      */
     public function create()
     {
-        // Get machines that don't have schedules for the current year
+        // Get machines that don't have schedules for the current year - now using MachineErp
         $currentYear = now()->year;
         $machinesWithSchedules = PreventiveMaintenanceSchedule::whereYear('start_date', $currentYear)
             ->distinct()
-            ->pluck('machine_id')
+            ->pluck('machine_erp_id')
             ->toArray();
         
-        $machines = Machine::with(['plant', 'process', 'line', 'room', 'machineType'])
+        $machines = MachineErp::with(['roomErp', 'machineType'])
             ->whereNotIn('id', $machinesWithSchedules)
             ->get();
         
@@ -296,22 +302,22 @@ class SchedulingController extends Controller
         }
         
         try {
-            // Get machines that don't have schedules for the current year
+            // Get machines that don't have schedules for the current year - now using MachineErp
             $currentYear = now()->year;
             $machinesWithSchedules = PreventiveMaintenanceSchedule::whereYear('start_date', $currentYear)
                 ->distinct()
-                ->pluck('machine_id')
+                ->pluck('machine_erp_id')
                 ->toArray();
             
-            $machines = Machine::where('type_id', $typeId)
+            $machines = MachineErp::where('machine_type_id', $typeId)
                 ->whereNotIn('id', $machinesWithSchedules)
-                ->with(['plant', 'process', 'line', 'room', 'machineType'])
+                ->with(['roomErp', 'machineType'])
                 ->get()
                 ->map(function($machine) {
                     return [
                         'id' => $machine->id,
                         'idMachine' => $machine->idMachine,
-                        'name' => $machine->idMachine . ' - ' . ($machine->machineType->name ?? '-') . ' (' . ($machine->plant->name ?? '-') . '/' . ($machine->process->name ?? '-') . '/' . ($machine->line->name ?? '-') . ')'
+                        'name' => $machine->idMachine . ' - ' . ($machine->machineType->name ?? $machine->type_name ?? '-') . ' (' . ($machine->plant_name ?? '-') . '/' . ($machine->process_name ?? '-') . '/' . ($machine->line_name ?? '-') . ')'
                     ];
                 });
             
@@ -420,7 +426,7 @@ class SchedulingController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'machine_id' => 'required|exists:machines,id',
+            'machine_id' => 'required|exists:machine_erp,id',
             'maintenance_category' => 'required|in:autonomous,preventive,predictive',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after:start_date',
@@ -431,8 +437,12 @@ class SchedulingController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        $machine = Machine::findOrFail($validated['machine_id']);
-        $typeId = $machine->type_id;
+        $machineErp = MachineErp::findOrFail($validated['machine_id']);
+        $typeId = $machineErp->machine_type_id;
+        
+        if (!$typeId) {
+            return back()->withErrors(['machine_id' => 'Machine type belum ditentukan untuk mesin ini.'])->withInput();
+        }
         $category = $validated['maintenance_category'];
         
         // Get all maintenance points for this machine type and category
@@ -458,7 +468,7 @@ class SchedulingController extends Controller
             // Generate schedules until end of year
             while ($currentDate->lte($endDate)) {
                 PreventiveMaintenanceSchedule::create([
-                    'machine_id' => $validated['machine_id'],
+                    'machine_erp_id' => $validated['machine_id'],
                     'maintenance_point_id' => $point->id,
                     'title' => $point->name,
                     'description' => $point->instruction,
@@ -545,7 +555,7 @@ class SchedulingController extends Controller
     public function edit(string $id)
     {
         $schedule = PreventiveMaintenanceSchedule::findOrFail($id);
-        $machines = Machine::with(['plant', 'process', 'line', 'room', 'machineType'])->get();
+        $machines = MachineErp::with(['roomErp', 'machineType'])->get();
         $maintenancePoints = MaintenancePoint::with('machineType')->get();
         $users = User::whereIn('role', ['mekanik', 'team_leader', 'group_leader', 'coordinator'])->get();
         
@@ -558,7 +568,7 @@ class SchedulingController extends Controller
     public function update(Request $request, string $id)
     {
         $validated = $request->validate([
-            'machine_id' => 'required|exists:machines,id',
+            'machine_id' => 'required|exists:machine_erp,id',
             'maintenance_point_id' => 'nullable|exists:maintenance_points,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -597,10 +607,10 @@ class SchedulingController extends Controller
      */
     public function deleteByMachine(string $machineId)
     {
-        $machine = Machine::findOrFail($machineId);
-        $schedulesCount = PreventiveMaintenanceSchedule::where('machine_id', $machineId)->count();
+        $machine = MachineErp::findOrFail($machineId);
+        $schedulesCount = PreventiveMaintenanceSchedule::where('machine_erp_id', $machineId)->count();
         
-        PreventiveMaintenanceSchedule::where('machine_id', $machineId)->delete();
+        PreventiveMaintenanceSchedule::where('machine_erp_id', $machineId)->delete();
 
         return redirect()->route('preventive-maintenance.scheduling.index')
             ->with('success', "Semua schedule untuk mesin {$machine->idMachine} ({$schedulesCount} schedule) berhasil dihapus.");
@@ -703,10 +713,10 @@ class SchedulingController extends Controller
             }
         }
         
-        // Group schedules by (machine_id, maintenance_point_id) to handle duplicates
+        // Group schedules by (machine_erp_id, maintenance_point_id) to handle duplicates
         $schedulesByPoint = [];
         foreach ($schedules as $schedule) {
-            $key = $schedule->machine_id . '_' . ($schedule->maintenance_point_id ?? 'null');
+            $key = $schedule->machine_erp_id . '_' . ($schedule->maintenance_point_id ?? 'null');
             if (!isset($schedulesByPoint[$key])) {
                 $schedulesByPoint[$key] = [];
             }
@@ -721,13 +731,13 @@ class SchedulingController extends Controller
         try {
             foreach ($schedulesByPoint as $key => $scheduleGroup) {
                 $firstSchedule = $scheduleGroup[0];
-                $machineId = $firstSchedule->machine_id;
+                $machineId = $firstSchedule->machine_erp_id;
                 $maintenancePointId = $firstSchedule->maintenance_point_id;
                 $frequencyType = $firstSchedule->frequency_type;
                 $frequencyValue = $firstSchedule->frequency_value ?? 1;
                 
                 // Check if there's already a schedule with the same maintenance_point_id on the new date
-                $existingScheduleOnNewDate = PreventiveMaintenanceSchedule::where('machine_id', $machineId)
+                $existingScheduleOnNewDate = PreventiveMaintenanceSchedule::where('machine_erp_id', $machineId)
                     ->where('maintenance_point_id', $maintenancePointId)
                     ->where('start_date', $newDate)
                     ->where('status', 'active')
@@ -760,7 +770,7 @@ class SchedulingController extends Controller
                     
                     // Delete future schedules for this maintenance point that haven't been executed yet
                     // (schedules with start_date > old_date and no completed execution)
-                    $futureSchedules = PreventiveMaintenanceSchedule::where('machine_id', $machineId)
+                    $futureSchedules = PreventiveMaintenanceSchedule::where('machine_erp_id', $machineId)
                         ->where('maintenance_point_id', $maintenancePointId)
                         ->where('start_date', '>', $oldDate)
                         ->where('status', 'active')
@@ -793,7 +803,7 @@ class SchedulingController extends Controller
                         }
                         
                         // Check if schedule already exists for this date
-                        $existingSchedule = PreventiveMaintenanceSchedule::where('machine_id', $machineId)
+                        $existingSchedule = PreventiveMaintenanceSchedule::where('machine_erp_id', $machineId)
                             ->where('maintenance_point_id', $maintenancePointId)
                             ->where('start_date', $currentDate->format('Y-m-d'))
                             ->where('status', 'active')
@@ -802,7 +812,7 @@ class SchedulingController extends Controller
                         if (!$existingSchedule) {
                             // Create new schedule
                             PreventiveMaintenanceSchedule::create([
-                                'machine_id' => $machineId,
+                                'machine_erp_id' => $machineId,
                                 'maintenance_point_id' => $maintenancePointId,
                                 'title' => $scheduleToKeep->title,
                                 'description' => $scheduleToKeep->description,

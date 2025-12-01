@@ -32,10 +32,10 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Machine</label>
                         <div class="border rounded px-3 py-2 bg-gray-50">
-                            <div class="font-semibold text-gray-900">{{ $execution->schedule->machine->idMachine ?? '-' }}</div>
-                            <div class="text-sm text-gray-500">{{ $execution->schedule->machine->machineType->name ?? '-' }}</div>
+                            <div class="font-semibold text-gray-900">{{ $execution->schedule->machineErp->idMachine ?? '-' }}</div>
+                            <div class="text-sm text-gray-500">{{ $execution->schedule->machineErp->machineType->name ?? '-' }}</div>
                             <div class="text-xs text-gray-400">
-                                {{ $execution->schedule->machine->room->plant->name ?? '-' }} / {{ $execution->schedule->machine->room->line->name ?? '-' }}
+                                {{ $execution->schedule->machineErp->plant_name ?? '-' }} / {{ $execution->schedule->machineErp->line_name ?? '-' }}
                             </div>
                         </div>
                     </div>
