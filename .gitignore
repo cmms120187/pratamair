@@ -1,0 +1,6 @@
+# ... existing code ...
+
+# Platform check override (development only)
+# Note: vendor/composer/platform_check.php is modified to allow PHP 8.2
+# This will be overwritten on composer update - restore manually if needed
+node_modules
