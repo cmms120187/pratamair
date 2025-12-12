@@ -11,12 +11,30 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('production_daily_grades', function (Blueprint $table) {
-            $table->integer('target_per_hour')->nullable()->after('production_date');
-            $table->time('start_time')->nullable()->after('target_per_hour');
-            $table->time('end_time')->nullable()->after('start_time');
-            $table->decimal('break_duration', 3, 1)->nullable()->after('end_time'); // 1.0 or 1.5 hours
-        });
+        // Check if columns exist before adding them
+        if (!Schema::hasColumn('production_daily_grades', 'target_per_hour')) {
+            Schema::table('production_daily_grades', function (Blueprint $table) {
+                $table->integer('target_per_hour')->nullable()->after('production_date');
+            });
+        }
+        
+        if (!Schema::hasColumn('production_daily_grades', 'start_time')) {
+            Schema::table('production_daily_grades', function (Blueprint $table) {
+                $table->time('start_time')->nullable()->after('target_per_hour');
+            });
+        }
+        
+        if (!Schema::hasColumn('production_daily_grades', 'end_time')) {
+            Schema::table('production_daily_grades', function (Blueprint $table) {
+                $table->time('end_time')->nullable()->after('start_time');
+            });
+        }
+        
+        if (!Schema::hasColumn('production_daily_grades', 'break_duration')) {
+            Schema::table('production_daily_grades', function (Blueprint $table) {
+                $table->decimal('break_duration', 3, 1)->nullable()->after('end_time'); // 1.0 or 1.5 hours
+            });
+        }
     }
 
     /**
