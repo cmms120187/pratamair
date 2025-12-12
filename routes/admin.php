@@ -14,8 +14,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('part-erp/upload', [\App\Http\Controllers\PartErpController::class, 'upload'])->name('part-erp.upload');
     Route::get('part-erp/download', [\App\Http\Controllers\PartErpController::class, 'download'])->name('part-erp.download');
     
-    // Downtime ERP2 Upload/Download
-    Route::post('downtime-erp2/upload', [\App\Http\Controllers\DowntimeErp2Controller::class, 'upload'])->name('downtime-erp2.upload');
-    Route::get('downtime-erp2/download', [\App\Http\Controllers\DowntimeErp2Controller::class, 'download'])->name('downtime-erp2.download');
+    // Downtime ERP2 Upload/Download - Moved to routes/downtime.php to avoid route conflicts
 });
 

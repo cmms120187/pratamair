@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\ProductionDailyGrade;
+use App\Models\ProductionDailyDowntime;
 use App\Models\Line;
 use App\Models\Process;
 use App\Models\Plant;
@@ -262,7 +263,7 @@ class ProductionDailyController extends Controller
         $breakDuration = ($dayOfWeek == 5) ? 1.5 : 1.0; // Friday = 1.5, Monday-Thursday = 1.0
 
         // Store daily grade (grade_b and grade_c)
-        ProductionDailyGrade::create([
+        $productionDailyGrade = ProductionDailyGrade::create([
             'line_id' => $line->id,
             'process_id' => $process->id,
             'production_date' => $validated['production_date'],
@@ -287,6 +288,21 @@ class ProductionDailyController extends Controller
                 'total_production' => $validated['grade_a'],
             ]
         );
+
+        // Store production downtimes if provided
+        if (isset($validated['downtimes']) && is_array($validated['downtimes'])) {
+            foreach ($validated['downtimes'] as $downtimeData) {
+                \App\Models\ProductionDailyDowntime::create([
+                    'production_daily_grade_id' => $productionDailyGrade->id,
+                    'downtime_type' => $downtimeData['downtime_type'],
+                    'start_time' => $downtimeData['start_time'],
+                    'end_time' => $downtimeData['end_time'],
+                    'duration_minutes' => $downtimeData['duration_minutes'],
+                    'description' => $downtimeData['description'] ?? null,
+                    'include_oee' => isset($downtimeData['include_oee']) && $downtimeData['include_oee'] == '1',
+                ]);
+            }
+        }
 
         return redirect()->route('production-daily.index')->with('success', 'Data produksi per hari berhasil ditambahkan.');
     }
@@ -467,6 +483,24 @@ class ProductionDailyController extends Controller
                 'total_production' => $validated['grade_a'],
             ]
         );
+
+        // Delete existing downtimes and recreate
+        \App\Models\ProductionDailyDowntime::where('production_daily_grade_id', $productionDaily->id)->delete();
+
+        // Store production downtimes if provided
+        if (isset($validated['downtimes']) && is_array($validated['downtimes'])) {
+            foreach ($validated['downtimes'] as $downtimeData) {
+                \App\Models\ProductionDailyDowntime::create([
+                    'production_daily_grade_id' => $productionDaily->id,
+                    'downtime_type' => $downtimeData['downtime_type'],
+                    'start_time' => $downtimeData['start_time'],
+                    'end_time' => $downtimeData['end_time'],
+                    'duration_minutes' => $downtimeData['duration_minutes'],
+                    'description' => $downtimeData['description'] ?? null,
+                    'include_oee' => isset($downtimeData['include_oee']) && $downtimeData['include_oee'] == '1',
+                ]);
+            }
+        }
 
         return redirect()->route('production-daily.index')->with('success', 'Data produksi per hari berhasil diperbarui.');
     }

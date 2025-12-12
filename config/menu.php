@@ -147,6 +147,13 @@ return [
                     'type' => 'single',
                     'menu_key' => 'root-cause-analysis'
                 ],
+                [
+                    'name' => 'OEE',
+                    'route' => '/oee',
+                    'icon' => 'chart-line',
+                    'type' => 'single',
+                    'menu_key' => 'oee'
+                ],
             ]
         ],
     ],

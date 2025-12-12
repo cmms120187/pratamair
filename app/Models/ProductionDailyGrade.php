@@ -40,4 +40,9 @@ class ProductionDailyGrade extends Model
     {
         return $this->belongsTo(Process::class);
     }
+
+    public function downtimes()
+    {
+        return $this->hasMany(ProductionDailyDowntime::class);
+    }
 }

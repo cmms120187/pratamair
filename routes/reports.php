@@ -7,5 +7,6 @@ Route::middleware(['auth', 'role:group_leader,coordinator,ast_manager,manager,ge
     Route::get('mttr-mtbf', [\App\Http\Controllers\MTTRMTBFController::class, 'index'])->name('mttr_mtbf.index');
     Route::get('summary-downtime', [\App\Http\Controllers\SummaryDowntimeController::class, 'index'])->name('summary_downtime.index');
     Route::get('mechanic-performance', [\App\Http\Controllers\MechanicPerformanceController::class, 'index'])->name('mechanic_performance.index');
+    Route::get('oee', [\App\Http\Controllers\OeeController::class, 'index'])->name('oee.index');
 });
 

@@ -26,7 +26,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('reasons', ReasonController::class);
     Route::resource('actions', ActionController::class);
     
-    // Downtime ERP2 Routes
+    // Downtime ERP2 Routes - Custom routes must be BEFORE resource route to avoid conflicts
+    Route::get('downtime-erp2/download', [\App\Http\Controllers\DowntimeErp2Controller::class, 'download'])->name('downtime-erp2.download')->middleware('role:admin');
+    Route::post('downtime-erp2/upload', [\App\Http\Controllers\DowntimeErp2Controller::class, 'upload'])->name('downtime-erp2.upload')->middleware('role:admin');
     Route::resource('downtime-erp2', \App\Http\Controllers\DowntimeErp2Controller::class);
     
     // Work Orders - Team Leader and above

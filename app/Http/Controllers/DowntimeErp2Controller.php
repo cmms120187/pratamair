@@ -292,7 +292,8 @@ class DowntimeErp2Controller extends Controller
      */
     public function show(string $id)
     {
-        //
+        $downtimeErp2 = DowntimeErp2::findOrFail($id);
+        return view('downtime_erp2.show', compact('downtimeErp2'));
     }
 
     /**
@@ -726,9 +727,13 @@ class DowntimeErp2Controller extends Controller
     /**
      * Download Excel file with current data
      */
-    public function download()
+    public function download(Request $request)
     {
         try {
+            // Check if user is admin
+            if (auth()->user()->role !== 'admin') {
+                abort(403, 'Unauthorized. Only admin can download data.');
+            }
             $downtimeErp2s = DowntimeErp2::orderBy('date', 'desc')->get();
             
             $spreadsheet = new Spreadsheet();
