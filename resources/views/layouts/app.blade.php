@@ -17,6 +17,25 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <!-- Alpine.js CDN Fallback (for production) -->
+        <script>
+            // Check if Alpine is loaded after a delay, if not load from CDN
+            setTimeout(function() {
+                if (typeof Alpine === 'undefined' || typeof window.Alpine === 'undefined') {
+                    console.warn('Alpine.js not loaded from Vite, loading from CDN...');
+                    var script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js';
+                    script.defer = true;
+                    script.onload = function() {
+                        console.log('Alpine.js loaded from CDN');
+                        if (typeof Alpine !== 'undefined') {
+                            Alpine.start();
+                        }
+                    };
+                    document.head.appendChild(script);
+                }
+            }, 1000);
+        </script>
         <!-- ZXing Library for Barcode Scanning -->
         <script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest"></script>
         <style>
@@ -197,5 +216,72 @@
         </div>
     </div>
     @stack('scripts')
+    
+    <!-- Fallback JavaScript for menu submenu (if Alpine.js fails) -->
+    <script>
+        // Fallback menu toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait a bit for Alpine to initialize
+            setTimeout(function() {
+                // Check if Alpine is working
+                var testElement = document.querySelector('[x-data]');
+                var alpineWorking = testElement && typeof Alpine !== 'undefined';
+                
+                if (!alpineWorking) {
+                    console.warn('Alpine.js not detected, using fallback menu functionality');
+                    
+                    // Add fallback click handlers for menu groups
+                    var menuToggles = document.querySelectorAll('.menu-group-toggle');
+                    menuToggles.forEach(function(toggle) {
+                        toggle.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            var menuItem = this.closest('.menu-group-item');
+                            var submenu = menuItem.querySelector('.menu-submenu');
+                            var arrow = menuItem.querySelector('.menu-arrow');
+                            
+                            if (submenu) {
+                                // Close other submenus
+                                document.querySelectorAll('.menu-submenu').forEach(function(menu) {
+                                    if (menu !== submenu) {
+                                        menu.style.display = 'none';
+                                        var otherArrow = menu.closest('.menu-group-item')?.querySelector('.menu-arrow');
+                                        if (otherArrow) {
+                                            otherArrow.style.transform = 'rotate(0deg)';
+                                        }
+                                    }
+                                });
+                                
+                                // Toggle current submenu
+                                if (submenu.style.display === 'none' || !submenu.style.display) {
+                                    submenu.style.display = 'block';
+                                    if (arrow) {
+                                        arrow.style.transform = 'rotate(180deg)';
+                                    }
+                                } else {
+                                    submenu.style.display = 'none';
+                                    if (arrow) {
+                                        arrow.style.transform = 'rotate(0deg)';
+                                    }
+                                }
+                            }
+                        });
+                    });
+                    
+                    // Close submenus when clicking outside
+                    document.addEventListener('click', function(e) {
+                        if (!e.target.closest('.menu-group-item')) {
+                            document.querySelectorAll('.menu-submenu').forEach(function(menu) {
+                                menu.style.display = 'none';
+                                var arrow = menu.closest('.menu-group-item')?.querySelector('.menu-arrow');
+                                if (arrow) {
+                                    arrow.style.transform = 'rotate(0deg)';
+                                }
+                            });
+                        }
+                    });
+                }
+            }, 500);
+        });
+    </script>
     </body>
 </html>

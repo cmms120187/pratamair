@@ -63,6 +63,7 @@ return [
             'menu_key' => 'production',
             'children' => [
                 ['name' => 'Hasil Produksi Per Jam', 'route' => '/production-hourly', 'icon' => 'clock', 'menu_key' => 'production-hourly'],
+                ['name' => 'Hasil Produksi Perhari', 'route' => '/production-daily', 'icon' => 'calendar', 'menu_key' => 'production-daily'],
             ]
         ],
         [

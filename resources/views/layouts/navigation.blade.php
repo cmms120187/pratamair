@@ -46,11 +46,12 @@
                     $menuGroups = config('menu.menu_groups', []);
                     
                     // Process menu groups to convert route names to actual routes
-                    foreach ($menuGroups as &$menu) {
+                    // Use array index to avoid reference issues
+                    foreach ($menuGroups as $index => $menu) {
                         // Convert route name to actual route for single type menus
                         if ($menu['type'] === 'single' && isset($menu['route']) && !str_starts_with($menu['route'], '/') && !str_starts_with($menu['route'], 'http')) {
                             try {
-                                $menu['route'] = route($menu['route']);
+                                $menuGroups[$index]['route'] = route($menu['route']);
                             } catch (\Exception $e) {
                                 // If route doesn't exist, keep original value
                             }
@@ -58,13 +59,13 @@
                         
                         // Process children for group menus
                         if ($menu['type'] === 'group' && isset($menu['children'])) {
-                            foreach ($menu['children'] as &$child) {
+                            foreach ($menu['children'] as $childIndex => $child) {
                                 // Convert route paths to full URLs if needed
                                 if (isset($child['route']) && str_starts_with($child['route'], '/')) {
                                     // Keep as is, it's already a path
                                 } elseif (isset($child['route']) && !str_starts_with($child['route'], 'http')) {
                                     try {
-                                        $child['route'] = route($child['route']);
+                                        $menuGroups[$index]['children'][$childIndex]['route'] = route($child['route']);
                                     } catch (\Exception $e) {
                                         // If route doesn't exist, keep original value
                                     }
@@ -74,18 +75,23 @@
                     }
                     
                     // Add Role Permissions menu for admin users in Users group
-                    foreach ($menuGroups as &$menu) {
+                    foreach ($menuGroups as $index => $menu) {
                         if ($menu['menu_key'] === 'users' && $userRole === 'admin') {
                             // Check if permissions menu already exists
                             $hasPermissions = false;
-                            foreach ($menu['children'] as $child) {
-                                if (isset($child['menu_key']) && $child['menu_key'] === 'permissions') {
-                                    $hasPermissions = true;
-                                    break;
+                            if (isset($menu['children'])) {
+                                foreach ($menu['children'] as $child) {
+                                    if (isset($child['menu_key']) && $child['menu_key'] === 'permissions') {
+                                        $hasPermissions = true;
+                                        break;
+                                    }
                                 }
                             }
                             if (!$hasPermissions) {
-                                $menu['children'][] = [
+                                if (!isset($menuGroups[$index]['children'])) {
+                                    $menuGroups[$index]['children'] = [];
+                                }
+                                $menuGroups[$index]['children'][] = [
                                     'name' => 'Role Permissions',
                                     'route' => '/permissions',
                                     'icon' => 'key',
@@ -138,7 +144,7 @@
                     }
                 @endphp
                 
-                @foreach($menuGroups as $menu)
+                @foreach($menuGroups as $menuIndex => $menu)
                     @php
                         // Filter menu based on role
                         $menuKey = $menu['menu_key'] ?? strtolower(str_replace([' ', '-'], '_', $menu['name']));
@@ -150,48 +156,52 @@
                             if (empty($filteredChildren)) {
                                 continue;
                             }
-                            $menu['children'] = $filteredChildren;
+                            // Create a copy of menu to avoid modifying original array
+                            $displayMenu = $menu;
+                            $displayMenu['children'] = $filteredChildren;
                         } else {
                             // For single menus, check direct access
                             if (!canAccessMenu($menuKey, $userRole)) {
                                 continue;
                             }
+                            $displayMenu = $menu;
                         }
                     @endphp
-                    @if($menu['type'] === 'single')
+                    @if($displayMenu['type'] === 'single')
                         <li>
-                            <a href="{{ $menu['route'] }}"
+                            <a href="{{ $displayMenu['route'] }}"
                                 @click="sidebarOpen = false"
-                                class="flex items-center px-2 sm:px-3 py-2 rounded-lg transition-colors duration-150 hover:bg-blue-100 hover:text-blue-700 text-sm sm:text-base {{ isMenuActive($menu['route'], $menu['name'], $currentUrl) ? 'bg-blue-600 text-white' : 'text-gray-700' }}"
+                                class="flex items-center px-2 sm:px-3 py-2 rounded-lg transition-colors duration-150 hover:bg-blue-100 hover:text-blue-700 text-sm sm:text-base {{ isMenuActive($displayMenu['route'], $displayMenu['name'], $currentUrl) ? 'bg-blue-600 text-white' : 'text-gray-700' }}"
                                 class="flex items-center">
                                 <span class="flex-shrink-0 mr-3">
-                                    @include('layouts.partials.menu-icon', ['icon' => $menu['icon']])
+                                    @include('layouts.partials.menu-icon', ['icon' => $displayMenu['icon']])
                                 </span>
-                                <span>{{ $menu['name'] }}</span>
+                                <span>{{ $displayMenu['name'] }}</span>
                             </a>
                         </li>
                     @else
                         <li x-data="{ open: false }" 
-                            class="relative"
+                            class="relative menu-group-item"
+                            data-menu-name="{{ $displayMenu['name'] }}"
                             @close-other-submenus.window="
-                                if ($event.detail !== '{{ $menu['name'] }}') {
+                                if ($event.detail !== '{{ $displayMenu['name'] }}') {
                                     open = false;
                                 }
                             ">
-                            <div class="w-full flex items-center justify-between px-2 sm:px-3 py-2 rounded-lg transition-colors duration-150 hover:bg-blue-100 hover:text-blue-700 cursor-pointer text-sm sm:text-base {{ isGroupActive($menu, $currentUrl) ? 'bg-blue-50 text-blue-700' : 'text-gray-700' }}"
+                            <div class="w-full flex items-center justify-between px-2 sm:px-3 py-2 rounded-lg transition-colors duration-150 hover:bg-blue-100 hover:text-blue-700 cursor-pointer text-sm sm:text-base {{ isGroupActive($displayMenu, $currentUrl) ? 'bg-blue-50 text-blue-700' : 'text-gray-700' }} menu-group-toggle"
                                  @click.stop="
                                     // Close other submenus
-                                    $dispatch('close-other-submenus', '{{ $menu['name'] }}');
+                                    $dispatch('close-other-submenus', '{{ $displayMenu['name'] }}');
                                     // Toggle this submenu
                                     open = !open;
                                  ">
                                 <div class="flex items-center flex-1 min-w-0">
                                     <span class="flex-shrink-0 mr-3">
-                                        @include('layouts.partials.menu-icon', ['icon' => $menu['icon']])
+                                        @include('layouts.partials.menu-icon', ['icon' => $displayMenu['icon']])
                                     </span>
-                                    <span class="truncate">{{ $menu['name'] }}</span>
+                                    <span class="truncate">{{ $displayMenu['name'] }}</span>
                                 </div>
-                                <svg class="w-4 h-4 transition-transform duration-200 flex-shrink-0" 
+                                <svg class="w-4 h-4 transition-transform duration-200 flex-shrink-0 menu-arrow" 
                                      :class="{ 'rotate-180': open }"
                                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -200,6 +210,7 @@
                             <!-- Submenu Dropdown - appears below -->
                             <ul x-show="open" 
                                 x-cloak
+                                class="menu-submenu ml-4 mt-1 space-y-0.5 border-l-2 border-blue-200 pl-2"
                                 @click.away="open = false"
                                 x-transition:enter="transition ease-out duration-200"
                                 x-transition:enter-start="opacity-0 transform -translate-y-2"
@@ -207,9 +218,8 @@
                                 x-transition:leave="transition ease-in duration-150"
                                 x-transition:leave-start="opacity-100 transform translate-y-0"
                                 x-transition:leave-end="opacity-0 transform -translate-y-2"
-                                class="ml-4 mt-1 space-y-0.5 border-l-2 border-blue-200 pl-2"
                                 style="display: none;">
-                                @foreach($menu['children'] as $child)
+                                @foreach($displayMenu['children'] as $child)
                                     <li>
                                         <a href="{{ $child['route'] }}"
                                             @click="sidebarOpen = false; open = false"
