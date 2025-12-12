@@ -5,28 +5,29 @@ Migration `2025_12_11_095930_add_work_hours_to_production_daily_grades_table` ga
 
 ## Solusi
 
-### Opsi 1: Mark Migration sebagai Sudah Dijalankan (Jika kolom sudah ada semua)
-Jika semua kolom (`target_per_hour`, `start_time`, `end_time`, `break_duration`) sudah ada di tabel:
+### Opsi 1: Via SQL (Paling Mudah - Recommended)
+Jalankan query SQL ini di phpMyAdmin atau database client Hostinger:
+
+```sql
+-- Hapus record migration yang gagal
+DELETE FROM migrations 
+WHERE migration = '2025_12_11_095930_add_work_hours_to_production_daily_grades_table';
+```
+
+Lalu jalankan:
+```bash
+php artisan migrate
+```
+
+### Opsi 1b: Via PHP Script
+Jika tinker tidak bisa digunakan (shell_exec disabled):
 
 ```bash
-# Cek apakah kolom sudah ada
-php artisan tinker
->>> Schema::hasColumn('production_daily_grades', 'target_per_hour')
->>> Schema::hasColumn('production_daily_grades', 'start_time')
->>> Schema::hasColumn('production_daily_grades', 'end_time')
->>> Schema::hasColumn('production_daily_grades', 'break_duration')
->>> exit
+# Upload file fix_migration.php ke root project
+# Jalankan via browser: https://yourdomain.com/fix_migration.php
+# ATAU via CLI: php fix_migration.php
 
-# Jika semua kolom sudah ada, insert record ke migrations table
-php artisan tinker
->>> DB::table('migrations')->insert([
-    'migration' => '2025_12_11_095930_add_work_hours_to_production_daily_grades_table',
-    'batch' => DB::table('migrations')->max('batch') + 1
-]);
->>> exit
-
-# Lalu lanjutkan migration lainnya
-php artisan migrate
+# Setelah selesai, HAPUS file fix_migration.php untuk keamanan!
 ```
 
 ### Opsi 2: Hapus Record Migration yang Gagal, Lalu Jalankan Lagi
