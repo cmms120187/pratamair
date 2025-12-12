@@ -162,6 +162,32 @@
                 </div>
             </div>
 
+            <!-- Production Downtime Section -->
+            <div class="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">Downtime Produksi & Kualitas</h3>
+                    <button type="button" id="addDowntimeBtn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded shadow transition text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Tambah Downtime
+                    </button>
+                </div>
+                <p class="text-sm text-gray-600 mb-4">Catat downtime terkait proses produksi, kualitas, material, changeover, dll (selain breakdown mesin)</p>
+                
+                <div id="downtimeContainer" class="space-y-4">
+                    @if(isset($existingDowntimes) && $existingDowntimes->count() > 0)
+                        @foreach($existingDowntimes as $index => $downtime)
+                            @include('production_daily.partials.downtime-entry', ['downtime' => $downtime, 'index' => $index])
+                        @endforeach
+                    @endif
+                </div>
+                
+                <div id="noDowntimeMessage" class="text-center py-4 text-gray-500 text-sm" style="{{ (isset($existingDowntimes) && $existingDowntimes->count() > 0) ? 'display: none;' : '' }}">
+                    Belum ada downtime yang ditambahkan. Klik "Tambah Downtime" untuk menambahkan.
+                </div>
+            </div>
+
             <!-- Notes -->
             <div class="mt-6">
                 <label for="notes" class="block text-sm font-semibold text-gray-700 mb-2">Catatan</label>
@@ -267,6 +293,158 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial calculation
     calculateBreakDuration();
+
+    // Downtime Management
+    const downtimeContainer = document.getElementById('downtimeContainer');
+    const noDowntimeMessage = document.getElementById('noDowntimeMessage');
+    const addDowntimeBtn = document.getElementById('addDowntimeBtn');
+    let downtimeIndex = {{ isset($existingDowntimes) ? $existingDowntimes->count() : 0 }};
+
+    const downtimeTypes = @json(\App\Models\ProductionDailyDowntime::getDowntimeTypes());
+
+    // Initialize duration calculation for existing downtimes
+    document.querySelectorAll('.downtime-start-time, .downtime-end-time').forEach(input => {
+        const entry = input.closest('[data-index]');
+        const startTimeInput = entry.querySelector('.downtime-start-time');
+        const endTimeInput = entry.querySelector('.downtime-end-time');
+        const durationInput = entry.querySelector('.downtime-duration');
+        const durationMinutesInput = entry.querySelector('.downtime-duration-minutes');
+        
+        function calculateDuration() {
+            const start = startTimeInput.value;
+            const end = endTimeInput.value;
+            
+            if (start && end) {
+                const [startHour, startMin] = start.split(':').map(Number);
+                const [endHour, endMin] = end.split(':').map(Number);
+                
+                let startTotal = startHour * 60 + startMin;
+                let endTotal = endHour * 60 + endMin;
+                
+                if (endTotal < startTotal) {
+                    endTotal += 24 * 60;
+                }
+                
+                const duration = endTotal - startTotal;
+                durationInput.value = duration + ' menit';
+                durationMinutesInput.value = duration;
+            }
+        }
+        
+        startTimeInput.addEventListener('change', calculateDuration);
+        endTimeInput.addEventListener('change', calculateDuration);
+    });
+
+    // Remove button handlers for existing entries
+    document.querySelectorAll('.removeDowntimeBtn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const entry = this.closest('[data-index]');
+            entry.remove();
+            updateDowntimeNumbers();
+            if (downtimeContainer.children.length === 0) {
+                noDowntimeMessage.style.display = 'block';
+            }
+        });
+    });
+
+    function addDowntimeEntry() {
+        const entry = document.createElement('div');
+        entry.className = 'bg-white p-4 rounded-lg border border-yellow-300';
+        entry.dataset.index = downtimeIndex;
+        
+        entry.innerHTML = `
+            <div class="flex items-center justify-between mb-3">
+                <h4 class="font-semibold text-gray-700">Downtime #${downtimeIndex + 1}</h4>
+                <button type="button" class="removeDowntimeBtn text-red-600 hover:text-red-800 text-sm font-semibold">
+                    Hapus
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Jenis Downtime <span class="text-red-500">*</span></label>
+                    <select name="downtimes[${downtimeIndex}][downtime_type]" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">-- Pilih Jenis --</option>
+                        ${Object.entries(downtimeTypes).map(([key, value]) => `<option value="${key}">${value}</option>`).join('')}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Include OEE</label>
+                    <div class="flex items-center mt-2">
+                        <input type="checkbox" name="downtimes[${downtimeIndex}][include_oee]" value="1" checked class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label class="ml-2 text-sm text-gray-700">Masukkan ke perhitungan OEE</label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Waktu Mulai <span class="text-red-500">*</span></label>
+                    <input type="time" name="downtimes[${downtimeIndex}][start_time]" required class="downtime-start-time w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Waktu Selesai <span class="text-red-500">*</span></label>
+                    <input type="time" name="downtimes[${downtimeIndex}][end_time]" required class="downtime-end-time w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Durasi (Menit)</label>
+                    <input type="text" class="downtime-duration w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100" readonly>
+                    <input type="hidden" name="downtimes[${downtimeIndex}][duration_minutes]" class="downtime-duration-minutes">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Deskripsi</label>
+                    <textarea name="downtimes[${downtimeIndex}][description]" rows="2" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Keterangan downtime..."></textarea>
+                </div>
+            </div>
+        `;
+        
+        downtimeContainer.appendChild(entry);
+        noDowntimeMessage.style.display = 'none';
+        
+        const startTimeInput = entry.querySelector('.downtime-start-time');
+        const endTimeInput = entry.querySelector('.downtime-end-time');
+        const durationInput = entry.querySelector('.downtime-duration');
+        const durationMinutesInput = entry.querySelector('.downtime-duration-minutes');
+        
+        function calculateDuration() {
+            const start = startTimeInput.value;
+            const end = endTimeInput.value;
+            
+            if (start && end) {
+                const [startHour, startMin] = start.split(':').map(Number);
+                const [endHour, endMin] = end.split(':').map(Number);
+                
+                let startTotal = startHour * 60 + startMin;
+                let endTotal = endHour * 60 + endMin;
+                
+                if (endTotal < startTotal) {
+                    endTotal += 24 * 60;
+                }
+                
+                const duration = endTotal - startTotal;
+                durationInput.value = duration + ' menit';
+                durationMinutesInput.value = duration;
+            }
+        }
+        
+        startTimeInput.addEventListener('change', calculateDuration);
+        endTimeInput.addEventListener('change', calculateDuration);
+        
+        entry.querySelector('.removeDowntimeBtn').addEventListener('click', function() {
+            entry.remove();
+            updateDowntimeNumbers();
+            if (downtimeContainer.children.length === 0) {
+                noDowntimeMessage.style.display = 'block';
+            }
+        });
+        
+        downtimeIndex++;
+    }
+
+    function updateDowntimeNumbers() {
+        const entries = downtimeContainer.querySelectorAll('[data-index]');
+        entries.forEach((entry, index) => {
+            entry.querySelector('h4').textContent = `Downtime #${index + 1}`;
+        });
+    }
+
+    addDowntimeBtn.addEventListener('click', addDowntimeEntry);
 
     // Load processes when plant is selected
     function loadProcesses(plantName) {

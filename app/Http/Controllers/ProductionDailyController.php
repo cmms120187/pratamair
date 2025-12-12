@@ -405,7 +405,12 @@ class ProductionDailyController extends Controller
         $lines = $roomErps->pluck('line_name')->filter()->unique()->sort()->values();
         $rooms = $roomErps;
 
-        return view('production_daily.edit', compact('productionDaily', 'plants', 'processes', 'lines', 'rooms', 'roomErps', 'roomErp'));
+        // Get existing downtimes
+        $existingDowntimes = ProductionDailyDowntime::where('production_daily_grade_id', $productionDaily->id)
+            ->orderBy('start_time', 'asc')
+            ->get();
+
+        return view('production_daily.edit', compact('productionDaily', 'plants', 'processes', 'lines', 'rooms', 'roomErps', 'roomErp', 'existingDowntimes'));
     }
 
     /**
