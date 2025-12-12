@@ -91,7 +91,7 @@
         @if(count($oeeData) > 0 && count($plantOeeData['labels']) > 0)
         <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
             <h2 class="text-xl font-bold text-gray-800 mb-4">Grafik OEE per Plant (Production)</h2>
-            <p class="text-sm text-gray-600 mb-4">Rata-rata OEE untuk setiap Plant dengan kategori Production</p>
+            <p class="text-sm text-gray-600 mb-4">Rata-rata OEE untuk setiap Plant dengan kategori Production. Klik bar untuk melihat detail Availability, Performance, dan Quality.</p>
             <div class="relative" style="height: 400px;">
                 <canvas id="plantOeeChart"></canvas>
             </div>
@@ -102,12 +102,32 @@
         @if(count($oeeData) > 0 && count($summaryData['labels']) > 0)
         <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
             <h2 class="text-xl font-bold text-gray-800 mb-4">Grafik OEE per Hari</h2>
-            <p class="text-sm text-gray-600 mb-4">Trend OEE Components per Hari</p>
+            <p class="text-sm text-gray-600 mb-4">Trend OEE per Hari. Klik bar untuk melihat detail Availability, Performance, dan Quality.</p>
             <div class="relative" style="height: 400px;">
                 <canvas id="oeeChart"></canvas>
             </div>
         </div>
         @endif
+
+        <!-- Modal untuk Detail OEE -->
+        <div id="oeeDetailModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-black bg-opacity-50" onclick="document.getElementById('oeeDetailModal').classList.add('hidden')"></div>
+                <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold text-gray-800" id="modalTitle">Detail OEE</h3>
+                        <button onclick="document.getElementById('oeeDetailModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="modalContent" class="space-y-4">
+                        <!-- Content will be filled dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- OEE Summary Cards -->
         @if(count($oeeData) > 0)
@@ -281,32 +301,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (plantCtx) {
         const plantOeeData = @json($plantOeeData);
         
-        new Chart(plantCtx, {
+        const plantChart = new Chart(plantCtx, {
             type: 'bar',
             data: {
                 labels: plantOeeData.labels,
                 datasets: [
-                    {
-                        label: 'Availability (%)',
-                        data: plantOeeData.availability,
-                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                        borderColor: 'rgba(59, 130, 246, 1)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Performance (%)',
-                        data: plantOeeData.performance,
-                        backgroundColor: 'rgba(234, 179, 8, 0.7)',
-                        borderColor: 'rgba(234, 179, 8, 1)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Quality (%)',
-                        data: plantOeeData.quality,
-                        backgroundColor: 'rgba(34, 197, 94, 0.7)',
-                        borderColor: 'rgba(34, 197, 94, 1)',
-                        borderWidth: 1
-                    },
                     {
                         label: 'OEE (%)',
                         data: plantOeeData.oee,
@@ -319,16 +318,37 @@ document.addEventListener('DOMContentLoaded', function() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                onHover: (event, elements) => {
+                    event.native.target.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+                },
+                onClick: (event, elements) => {
+                    if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const plantName = plantOeeData.labels[index];
+                        const availability = plantOeeData.availability[index];
+                        const performance = plantOeeData.performance[index];
+                        const quality = plantOeeData.quality[index];
+                        const oee = plantOeeData.oee[index];
+                        
+                        showOeeDetailModal(plantName, availability, performance, quality, oee, 'Plant');
+                    }
+                },
                 plugins: {
                     legend: {
-                        position: 'top',
+                        display: false
                     },
                     title: {
                         display: false
                     },
                     tooltip: {
-                        mode: 'index',
-                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return 'OEE: ' + context.parsed.y.toFixed(2) + '%';
+                            },
+                            afterLabel: function(context) {
+                                return 'Klik untuk detail AR, PR, QR';
+                            }
+                        }
                     },
                     datalabels: {
                         anchor: 'end',
@@ -352,9 +372,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 return value + '%';
                             }
                         }
-                    },
-                    x: {
-                        stacked: false,
                     }
                 }
             }
@@ -368,32 +385,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (ctx) {
         const summaryData = @json($summaryData);
         
-        new Chart(ctx, {
+        const dailyChart = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: summaryData.labels,
                 datasets: [
-                    {
-                        label: 'Availability (%)',
-                        data: summaryData.availability,
-                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                        borderColor: 'rgba(59, 130, 246, 1)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Performance (%)',
-                        data: summaryData.performance,
-                        backgroundColor: 'rgba(234, 179, 8, 0.7)',
-                        borderColor: 'rgba(234, 179, 8, 1)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Quality (%)',
-                        data: summaryData.quality,
-                        backgroundColor: 'rgba(34, 197, 94, 0.7)',
-                        borderColor: 'rgba(34, 197, 94, 1)',
-                        borderWidth: 1
-                    },
                     {
                         label: 'OEE (%)',
                         data: summaryData.oee,
@@ -406,16 +402,37 @@ document.addEventListener('DOMContentLoaded', function() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                onHover: (event, elements) => {
+                    event.native.target.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+                },
+                onClick: (event, elements) => {
+                    if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const date = summaryData.labels[index];
+                        const availability = summaryData.availability[index];
+                        const performance = summaryData.performance[index];
+                        const quality = summaryData.quality[index];
+                        const oee = summaryData.oee[index];
+                        
+                        showOeeDetailModal(date, availability, performance, quality, oee, 'Tanggal');
+                    }
+                },
                 plugins: {
                     legend: {
-                        position: 'top',
+                        display: false
                     },
                     title: {
                         display: false
                     },
                     tooltip: {
-                        mode: 'index',
-                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return 'OEE: ' + context.parsed.y.toFixed(2) + '%';
+                            },
+                            afterLabel: function(context) {
+                                return 'Klik untuk detail AR, PR, QR';
+                            }
+                        }
                     }
                 },
                 scales: {
@@ -427,15 +444,71 @@ document.addEventListener('DOMContentLoaded', function() {
                                 return value + '%';
                             }
                         }
-                    },
-                    x: {
-                        stacked: false,
                     }
                 }
             }
         });
     }
     @endif
+
+    // Function to show OEE detail modal
+    function showOeeDetailModal(label, availability, performance, quality, oee, type) {
+        const modal = document.getElementById('oeeDetailModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalContent = document.getElementById('modalContent');
+        
+        modalTitle.textContent = `Detail OEE - ${type}: ${label}`;
+        
+        modalContent.innerHTML = `
+            <div class="space-y-4">
+                <div class="bg-purple-50 border-l-4 border-purple-500 p-4 rounded">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-semibold text-gray-700">OEE (Overall Equipment Effectiveness)</span>
+                        <span class="text-2xl font-bold text-purple-600">${oee.toFixed(2)}%</span>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 gap-3">
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-sm font-semibold text-gray-700">AR (Availability Rate)</span>
+                                <p class="text-xs text-gray-600 mt-1">Ketersediaan mesin untuk produksi</p>
+                            </div>
+                            <span class="text-xl font-bold text-blue-600">${availability.toFixed(2)}%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-sm font-semibold text-gray-700">PR (Performance Rate)</span>
+                                <p class="text-xs text-gray-600 mt-1">Kinerja produksi vs target</p>
+                            </div>
+                            <span class="text-xl font-bold text-yellow-600">${performance.toFixed(2)}%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-green-50 border-l-4 border-green-500 p-3 rounded">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-sm font-semibold text-gray-700">QR (Quality Rate)</span>
+                                <p class="text-xs text-gray-600 mt-1">Tingkat kualitas produk</p>
+                            </div>
+                            <span class="text-xl font-bold text-green-600">${quality.toFixed(2)}%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 p-3 rounded text-xs text-gray-600">
+                    <p><strong>Rumus:</strong> OEE = AR × PR × QR</p>
+                    <p class="mt-1">${availability.toFixed(2)}% × ${performance.toFixed(2)}% × ${quality.toFixed(2)}% = ${oee.toFixed(2)}%</p>
+                </div>
+            </div>
+        `;
+        
+        modal.classList.remove('hidden');
+    }
 });
 </script>
 @endif
