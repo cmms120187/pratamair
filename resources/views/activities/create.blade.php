@@ -25,24 +25,24 @@
             <div class="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <div class="mb-3">
                     <label for="plant_filter" class="block text-sm font-semibold text-gray-700 mb-2">
-                        Pilih Plant (untuk filter Room ERP)
+                        Pilih Gedung (untuk filter Area)
                     </label>
                     <select id="plant_filter" 
                             class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-                        <option value="">-- Pilih Plant (opsional) --</option>
+                        <option value="">-- Pilih Gedung (opsional) --</option>
                         @foreach($plants as $plant)
                             <option value="{{ $plant->name }}">{{ $plant->name }}</option>
                         @endforeach
                     </select>
-                    <p class="text-xs text-gray-500 mt-1">Pilih plant untuk memfilter pilihan Room ERP</p>
+                    <p class="text-xs text-gray-500 mt-1">Pilih Gedung untuk memfilter pilihan Area</p>
                 </div>
                 <div>
                     <label for="room_erp_select" class="block text-sm font-semibold text-gray-700 mb-2">
-                        Pilih Room ERP (untuk auto-fill Plant/Process/Line/Room)
+                        Pilih Area (untuk auto-fill Plant/Process/Line/Room)
                     </label>
                     <select id="room_erp_select" 
                             class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-                        <option value="">-- Pilih Room ERP atau isi manual --</option>
+                        <option value="">-- Pilih Area --</option>
                         @foreach($roomErps as $roomErp)
                             <option value="{{ $roomErp->id }}" 
                                     data-plant="{{ $roomErp->plant_name ?? '' }}"
@@ -57,13 +57,13 @@
                             </option>
                         @endforeach
                     </select>
-                    <p class="text-xs text-gray-500 mt-1">Pilih room untuk mengisi otomatis field Plant, Process, Line, dan Room Name</p>
+                    <p class="text-xs text-gray-500 mt-1">Pilih area untuk mengisi otomatis field Plant, Process, Line, dan Room Name</p>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
-                    <label for="plant" class="block text-sm font-semibold text-gray-700 mb-2">Plant</label>
+                    <label for="plant" class="block text-sm font-semibold text-gray-700 mb-2">Gedung</label>
                     <input type="text" name="plant" id="plant" value="{{ old('plant') }}" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('plant') border-red-500 @enderror" placeholder="Akan terisi otomatis dari Room ERP" readonly>
                     @error('plant')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
@@ -73,15 +73,15 @@
                     @error('process')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
                 <div>
-                    <label for="line" class="block text-sm font-semibold text-gray-700 mb-2">Line</label>
+                    <label for="line" class="block text-sm font-semibold text-gray-700 mb-2">Line/Lantai</label>
                     <input type="text" name="line" id="line" value="{{ old('line') }}" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('line') border-red-500 @enderror" placeholder="Akan terisi otomatis dari Room ERP" readonly>
                     @error('line')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
             </div>
 
             <div class="mb-4">
-                <label for="room_name" class="block text-sm font-semibold text-gray-700 mb-2">Room Name</label>
-                <input type="text" name="room_name" id="room_name" value="{{ old('room_name') }}" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('room_name') border-red-500 @enderror" placeholder="Akan terisi otomatis dari Room ERP" readonly>
+                <label for="room_name" class="block text-sm font-semibold text-gray-700 mb-2">Area</label>
+                <input type="text" name="room_name" id="room_name" value="{{ old('room_name') }}" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('room_name') border-red-500 @enderror" placeholder="Akan terisi otomatis dari Area terpilih" readonly>
                 @error('room_name')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
             </div>
 
@@ -111,7 +111,7 @@
             </div>
 
             <div class="mb-4">
-                <label for="remarks" class="block text-sm font-semibold text-gray-700 mb-2">Remarks</label>
+                <label for="remarks" class="block text-sm font-semibold text-gray-700 mb-2">Remarks / Detail Kegiatan</label>
                 <textarea name="remarks" id="remarks" rows="3" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('remarks') border-red-500 @enderror" placeholder="Enter remarks">{{ old('remarks') }}</textarea>
                 @error('remarks')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
             </div>

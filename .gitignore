@@ -6,7 +6,7 @@
 node_modules
 
 # Environment files
-.env
+# .env - Keep in repository for server, but skip local changes using: git update-index --skip-worktree .env
 .env.sample
 
 # Laravel hot reload file
