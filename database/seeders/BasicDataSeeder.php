@@ -26,14 +26,18 @@ class BasicDataSeeder extends Seeder
             ['id' => 10, 'name' => 'Engineering', 'created_at' => '2025-11-27 18:39:28', 'updated_at' => '2025-11-27 18:39:28'],
             ['id' => 11, 'name' => 'PCC', 'created_at' => '2025-11-27 18:39:28', 'updated_at' => '2025-11-27 18:39:28'],
         ];
-        DB::table('plants')->insert($plants);
+        foreach ($plants as $plant) {
+            DB::table('plants')->updateOrInsert(['id' => $plant['id']], $plant);
+        }
 
         // Processes
         $processes = [
             ['id' => 1, 'name' => 'Utility', 'created_at' => '2025-11-26 17:41:03', 'updated_at' => '2025-11-26 17:41:03'],
             ['id' => 2, 'name' => 'Supporting', 'created_at' => '2025-11-27 19:44:49', 'updated_at' => '2025-11-27 19:44:49'],
         ];
-        DB::table('processes')->insert($processes);
+        foreach ($processes as $process) {
+            DB::table('processes')->updateOrInsert(['id' => $process['id']], $process);
+        }
 
         // Lines
         $lines = [
@@ -57,7 +61,9 @@ class BasicDataSeeder extends Seeder
             ['id' => 18, 'name' => 'Utility', 'plant_id' => 8, 'process_id' => null, 'created_at' => '2025-11-27 18:39:28', 'updated_at' => '2025-11-27 18:39:28'],
             ['id' => 19, 'name' => 'Utility', 'plant_id' => 11, 'process_id' => null, 'created_at' => '2025-11-27 18:39:28', 'updated_at' => '2025-11-27 18:39:28'],
         ];
-        DB::table('lines')->insert($lines);
+        foreach ($lines as $line) {
+            DB::table('lines')->updateOrInsert(['id' => $line['id']], $line);
+        }
 
         // Rooms
         $rooms = [
@@ -80,7 +86,9 @@ class BasicDataSeeder extends Seeder
             ['id' => 17, 'name' => 'Utility IDC', 'category' => 'Utility', 'plant_id' => 11, 'line_id' => 19, 'process_id' => null, 'description' => null, 'created_at' => '2025-11-27 18:39:28', 'updated_at' => '2025-11-27 18:39:28'],
             ['id' => 18, 'name' => 'Utility Press O/S', 'category' => 'Utility', 'plant_id' => 6, 'line_id' => 9, 'process_id' => null, 'description' => null, 'created_at' => '2025-11-27 18:39:28', 'updated_at' => '2025-11-27 18:39:28'],
         ];
-        DB::table('rooms')->insert($rooms);
+        foreach ($rooms as $room) {
+            DB::table('rooms')->updateOrInsert(['id' => $room['id']], $room);
+        }
 
         // Room ERP
         $roomErp = [
@@ -102,7 +110,9 @@ class BasicDataSeeder extends Seeder
             ['id' => 16, 'kode_room' => '*001610*', 'name' => 'Utility IDC', 'category' => 'Utility', 'plant_name' => 'PCC', 'line_name' => 'Utility', 'process_name' => 'Supporting', 'description' => null, 'created_at' => '2025-11-26 20:45:37', 'updated_at' => '2025-11-26 20:45:37'],
             ['id' => 17, 'kode_room' => '*001613*', 'name' => 'Utility Press O/S', 'category' => 'Utility', 'plant_name' => 'Plant E2', 'line_name' => 'Utility', 'process_name' => 'Supporting', 'description' => null, 'created_at' => '2025-11-26 20:45:37', 'updated_at' => '2025-11-26 20:45:37'],
         ];
-        DB::table('room_erp')->insert($roomErp);
+        foreach ($roomErp as $room) {
+            DB::table('room_erp')->updateOrInsert(['id' => $room['id']], $room);
+        }
 
         // Brands
         $brands = [
@@ -113,7 +123,9 @@ class BasicDataSeeder extends Seeder
             ['id' => 5, 'name' => 'CUMMINS', 'created_at' => '2025-11-27 17:00:52', 'updated_at' => '2025-11-27 17:00:52'],
             ['id' => 6, 'name' => 'CATERPILLAR', 'created_at' => '2025-11-27 17:00:52', 'updated_at' => '2025-11-27 17:00:52'],
         ];
-        DB::table('brands')->insert($brands);
+        foreach ($brands as $brand) {
+            DB::table('brands')->updateOrInsert(['id' => $brand['id']], $brand);
+        }
 
         // Groups
         $groups = [
@@ -122,7 +134,9 @@ class BasicDataSeeder extends Seeder
             ['id' => 3, 'name' => 'Boiler', 'created_at' => '2025-11-27 00:33:58', 'updated_at' => '2025-11-27 00:33:58'],
             ['id' => 4, 'name' => 'Genset', 'created_at' => '2025-11-27 00:34:17', 'updated_at' => '2025-11-27 00:34:17'],
         ];
-        DB::table('groups')->insert($groups);
+        foreach ($groups as $group) {
+            DB::table('groups')->updateOrInsert(['id' => $group['id']], $group);
+        }
 
         // Systems
         $systems = [
@@ -137,7 +151,9 @@ class BasicDataSeeder extends Seeder
             ['id' => 9, 'nama_sistem' => 'Handling & Sircutalion (Piping)', 'deskripsi' => 'Sistem yang memindahkan material atau produk di dalam fasilitas, seperti konveyor, crane, forklift, robotics, dan sistem penyimpanan otomatis.', 'created_at' => '2025-11-26 17:53:26', 'updated_at' => '2025-11-27 19:04:30'],
             ['id' => 10, 'nama_sistem' => 'Safety', 'deskripsi' => 'Komponen dan fitur yang dirancang untuk melindungi operator dan mesin, termasuk emergency stop (E-stop), safety interlocks, guarding, dan pressure relief valves.', 'created_at' => '2025-11-26 17:54:11', 'updated_at' => '2025-11-26 17:54:11'],
         ];
-        DB::table('systems')->insert($systems);
+        foreach ($systems as $system) {
+            DB::table('systems')->updateOrInsert(['id' => $system['id']], $system);
+        }
 
         // Group System
         $groupSystem = [
@@ -158,7 +174,9 @@ class BasicDataSeeder extends Seeder
             ['id' => 15, 'group_id' => 4, 'system_id' => 7, 'created_at' => null, 'updated_at' => null],
             ['id' => 16, 'group_id' => 4, 'system_id' => 1, 'created_at' => null, 'updated_at' => null],
         ];
-        DB::table('group_system')->insert($groupSystem);
+        foreach ($groupSystem as $gs) {
+            DB::table('group_system')->updateOrInsert(['id' => $gs['id']], $gs);
+        }
 
         // Machine Types
         $machineTypes = [
@@ -167,7 +185,9 @@ class BasicDataSeeder extends Seeder
             ['id' => 8, 'name' => 'Compressor', 'group_id' => 1, 'model' => 'GRH2-100A', 'group' => null, 'brand' => 'HANSHIN', 'description' => null, 'photo' => 'machine-types/W2fabLVBbCTN4GuCDxZGwGplsVWg4xszqVEuUIgm.jpg', 'created_at' => '2025-11-27 00:33:13', 'updated_at' => '2025-11-27 02:18:01'],
             ['id' => 9, 'name' => 'Generator Set', 'group_id' => 4, 'model' => '200KV ABC C 200 "CUMMINS"', 'group' => null, 'brand' => 'CUMMINS', 'description' => null, 'photo' => 'machine-types/xtaSgg7ON5fodwdQqGKaO9l0nUzrPYe6sMSezdum.jpg', 'created_at' => '2025-11-27 00:33:13', 'updated_at' => '2025-11-27 02:10:58'],
         ];
-        DB::table('machine_types')->insert($machineTypes);
+        foreach ($machineTypes as $mt) {
+            DB::table('machine_types')->updateOrInsert(['id' => $mt['id']], $mt);
+        }
 
         // Models
         $models = [
@@ -181,7 +201,9 @@ class BasicDataSeeder extends Seeder
             ['id' => 13, 'name' => 'CUMMIN KTA 19G4 500KVA/400KW', 'brand_id' => 5, 'type_id' => 9, 'photo' => null, 'created_at' => '2025-11-27 17:01:06', 'updated_at' => '2025-11-27 17:01:06'],
             ['id' => 14, 'name' => 'CAT  3516 ,1.825 KVA', 'brand_id' => 6, 'type_id' => 9, 'photo' => null, 'created_at' => '2025-11-27 17:01:06', 'updated_at' => '2025-11-27 17:01:06'],
         ];
-        DB::table('models')->insert($models);
+        foreach ($models as $model) {
+            DB::table('models')->updateOrInsert(['id' => $model['id']], $model);
+        }
 
         // Machine Type System
         $machineTypeSystem = [
@@ -203,7 +225,9 @@ class BasicDataSeeder extends Seeder
             ['id' => 16, 'machine_type_id' => 7, 'system_id' => 7, 'created_at' => null, 'updated_at' => null],
             ['id' => 17, 'machine_type_id' => 7, 'system_id' => 8, 'created_at' => null, 'updated_at' => null],
         ];
-        DB::table('machine_type_system')->insert($machineTypeSystem);
+        foreach ($machineTypeSystem as $mts) {
+            DB::table('machine_type_system')->updateOrInsert(['id' => $mts['id']], $mts);
+        }
     }
 }
 

@@ -81,6 +81,8 @@ class ActivitiesSeeder extends Seeder
             ['id' => 66, 'date' => '2025-10-04', 'kode_room' => '*000078*', 'plant' => 'Engineering', 'process' => 'Supporting', 'line' => 'Utility', 'room_name' => 'Panel MDB', 'start' => '15:00', 'stop' => '18:00', 'duration' => 180, 'description' => 'monitoring panel pj 023-pj 112. pasang radiator dan cover compresor area grinding', 'remarks' => null, 'id_mekanik' => '38187', 'nama_mekanik' => 'TB WAHYU HIDAYAT', 'id_mesin' => null, 'photos' => '[]', 'created_at' => '2025-11-28 00:23:36', 'updated_at' => '2025-11-28 19:32:17'],
         ];
         
-        DB::table('activities')->insert($activities);
+        foreach ($activities as $activity) {
+            DB::table('activities')->updateOrInsert(['id' => $activity['id']], $activity);
+        }
     }
 }

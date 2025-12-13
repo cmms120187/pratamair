@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\DowntimeErp;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class DowntimeErpController extends Controller
 {
@@ -335,5 +338,259 @@ class DowntimeErpController extends Controller
                 'line' => $machine->line->name ?? '-',
             ]
         ]);
+    }
+
+    /**
+     * Download Excel file with current data
+     */
+    public function download(Request $request)
+    {
+        try {
+            // Check if user is admin
+            if (auth()->user()->role !== 'admin') {
+                abort(403, 'Unauthorized. Only admin can download data.');
+            }
+            $downtimeErps = DowntimeErp::orderBy('date', 'desc')->get();
+            
+            $spreadsheet = new Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            
+            // Set header
+            $headers = [
+                'Date', 'Plant', 'Process', 'Line', 'Room Name', 'ID Machine', 'Type Machine', 
+                'Model Machine', 'Brand Machine', 'Stop Production', 'Respon Mechanic', 
+                'Start Production', 'Duration', 'Standar Time', 'Problem Downtime', 'Problem MM',
+                'Reason Downtime', 'Action Downtime', 'Part', 'ID Mekanik', 'Name Mekanik',
+                'ID Leader', 'Name Leader', 'ID GL', 'Name GL', 'ID Coord', 'Name Coord', 'Group Problem'
+            ];
+            
+            $col = 'A';
+            foreach ($headers as $header) {
+                $sheet->setCellValue($col . '1', $header);
+                $col++;
+            }
+            
+            // Style header
+            $headerStyle = [
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => '4472C4']
+                ],
+                'font' => ['color' => ['rgb' => 'FFFFFF'], 'bold' => true],
+            ];
+            $sheet->getStyle('A1:' . $col . '1')->applyFromArray($headerStyle);
+            
+            // Write data
+            $row = 2;
+            foreach ($downtimeErps as $downtimeErp) {
+                $col = 'A';
+                $values = [
+                    $downtimeErp->date,
+                    $downtimeErp->plant ?? '',
+                    $downtimeErp->process ?? '',
+                    $downtimeErp->line ?? '',
+                    $downtimeErp->roomName ?? '',
+                    $downtimeErp->idMachine ?? '',
+                    $downtimeErp->typeMachine ?? '',
+                    $downtimeErp->modelMachine ?? '',
+                    $downtimeErp->brandMachine ?? '',
+                    $downtimeErp->stopProduction ?? '',
+                    $downtimeErp->responMechanic ?? '',
+                    $downtimeErp->startProduction ?? '',
+                    $downtimeErp->duration ?? '',
+                    $downtimeErp->Standar_Time ?? '',
+                    $downtimeErp->problemDowntime ?? '',
+                    $downtimeErp->Problem_MM ?? '',
+                    $downtimeErp->reasonDowntime ?? '',
+                    $downtimeErp->actionDowtime ?? '',
+                    $downtimeErp->Part ?? '',
+                    $downtimeErp->idMekanik ?? '',
+                    $downtimeErp->nameMekanik ?? '',
+                    $downtimeErp->idLeader ?? '',
+                    $downtimeErp->nameLeader ?? '',
+                    $downtimeErp->idGL ?? '',
+                    $downtimeErp->nameGL ?? '',
+                    $downtimeErp->idCoord ?? '',
+                    $downtimeErp->nameCoord ?? '',
+                    $downtimeErp->groupProblem ?? '',
+                ];
+                
+                foreach ($values as $value) {
+                    $sheet->setCellValue($col . $row, $value);
+                    $col++;
+                }
+                $row++;
+            }
+            
+            // Auto-size columns
+            foreach (range('A', 'AB') as $col) {
+                $sheet->getColumnDimension($col)->setAutoSize(true);
+            }
+            
+            $filename = 'downtime_erp_' . date('Y-m-d_His') . '.xlsx';
+            
+            // Create temporary file
+            $tempFile = tempnam(sys_get_temp_dir(), 'downtime_erp_');
+            $writer = new Xlsx($spreadsheet);
+            $writer->save($tempFile);
+            
+            return response()->download($tempFile, $filename, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ])->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            \Log::error('Error downloading Excel file: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Error generating Excel file: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Upload Excel file and import data
+     */
+    public function upload(Request $request)
+    {
+        $request->validate([
+            'excel_file' => 'required|file|mimes:xlsx,xls|max:10240', // Max 10MB
+        ]);
+
+        try {
+            $file = $request->file('excel_file');
+            $spreadsheet = IOFactory::load($file->getRealPath());
+            $worksheet = $spreadsheet->getActiveSheet();
+            
+            // Get header row (first row)
+            $header = [];
+            $highestColumn = $worksheet->getHighestColumn();
+            $highestColumnIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($highestColumn);
+            
+            // Read header from row 1
+            for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
+                $cellValue = $worksheet->getCell($columnLetter . '1')->getValue();
+                $header[] = trim($cellValue ?? '');
+            }
+            
+            if (empty($header) || count($header) < 1) {
+                return back()->withErrors(['excel_file' => 'Invalid Excel format. Please check the file format.']);
+            }
+            
+            $rowCount = 0;
+            $errorCount = 0;
+            $highestRow = $worksheet->getHighestRow();
+            
+            // Start from row 2 (skip header)
+            for ($row = 2; $row <= $highestRow; $row++) {
+                try {
+                    $rowData = [];
+                    
+                    // Read data from current row
+                    for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                        $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
+                        $cellValue = $worksheet->getCell($columnLetter . $row)->getValue();
+                        $rowData[] = trim($cellValue ?? '');
+                    }
+                    
+                    // Skip empty rows
+                    if (empty(array_filter($rowData))) {
+                        continue;
+                    }
+                    
+                    if (count($rowData) !== count($header)) {
+                        $errorCount++;
+                        continue;
+                    }
+                    
+                    $data = array_combine($header, $rowData);
+                    
+                    // Map Excel columns to database columns
+                    $downtimeData = [
+                        'date' => $this->parseDate($data['date'] ?? $data['Date'] ?? ''),
+                        'plant' => trim($data['plant'] ?? $data['Plant'] ?? '') ?: null,
+                        'process' => trim($data['process'] ?? $data['Process'] ?? '') ?: null,
+                        'line' => trim($data['line'] ?? $data['Line'] ?? '') ?: null,
+                        'roomName' => trim($data['roomName'] ?? $data['Room Name'] ?? $data['room_name'] ?? '') ?: null,
+                        'idMachine' => trim($data['idMachine'] ?? $data['ID Machine'] ?? $data['id_machine'] ?? '') ?: null,
+                        'typeMachine' => trim($data['typeMachine'] ?? $data['Type Machine'] ?? $data['type_machine'] ?? '') ?: null,
+                        'modelMachine' => trim($data['modelMachine'] ?? $data['Model Machine'] ?? $data['model_machine'] ?? '') ?: null,
+                        'brandMachine' => trim($data['brandMachine'] ?? $data['Brand Machine'] ?? $data['brand_machine'] ?? '') ?: null,
+                        'stopProduction' => trim($data['stopProduction'] ?? $data['Stop Production'] ?? $data['stop_production'] ?? '') ?: null,
+                        'responMechanic' => trim($data['responMechanic'] ?? $data['Respon Mechanic'] ?? $data['respon_mechanic'] ?? '') ?: null,
+                        'startProduction' => trim($data['startProduction'] ?? $data['Start Production'] ?? $data['start_production'] ?? '') ?: null,
+                        'duration' => trim($data['duration'] ?? $data['Duration'] ?? '') ?: null,
+                        'Standar_Time' => trim($data['Standar_Time'] ?? $data['Standar Time'] ?? $data['standar_time'] ?? '') ?: null,
+                        'problemDowntime' => trim($data['problemDowntime'] ?? $data['Problem Downtime'] ?? $data['problem_downtime'] ?? '') ?: null,
+                        'Problem_MM' => trim($data['Problem_MM'] ?? $data['Problem MM'] ?? $data['problem_mm'] ?? '') ?: null,
+                        'reasonDowntime' => trim($data['reasonDowntime'] ?? $data['Reason Downtime'] ?? $data['reason_downtime'] ?? '') ?: null,
+                        'actionDowtime' => trim($data['actionDowtime'] ?? $data['Action Downtime'] ?? $data['action_downtime'] ?? '') ?: null,
+                        'Part' => trim($data['Part'] ?? $data['part'] ?? '') ?: null,
+                        'idMekanik' => trim($data['idMekanik'] ?? $data['ID Mekanik'] ?? $data['id_mekanik'] ?? '') ?: null,
+                        'nameMekanik' => trim($data['nameMekanik'] ?? $data['Name Mekanik'] ?? $data['name_mekanik'] ?? '') ?: null,
+                        'idLeader' => trim($data['idLeader'] ?? $data['ID Leader'] ?? $data['id_leader'] ?? '') ?: null,
+                        'nameLeader' => trim($data['nameLeader'] ?? $data['Name Leader'] ?? $data['name_leader'] ?? '') ?: null,
+                        'idGL' => trim($data['idGL'] ?? $data['ID GL'] ?? $data['id_gl'] ?? '') ?: null,
+                        'nameGL' => trim($data['nameGL'] ?? $data['Name GL'] ?? $data['name_gl'] ?? '') ?: null,
+                        'idCoord' => trim($data['idCoord'] ?? $data['ID Coord'] ?? $data['id_coord'] ?? '') ?: null,
+                        'nameCoord' => trim($data['nameCoord'] ?? $data['Name Coord'] ?? $data['name_coord'] ?? '') ?: null,
+                        'groupProblem' => trim($data['groupProblem'] ?? $data['Group Problem'] ?? $data['group_problem'] ?? '') ?: null,
+                    ];
+                    
+                    // Validate required fields
+                    if (empty($downtimeData['date'])) {
+                        $errorCount++;
+                        continue;
+                    }
+                    
+                    DowntimeErp::create($downtimeData);
+                    $rowCount++;
+                } catch (\Exception $e) {
+                    $errorCount++;
+                    \Log::error('Error importing downtime ERP row: ' . $e->getMessage(), [
+                        'row' => $row,
+                        'header' => $header,
+                    ]);
+                }
+            }
+            
+            $message = "Imported $rowCount rows.";
+            if ($errorCount > 0) {
+                $message .= " Skipped $errorCount rows with errors.";
+            }
+            
+            return back()->with('success', $message);
+        } catch (\Exception $e) {
+            \Log::error('Error uploading Excel file: ' . $e->getMessage());
+            return back()->withErrors(['excel_file' => 'Error reading Excel file: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Parse date from various formats
+     */
+    private function parseDate($dateValue)
+    {
+        if (empty($dateValue)) {
+            return null;
+        }
+        
+        // If it's already a date object
+        if ($dateValue instanceof \DateTime) {
+            return $dateValue->format('Y-m-d');
+        }
+        
+        // Try to parse as date string
+        try {
+            $date = \Carbon\Carbon::parse($dateValue);
+            return $date->format('Y-m-d');
+        } catch (\Exception $e) {
+            // Try Excel date format (numeric)
+            if (is_numeric($dateValue)) {
+                try {
+                    $date = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($dateValue);
+                    return $date->format('Y-m-d');
+                } catch (\Exception $e2) {
+                    return null;
+                }
+            }
+            return null;
+        }
     }
 }

@@ -52,6 +52,7 @@ return [
                 ['name' => 'Problems', 'route' => '/problems', 'icon' => 'exclamation', 'menu_key' => 'problems'],
                 ['name' => 'Reasons', 'route' => '/reasons', 'icon' => 'question', 'menu_key' => 'reasons'],
                 ['name' => 'Actions', 'route' => '/actions', 'icon' => 'bolt', 'menu_key' => 'actions'],
+                ['name' => 'Downtime ERP', 'route' => '/downtime_erp', 'icon' => 'server', 'menu_key' => 'downtime-erp'],
                 ['name' => 'Downtime ERP2', 'route' => '/downtime-erp2', 'icon' => 'server', 'menu_key' => 'downtime-erp2'],
                 ['name' => 'Work Orders', 'route' => '/work-orders', 'icon' => 'clipboard-list', 'menu_key' => 'work-orders'],
             ]

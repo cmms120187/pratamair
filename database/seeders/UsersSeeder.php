@@ -59,7 +59,7 @@ class UsersSeeder extends Seeder
         
         // Insert users one by one to handle password hashing
         foreach ($users as $user) {
-            DB::table('users')->insert($user);
+            DB::table('users')->updateOrInsert(['id' => $user['id']], $user);
         }
     }
 }

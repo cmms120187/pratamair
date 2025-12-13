@@ -23,10 +23,8 @@ class DatabaseSeeder extends Seeder
             PredictiveMaintenanceSeeder::class,
             PartsErpSeeder::class,
             ProblemsSeeder::class,
-            // Existing seeders (keep for backward compatibility)
-            SystemSeeder::class,
-            InsulationClassElectricMotorSeeder::class,
-            ISO10816StandardSeeder::class,
+            // Dummy data for testing (run last)
+            DummyDataSeeder::class,
         ]);
     }
 }

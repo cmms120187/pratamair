@@ -21,6 +21,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('downtimes', DowntimeController::class);
     
     Route::post('downtime_erp/search-machine', [DowntimeErpController::class, 'searchMachine'])->name('downtime_erp.search-machine');
+    Route::get('downtime_erp/download', [DowntimeErpController::class, 'download'])->name('downtime_erp.download')->middleware('role:admin');
+    Route::post('downtime_erp/upload', [DowntimeErpController::class, 'upload'])->name('downtime_erp.upload')->middleware('role:admin');
     Route::resource('problems', ProblemController::class);
     Route::resource('problem-mms', ProblemMmController::class);
     Route::resource('reasons', ReasonController::class);

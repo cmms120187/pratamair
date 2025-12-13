@@ -7,6 +7,7 @@ use App\Models\Activity;
 use App\Models\User;
 use App\Models\MachineErp;
 use App\Models\RoomErp;
+use App\Models\Plant;
 use App\Helpers\ImageHelper;
 use App\Helpers\DataFilterHelper;
 use Illuminate\Support\Facades\Storage;
@@ -81,10 +82,13 @@ class ActivityController extends Controller
         // Get RoomErp for dropdown (same format as MachineErp)
         $roomErps = RoomErp::orderBy('name', 'asc')->get();
         
+        // Get all plants for dropdown filter
+        $plants = Plant::orderBy('name', 'asc')->get();
+        
         // Get current logged in user
         $currentUser = auth()->user();
         
-        return view('activities.create', compact('mekaniks', 'machines', 'roomErps', 'currentUser'));
+        return view('activities.create', compact('mekaniks', 'machines', 'roomErps', 'plants', 'currentUser'));
     }
 
     /**
@@ -214,7 +218,10 @@ class ActivityController extends Controller
         // Get RoomErp for dropdown (same format as MachineErp)
         $roomErps = RoomErp::orderBy('name', 'asc')->get();
         
-        return view('activities.edit', compact('activity', 'mekaniks', 'machines', 'roomErps', 'page'));
+        // Get all plants for dropdown filter
+        $plants = Plant::orderBy('name', 'asc')->get();
+        
+        return view('activities.edit', compact('activity', 'mekaniks', 'machines', 'roomErps', 'plants', 'page'));
     }
 
     /**

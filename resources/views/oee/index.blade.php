@@ -99,10 +99,10 @@
         @endif
 
         <!-- OEE Chart -->
-        @if(count($oeeData) > 0 && count($summaryData['labels']) > 0)
+        @if(count($oeeData) > 0 && isset($summaryData['labels']) && count($summaryData['labels']) > 0 && isset($summaryData['datasets']) && count($summaryData['datasets']) > 0)
         <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Grafik OEE per Hari</h2>
-            <p class="text-sm text-gray-600 mb-4">Trend OEE per Hari. Klik bar untuk melihat detail Availability, Performance, dan Quality.</p>
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Grafik OEE per Hari (per Line)</h2>
+            <p class="text-sm text-gray-600 mb-4">Trend OEE per Hari untuk setiap Line. Setiap Line memiliki warna berbeda. Klik bar untuk melihat detail Availability, Performance, dan Quality.</p>
             <div class="relative" style="height: 400px;">
                 <canvas id="oeeChart"></canvas>
             </div>
@@ -301,19 +301,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (plantCtx) {
         const plantOeeData = @json($plantOeeData);
         
+        // Create single dataset with different colors for each bar
         const plantChart = new Chart(plantCtx, {
             type: 'bar',
             data: {
                 labels: plantOeeData.labels,
-                datasets: [
-                    {
-                        label: 'OEE (%)',
-                        data: plantOeeData.oee,
-                        backgroundColor: 'rgba(168, 85, 247, 0.7)',
-                        borderColor: 'rgba(168, 85, 247, 1)',
-                        borderWidth: 2
-                    }
-                ]
+                datasets: [{
+                    label: 'OEE (%)',
+                    data: plantOeeData.oee,
+                    backgroundColor: plantOeeData.colors,
+                    borderColor: plantOeeData.colors.map(color => color.replace(/0\.7/, '1')),
+                    borderWidth: 2
+                }]
             },
             options: {
                 responsive: true,
@@ -379,8 +378,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     @endif
 
-    // Daily OEE Chart
-    @if(count($summaryData['labels']) > 0)
+    // Daily OEE Chart - grouped by line
+    @if(count($summaryData['labels']) > 0 && count($summaryData['datasets']) > 0)
     const ctx = document.getElementById('oeeChart');
     if (ctx) {
         const summaryData = @json($summaryData);
@@ -389,15 +388,16 @@ document.addEventListener('DOMContentLoaded', function() {
             type: 'bar',
             data: {
                 labels: summaryData.labels,
-                datasets: [
-                    {
-                        label: 'OEE (%)',
-                        data: summaryData.oee,
-                        backgroundColor: 'rgba(168, 85, 247, 0.7)',
-                        borderColor: 'rgba(168, 85, 247, 1)',
-                        borderWidth: 2
-                    }
-                ]
+                datasets: summaryData.datasets.map((dataset, index) => ({
+                    label: dataset.label,
+                    data: dataset.data,
+                    backgroundColor: dataset.backgroundColor,
+                    borderColor: dataset.borderColor,
+                    borderWidth: dataset.borderWidth,
+                    availability: dataset.availability,
+                    performance: dataset.performance,
+                    quality: dataset.quality
+                }))
             },
             options: {
                 responsive: true,
@@ -407,19 +407,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 onClick: (event, elements) => {
                     if (elements.length > 0) {
-                        const index = elements[0].index;
+                        const element = elements[0];
+                        const datasetIndex = element.datasetIndex;
+                        const index = element.index;
+                        const dataset = summaryData.datasets[datasetIndex];
                         const date = summaryData.labels[index];
-                        const availability = summaryData.availability[index];
-                        const performance = summaryData.performance[index];
-                        const quality = summaryData.quality[index];
-                        const oee = summaryData.oee[index];
+                        const lineName = dataset.label;
+                        const availability = dataset.availability[index];
+                        const performance = dataset.performance[index];
+                        const quality = dataset.quality[index];
+                        const oee = dataset.data[index];
                         
-                        showOeeDetailModal(date, availability, performance, quality, oee, 'Tanggal');
+                        if (oee !== null) {
+                            showOeeDetailModal(`${lineName} - ${date}`, availability, performance, quality, oee, 'Line & Tanggal');
+                        }
                     }
                 },
                 plugins: {
                     legend: {
-                        display: false
+                        display: true,
+                        position: 'top',
                     },
                     title: {
                         display: false
@@ -427,10 +434,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return 'OEE: ' + context.parsed.y.toFixed(2) + '%';
+                                return context.dataset.label + ': ' + (context.parsed.y !== null ? context.parsed.y.toFixed(2) + '%' : 'Tidak ada data');
                             },
                             afterLabel: function(context) {
-                                return 'Klik untuk detail AR, PR, QR';
+                                if (context.parsed.y !== null) {
+                                    return 'Klik untuk detail AR, PR, QR';
+                                }
+                                return '';
                             }
                         }
                     }
@@ -444,6 +454,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                 return value + '%';
                             }
                         }
+                    },
+                    x: {
+                        stacked: false
                     }
                 }
             }

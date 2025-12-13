@@ -208,101 +208,158 @@ class OeeController extends Controller
         $lines = Line::with('process')->orderBy('name', 'asc')->get();
         $processes = Process::orderBy('name', 'asc')->get();
         
-        // Calculate summary statistics for chart
+        // Calculate summary statistics for chart - grouped by date and line
         $summaryData = [
-            'labels' => [],
-            'availability' => [],
-            'performance' => [],
-            'quality' => [],
-            'oee' => [],
+            'labels' => [], // Unique dates
+            'datasets' => [], // One dataset per line
         ];
         
-        // Group by date for chart
-        $groupedByDate = [];
+        // Get unique dates
+        $uniqueDates = [];
         foreach ($oeeData as $data) {
             $dateKey = $data['production_date']->format('Y-m-d');
-            if (!isset($groupedByDate[$dateKey])) {
-                $groupedByDate[$dateKey] = [
-                    'availability' => [],
-                    'performance' => [],
-                    'quality' => [],
-                    'oee' => [],
-                ];
+            if (!in_array($dateKey, $uniqueDates)) {
+                $uniqueDates[] = $dateKey;
             }
-            $groupedByDate[$dateKey]['availability'][] = $data['availability'];
-            $groupedByDate[$dateKey]['performance'][] = $data['performance'];
-            $groupedByDate[$dateKey]['quality'][] = $data['quality'];
-            $groupedByDate[$dateKey]['oee'][] = $data['oee'];
         }
+        sort($uniqueDates);
         
-        // Calculate averages per date
-        ksort($groupedByDate);
-        foreach ($groupedByDate as $date => $values) {
+        // Format dates for labels
+        foreach ($uniqueDates as $date) {
             $summaryData['labels'][] = Carbon::parse($date)->format('d M');
-            $summaryData['availability'][] = count($values['availability']) > 0 ? round(array_sum($values['availability']) / count($values['availability']), 2) : 0;
-            $summaryData['performance'][] = count($values['performance']) > 0 ? round(array_sum($values['performance']) / count($values['performance']), 2) : 0;
-            $summaryData['quality'][] = count($values['quality']) > 0 ? round(array_sum($values['quality']) / count($values['quality']), 2) : 0;
-            $summaryData['oee'][] = count($values['oee']) > 0 ? round(array_sum($values['oee']) / count($values['oee']), 2) : 0;
         }
         
-        // Get plants with Production category from RoomErp
-        $productionPlants = RoomErp::where('category', 'Production')
-            ->whereNotNull('plant_name')
-            ->where('plant_name', '!=', '')
-            ->distinct()
-            ->pluck('plant_name')
-            ->sort()
-            ->values();
+        // Get unique lines
+        $uniqueLines = [];
+        foreach ($oeeData as $data) {
+            $lineKey = $data['line'] ? $data['line']->id : 'unknown';
+            $lineName = $data['line'] ? $data['line']->name : 'Unknown';
+            if (!isset($uniqueLines[$lineKey])) {
+                $uniqueLines[$lineKey] = $lineName;
+            }
+        }
         
-        // Calculate OEE per Plant
+        // Create dataset for each line
+        $lineColors = [
+            'rgba(59, 130, 246, 0.7)',   // Blue
+            'rgba(34, 197, 94, 0.7)',    // Green
+            'rgba(234, 179, 8, 0.7)',    // Yellow
+            'rgba(239, 68, 68, 0.7)',    // Red
+            'rgba(168, 85, 247, 0.7)',   // Purple
+            'rgba(236, 72, 153, 0.7)',   // Pink
+            'rgba(14, 165, 233, 0.7)',   // Sky
+            'rgba(251, 146, 60, 0.7)',   // Orange
+            'rgba(20, 184, 166, 0.7)',   // Teal
+            'rgba(139, 92, 246, 0.7)',   // Violet
+        ];
+        
+        $colorIndex = 0;
+        foreach ($uniqueLines as $lineId => $lineName) {
+            $bgColor = $lineColors[$colorIndex % count($lineColors)];
+            $borderColor = str_replace('0.7', '1', $bgColor);
+            
+            $lineData = [
+                'label' => $lineName,
+                'data' => [],
+                'availability' => [],
+                'performance' => [],
+                'quality' => [],
+                'backgroundColor' => $bgColor,
+                'borderColor' => $borderColor,
+                'borderWidth' => 2
+            ];
+            
+            // For each date, find OEE for this line
+            foreach ($uniqueDates as $date) {
+                $found = false;
+                foreach ($oeeData as $data) {
+                    $dataDate = $data['production_date']->format('Y-m-d');
+                    $dataLineId = $data['line'] ? $data['line']->id : 'unknown';
+                    
+                    if ($dataDate === $date && $dataLineId == $lineId) {
+                        $lineData['data'][] = round($data['oee'], 2);
+                        $lineData['availability'][] = round($data['availability'], 2);
+                        $lineData['performance'][] = round($data['performance'], 2);
+                        $lineData['quality'][] = round($data['quality'], 2);
+                        $found = true;
+                        break;
+                    }
+                }
+                
+                if (!$found) {
+                    $lineData['data'][] = null; // No data for this date
+                    $lineData['availability'][] = null;
+                    $lineData['performance'][] = null;
+                    $lineData['quality'][] = null;
+                }
+            }
+            
+            $summaryData['datasets'][] = $lineData;
+            $colorIndex++;
+        }
+        
+        // Get unique plants from actual oeeData (not from RoomErp)
+        // This ensures we only show plants that have data in the selected date range
+        $uniquePlants = [];
+        foreach ($oeeData as $data) {
+            if ($data['plant'] && $data['plant']->name) {
+                $plantName = $data['plant']->name;
+                if (!isset($uniquePlants[$plantName])) {
+                    $uniquePlants[$plantName] = $plantName;
+                }
+            }
+        }
+        
+        // Sort plants alphabetically
+        ksort($uniquePlants);
+        
+        // Calculate OEE per Plant with different colors
         $plantOeeData = [
             'labels' => [],
             'availability' => [],
             'performance' => [],
             'quality' => [],
             'oee' => [],
+            'colors' => [], // Different color for each plant
         ];
         
-        foreach ($productionPlants as $plantName) {
-            // Filter oeeData by plant name (match from plant model or from RoomErp plant_name)
+        // Color palette for plants
+        $plantColors = [
+            'rgba(59, 130, 246, 0.7)',   // Blue
+            'rgba(34, 197, 94, 0.7)',    // Green
+            'rgba(234, 179, 8, 0.7)',    // Yellow
+            'rgba(239, 68, 68, 0.7)',    // Red
+            'rgba(168, 85, 247, 0.7)',   // Purple
+            'rgba(236, 72, 153, 0.7)',   // Pink
+            'rgba(14, 165, 233, 0.7)',   // Sky
+            'rgba(251, 146, 60, 0.7)',   // Orange
+        ];
+        
+        $colorIndex = 0;
+        foreach ($uniquePlants as $plantName) {
+            // Filter oeeData by plant name - only from actual data in date range
             $plantOeeRecords = array_filter($oeeData, function($data) use ($plantName) {
-                // Try to get plant name from plant model
                 $dataPlantName = $data['plant'] ? $data['plant']->name : null;
-                
-                // If plant name matches, include this record
-                if ($dataPlantName === $plantName) {
-                    return true;
-                }
-                
-                // Also check if line name matches any RoomErp with this plant_name
-                // This handles cases where plant might not be set in line but exists in RoomErp
-                if ($data['line'] && $data['line']->name) {
-                    $roomErpMatch = RoomErp::where('category', 'Production')
-                        ->where('plant_name', $plantName)
-                        ->where('line_name', $data['line']->name)
-                        ->exists();
-                    
-                    if ($roomErpMatch) {
-                        return true;
-                    }
-                }
-                
-                return false;
+                return $dataPlantName === $plantName;
             });
             
             if (count($plantOeeRecords) > 0) {
                 $plantOeeData['labels'][] = $plantName;
                 
-                // Calculate averages for this plant
+                // Calculate averages for this plant across the entire date range
                 $availabilities = array_column($plantOeeRecords, 'availability');
                 $performances = array_column($plantOeeRecords, 'performance');
                 $qualities = array_column($plantOeeRecords, 'quality');
                 $oees = array_column($plantOeeRecords, 'oee');
                 
+                // Calculate average OEE for this plant in the selected date range
                 $plantOeeData['availability'][] = round(array_sum($availabilities) / count($availabilities), 2);
                 $plantOeeData['performance'][] = round(array_sum($performances) / count($performances), 2);
                 $plantOeeData['quality'][] = round(array_sum($qualities) / count($qualities), 2);
                 $plantOeeData['oee'][] = round(array_sum($oees) / count($oees), 2);
+                $plantOeeData['colors'][] = $plantColors[$colorIndex % count($plantColors)];
+                
+                $colorIndex++;
             }
         }
         

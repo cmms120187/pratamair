@@ -28,7 +28,9 @@ class StandardsSeeder extends Seeder
             ['id' => 12, 'name' => 'ISO 10816-3 - Machine Group 1 (Flexible)', 'reference_type' => 'ISO', 'reference_code' => 'ISO 10816-3', 'reference_name' => 'ISO 10816-3 - Mechanical vibration - Evaluation of machine vibration by measurements on non-rotating parts', 'class' => 'Machine Group 1 - Flexible Foundation', 'unit' => 'mm/s', 'min_value' => 0.0000, 'max_value' => 15.9900, 'target_value' => null, 'description' => 'Motors, 315 mm ≤ H, Large machines 300 kW < P < 50 MW - Flexible Foundation', 'keterangan' => 'Standar ISO 10816-3 untuk evaluasi getaran mesin berdasarkan pengukuran pada bagian non-rotating. Standar ini mengklasifikasikan tingkat getaran menjadi beberapa zone (A, B, C, D) berdasarkan nilai getaran yang diukur dalam mm/s rms.', 'photo' => 'standards/IzaX72O61G6gTgqZE658JB1zUwabUCyYnnvzInz8.jpg', 'machine_type_id' => null, 'status' => 'active', 'created_at' => '2025-11-26 17:35:11', 'updated_at' => '2025-11-27 23:40:47'],
             ['id' => 13, 'name' => 'Delta T Severity Criteria', 'reference_type' => 'ISO', 'reference_code' => 'Insulation Class Electric Motor', 'reference_name' => 'Insulation Class Electric Motor - Standard untuk Suhu Operasi Motor Listrik', 'class' => null, 'unit' => '°C', 'min_value' => 1.0000, 'max_value' => 10.0000, 'target_value' => null, 'description' => null, 'keterangan' => 'sample', 'photo' => 'standards/DemevxkbU6J8Sx55M2XGKTZGbfJl8lxNuw6xAt8J.jpg', 'machine_type_id' => null, 'status' => 'active', 'created_at' => '2025-11-28 21:13:09', 'updated_at' => '2025-11-30 19:32:19'],
         ];
-        DB::table('standards')->insert($standards);
+        foreach ($standards as $standard) {
+            DB::table('standards')->updateOrInsert(['id' => $standard['id']], $standard);
+        }
 
         // Standard Variants - Data terlalu panjang, saya akan buat file terpisah atau gunakan loop
         // Karena ada 48 variants, saya akan insert langsung dari array
@@ -94,7 +96,9 @@ class StandardsSeeder extends Seeder
             ['id' => 47, 'standard_id' => 12, 'name' => 'Short-term operation allowable', 'min_value' => 7.1100, 'max_value' => 11.0000, 'color' => '#FB923C', 'order' => 3, 'created_at' => '2025-11-26 17:35:11', 'updated_at' => '2025-11-26 17:35:11'],
             ['id' => 48, 'standard_id' => 12, 'name' => 'Vibration causes damage', 'min_value' => 11.1000, 'max_value' => 15.9900, 'color' => '#EF4444', 'order' => 4, 'created_at' => '2025-11-26 17:35:11', 'updated_at' => '2025-11-26 17:35:11'],
         ];
-        DB::table('standard_variants')->insert($variants);
+        foreach ($variants as $variant) {
+            DB::table('standard_variants')->updateOrInsert(['id' => $variant['id']], $variant);
+        }
 
         // Machine Type Standard
         $machineTypeStandard = [
@@ -125,7 +129,9 @@ class StandardsSeeder extends Seeder
             ['id' => 25, 'machine_type_id' => 8, 'standard_id' => 13, 'created_at' => null, 'updated_at' => null],
             ['id' => 26, 'machine_type_id' => 6, 'standard_id' => 13, 'created_at' => null, 'updated_at' => null],
         ];
-        DB::table('machine_type_standard')->insert($machineTypeStandard);
+        foreach ($machineTypeStandard as $mts) {
+            DB::table('machine_type_standard')->updateOrInsert(['id' => $mts['id']], $mts);
+        }
 
         // Standard Photos
         $standardPhotos = [
@@ -133,7 +139,9 @@ class StandardsSeeder extends Seeder
             ['id' => 2, 'standard_id' => 11, 'photo_path' => 'standards/IzaX72O61G6gTgqZE658JB1zUwabUCyYnnvzInz8.jpg', 'name' => 'ISO 10816-3 - Machine Group 1 (Flexible) - Photo', 'created_at' => '2025-11-27 23:45:02', 'updated_at' => '2025-11-27 23:59:29'],
             ['id' => 3, 'standard_id' => null, 'photo_path' => 'standards/DemevxkbU6J8Sx55M2XGKTZGbfJl8lxNuw6xAt8J.jpg', 'name' => 'delta-T-suhu-termografi-inframerah-value-delta-T-temperature-differentiate-infrared-thermography-1024x308.jpg', 'created_at' => '2025-11-30 19:32:19', 'updated_at' => '2025-11-30 19:32:19'],
         ];
-        DB::table('standard_photos')->insert($standardPhotos);
+        foreach ($standardPhotos as $photo) {
+            DB::table('standard_photos')->updateOrInsert(['id' => $photo['id']], $photo);
+        }
 
         // Standard Standard Photo
         $standardStandardPhoto = [
@@ -149,7 +157,9 @@ class StandardsSeeder extends Seeder
             ['id' => 10, 'standard_id' => 5, 'standard_photo_id' => 2, 'created_at' => null, 'updated_at' => null],
             ['id' => 11, 'standard_id' => 13, 'standard_photo_id' => 3, 'created_at' => null, 'updated_at' => null],
         ];
-        DB::table('standard_standard_photo')->insert($standardStandardPhoto);
+        foreach ($standardStandardPhoto as $ssp) {
+            DB::table('standard_standard_photo')->updateOrInsert(['id' => $ssp['id']], $ssp);
+        }
     }
 }
 
