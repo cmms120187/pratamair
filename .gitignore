@@ -4,3 +4,13 @@
 # Note: vendor/composer/platform_check.php is modified to allow PHP 8.2
 # This will be overwritten on composer update - restore manually if needed
 node_modules
+
+# Environment files
+.env
+.env.sample
+
+# Laravel hot reload file
+public/hot
+
+# Archive files
+tpmtambahOEE.zip
