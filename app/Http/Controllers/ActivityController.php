@@ -155,7 +155,14 @@ class ActivityController extends Controller
         if ($request->hasFile('photos')) {
             foreach ($request->file('photos') as $photo) {
                 $photoPath = ImageHelper::convertToWebP($photo, 'activities', 85);
-                $photos[] = $photoPath;
+                if ($photoPath) {
+                    $photos[] = $photoPath;
+                } else {
+                    \Log::error('ActivityController: Failed to upload photo', [
+                        'filename' => $photo->getClientOriginalName(),
+                        'size' => $photo->getSize()
+                    ]);
+                }
             }
         }
         $validated['photos'] = !empty($photos) ? $photos : null;

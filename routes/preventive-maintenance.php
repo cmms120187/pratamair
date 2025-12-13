@@ -6,8 +6,8 @@ use App\Http\Controllers\PreventiveMaintenance\MonitoringController;
 use App\Http\Controllers\PreventiveMaintenance\UpdatingController;
 use App\Http\Controllers\PreventiveMaintenance\ReportingController;
 
-// Preventive Maintenance Routes
-Route::middleware('auth')->prefix('preventive-maintenance')->name('preventive-maintenance.')->group(function () {
+// Preventive Maintenance Routes (Shortened URL: /pm/...)
+Route::middleware('auth')->prefix('pm')->name('preventive-maintenance.')->group(function () {
     // Scheduling - Custom routes must be defined BEFORE resource routes
     Route::get('scheduling/get-machines-by-type', [SchedulingController::class, 'getMachinesByType'])->name('scheduling.get-machines-by-type');
     Route::get('scheduling/get-maintenance-points-by-category', [SchedulingController::class, 'getMaintenancePointsByCategory'])->name('scheduling.get-maintenance-points-by-category');
@@ -18,11 +18,11 @@ Route::middleware('auth')->prefix('preventive-maintenance')->name('preventive-ma
     Route::post('scheduling/update-pic', [SchedulingController::class, 'updatePic'])->name('scheduling.update-pic');
     Route::resource('scheduling', SchedulingController::class);
     
-    // Controlling - Custom routes must be defined BEFORE resource routes
-    Route::get('controlling/get-machines-by-type', [ControllingController::class, 'getMachinesByType'])->name('controlling.get-machines-by-type');
-    Route::get('controlling/get-maintenance-points-by-machine-and-date', [ControllingController::class, 'getMaintenancePointsByMachineAndDate'])->name('controlling.get-maintenance-points-by-machine-and-date');
-    Route::post('controlling/batch-update-status', [ControllingController::class, 'batchUpdateStatus'])->name('controlling.batch-update-status');
-    Route::resource('controlling', ControllingController::class);
+    // Controlling - Custom routes must be defined BEFORE resource routes (Shortened: /pm/ctrl/...)
+    Route::get('ctrl/get-machines-by-type', [ControllingController::class, 'getMachinesByType'])->name('controlling.get-machines-by-type');
+    Route::get('ctrl/get-maintenance-points-by-machine-and-date', [ControllingController::class, 'getMaintenancePointsByMachineAndDate'])->name('controlling.get-maintenance-points-by-machine-and-date');
+    Route::post('ctrl/batch-update-status', [ControllingController::class, 'batchUpdateStatus'])->name('controlling.batch-update-status');
+    Route::resource('ctrl', ControllingController::class);
     
     // Monitoring
     Route::get('monitoring', [MonitoringController::class, 'index'])->name('monitoring.index');

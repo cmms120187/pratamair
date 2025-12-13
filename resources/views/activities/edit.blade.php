@@ -1,4 +1,7 @@
 @extends('layouts.app')
+@php
+    use Illuminate\Support\Facades\Storage;
+@endphp
 @section('content')
 <div class="w-full p-4 sm:p-6 lg:p-8">
     <div class="max-w-4xl mx-auto bg-white rounded-lg shadow p-6 sm:p-8">
@@ -194,7 +197,11 @@
                         <div class="grid grid-cols-3 gap-4 mb-4">
                             @foreach($activity->photos as $index => $photo)
                                 <div class="relative">
-                                    <img src="{{ asset('storage/' . $photo) }}" alt="Photo {{ $index + 1 }}" class="w-full h-32 object-cover rounded border" onerror="this.src='{{ asset('images/placeholder.jpg') }}'; this.onerror=null;">
+                                    @php
+                                        $photoPath = is_string($photo) ? $photo : null;
+                                        $photoUrl = $photoPath ? Storage::url($photoPath) : null;
+                                    @endphp
+                                    <img src="{{ $photoUrl ?? asset('images/placeholder.jpg') }}" alt="Photo {{ $index + 1 }}" class="w-full h-32 object-cover rounded border" onerror="this.src='{{ asset('images/placeholder.jpg') }}'; this.onerror=null;">
                                     <button type="button" onclick="removeExistingPhoto({{ $index }})" class="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />

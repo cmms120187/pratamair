@@ -1,4 +1,7 @@
 @extends('layouts.app')
+@php
+    use Illuminate\Support\Facades\Storage;
+@endphp
 @section('content')
 <div class="w-full p-4 sm:p-6 lg:p-8">
     <div class="max-w-6xl mx-auto">
@@ -127,7 +130,35 @@
                             <div class="space-y-4">
                                 @foreach($activity->photos as $photo)
                                     <div class="relative">
-                                        <img src="{{ asset('storage/' . $photo) }}" alt="Activity Photo" class="w-full h-auto object-cover rounded-lg border shadow" onerror="this.src='{{ asset('images/placeholder.jpg') }}'; this.onerror=null;">
+                                        @php
+                                            // Check if photo path exists in storage
+                                            $photoPath = is_string($photo) ? $photo : null;
+                                            // ImageHelper returns path like "activities/filename.webp"
+                                            // Storage::url() will generate "/storage/activities/filename.webp"
+                                            $photoUrl = $photoPath ? Storage::url($photoPath) : null;
+                                            $photoExists = $photoPath ? Storage::disk('public')->exists($photoPath) : false;
+                                        @endphp
+                                        @if($photoUrl && $photoExists)
+                                            <a href="{{ $photoUrl }}" target="_blank" class="block">
+                                                <img src="{{ $photoUrl }}" alt="Activity Photo" class="w-full h-auto object-cover rounded-lg border shadow hover:opacity-90 transition cursor-pointer" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                            </a>
+                                            <div style="display: none;" class="bg-gray-100 border border-gray-300 rounded-lg p-4 text-center text-gray-500 text-sm">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                Photo not found
+                                            </div>
+                                        @else
+                                            <div class="bg-gray-100 border border-gray-300 rounded-lg p-4 text-center text-gray-500 text-sm">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                Photo not found
+                                                @if($photoPath)
+                                                    <p class="text-xs mt-1">Path: {{ $photoPath }}</p>
+                                                @endif
+                                            </div>
+                                        @endif
                                     </div>
                                 @endforeach
                             </div>

@@ -6,20 +6,20 @@ use App\Http\Controllers\PredictiveMaintenance\MonitoringController as Predictiv
 use App\Http\Controllers\PredictiveMaintenance\UpdatingController as PredictiveUpdatingController;
 use App\Http\Controllers\PredictiveMaintenance\ReportingController as PredictiveReportingController;
 
-// Predictive Maintenance Routes
-Route::middleware('auth')->prefix('predictive-maintenance')->name('predictive-maintenance.')->group(function () {
+// Predictive Maintenance Routes (Shortened URL: /pdm/...)
+Route::middleware('auth')->prefix('pdm')->name('predictive-maintenance.')->group(function () {
     // Scheduling - Custom routes must be defined BEFORE resource routes
     Route::post('scheduling/update-pic', [PredictiveSchedulingController::class, 'updatePic'])->name('scheduling.update-pic');
     Route::post('scheduling/reschedule', [PredictiveSchedulingController::class, 'reschedule'])->name('scheduling.reschedule');
     Route::resource('scheduling', PredictiveSchedulingController::class);
     
-    // Controlling - Custom routes must be defined BEFORE resource routes
-    Route::get('controlling/get-machines-by-type', [PredictiveControllingController::class, 'getMachinesByType'])->name('controlling.get-machines-by-type');
-    Route::get('controlling/get-maintenance-points-by-machine-and-date', [PredictiveControllingController::class, 'getMaintenancePointsByMachineAndDate'])->name('controlling.get-maintenance-points-by-machine-and-date');
-    Route::get('controlling/machine-condition/{machineId}', [PredictiveControllingController::class, 'showMachineCondition'])->name('controlling.machine-condition');
-    Route::get('controlling/export', [PredictiveControllingController::class, 'export'])->name('controlling.export');
-    Route::post('controlling/import', [PredictiveControllingController::class, 'import'])->name('controlling.import');
-    Route::resource('controlling', PredictiveControllingController::class);
+    // Controlling - Custom routes must be defined BEFORE resource routes (Shortened: /pdm/ctrl/...)
+    Route::get('ctrl/get-machines-by-type', [PredictiveControllingController::class, 'getMachinesByType'])->name('controlling.get-machines-by-type');
+    Route::get('ctrl/get-maintenance-points-by-machine-and-date', [PredictiveControllingController::class, 'getMaintenancePointsByMachineAndDate'])->name('controlling.get-maintenance-points-by-machine-and-date');
+    Route::get('ctrl/machine-condition/{machineId}', [PredictiveControllingController::class, 'showMachineCondition'])->name('controlling.machine-condition');
+    Route::get('ctrl/export', [PredictiveControllingController::class, 'export'])->name('controlling.export');
+    Route::post('ctrl/import', [PredictiveControllingController::class, 'import'])->name('controlling.import');
+    Route::resource('ctrl', PredictiveControllingController::class);
     
     // Monitoring
     Route::get('monitoring', [PredictiveMonitoringController::class, 'index'])->name('monitoring.index');
