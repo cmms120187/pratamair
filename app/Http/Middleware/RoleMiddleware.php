@@ -161,7 +161,7 @@ class RoleMiddleware
             'preventive-maintenance.reporting.performance' => 'preventive-reporting',
             'preventive-maintenance.reporting.get-schedule-points-by-machine-and-date' => 'preventive-reporting',
             'predictive-maintenance.scheduling.index' => 'predictive-scheduling',
-            'predictive-maintenance.controlling.index' => 'predictive-controlling',
+            'predictive-maintenance.ctrl.index' => 'predictive-controlling',
             'predictive-maintenance.monitoring.index' => 'predictive-monitoring',
             'predictive-maintenance.updating.index' => 'predictive-updating',
             'predictive-maintenance.updating.edit' => 'predictive-updating',

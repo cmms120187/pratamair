@@ -8,7 +8,7 @@
                 <p class="text-gray-600 mt-1">{{ $schedule->title }}</p>
             </div>
             <div class="flex gap-2">
-                <a href="{{ route('preventive-maintenance.scheduling.edit', $schedule->id) }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition">
+                <a href="{{ route('preventive-maintenance.scheduling.edit', ['scheduling' => $schedule->id]) }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition">
                     Edit
                 </a>
                 <a href="{{ route('preventive-maintenance.scheduling.index') }}" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded shadow transition">
@@ -115,7 +115,7 @@
                                         <p class="text-xs text-gray-500 mt-1">By: {{ $execution->performedBy->name }}</p>
                                     @endif
                                 </div>
-                                <a href="{{ route('preventive-maintenance.controlling.show', $execution->id) }}" class="text-blue-600 hover:text-blue-800 text-xs">
+                                <a href="{{ route('preventive-maintenance.ctrl.show', ['ctrl' => $execution->id]) }}" class="text-blue-600 hover:text-blue-800 text-xs">
                                     View
                                 </a>
                             </div>
@@ -125,7 +125,7 @@
                     @endforelse
                 </div>
                 <div class="mt-4">
-                    <a href="{{ route('preventive-maintenance.controlling.create') }}?schedule_id={{ $schedule->id }}" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded shadow transition flex items-center justify-center text-sm">
+                    <a href="{{ route('preventive-maintenance.ctrl.create') }}?schedule_id={{ $schedule->id }}" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded shadow transition flex items-center justify-center text-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                         </svg>

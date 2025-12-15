@@ -13,7 +13,7 @@
             </div>
         @endif
         
-        <form action="{{ route('part-erp.update', $partErp->id) }}" method="POST">
+        <form action="{{ route('part-erp.update', ['perp' => $partErp->id]) }}" method="POST">
             @csrf
             @method('PUT')
             <input type="hidden" name="page" value="{{ old('page', $page ?? 1) }}">

@@ -8,7 +8,7 @@
                 <p class="text-sm text-gray-500 mt-1">Bulan: {{ \Carbon\Carbon::create($filterYear, $filterMonth, 1)->locale('id')->translatedFormat('F Y') }}</p>
             </div>
             <div class="flex gap-2">
-                <a href="{{ route('predictive-maintenance.controlling.index', ['month' => $filterMonth, 'year' => $filterYear]) }}" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded shadow transition">
+                <a href="{{ route('predictive-maintenance.ctrl.index', ['month' => $filterMonth, 'year' => $filterYear]) }}" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded shadow transition">
                     Kembali
                 </a>
             </div>
@@ -177,7 +177,7 @@
                                         </div>
                                         <div>
                                             <label class="block text-xs font-medium text-gray-500 mb-1">Actions</label>
-                                            <a href="{{ route('predictive-maintenance.controlling.edit', $latestExecution->id) }}" 
+                                            <a href="{{ route('predictive-maintenance.ctrl.edit', ['ctrl' => $latestExecution->id]) }}" 
                                                class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded shadow transition"
                                                title="Edit Execution">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">

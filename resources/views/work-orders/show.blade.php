@@ -5,7 +5,7 @@
         <div class="flex items-center justify-between mb-6">
             <h1 class="text-2xl font-bold text-gray-800">Work Order Detail</h1>
             <div class="flex items-center gap-3">
-                <a href="{{ route('work-orders.edit', $workOrder->id) }}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
+                <a href="{{ route('work-orders.edit', ['wo' => $workOrder->id]) }}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
                     Edit
                 </a>
                 <a href="{{ route('work-orders.index') }}" class="text-gray-600 hover:text-gray-800">

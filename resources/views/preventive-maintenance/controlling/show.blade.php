@@ -8,10 +8,10 @@
                 <p class="text-gray-600 mt-1">{{ $execution->schedule->title ?? '-' }}</p>
             </div>
             <div class="flex gap-2">
-                <a href="{{ route('preventive-maintenance.controlling.edit', $execution->id) }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition">
+                <a href="{{ route('preventive-maintenance.ctrl.edit', ['ctrl' => $execution->id]) }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition">
                     Edit
                 </a>
-                <a href="{{ route('preventive-maintenance.controlling.index') }}" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded shadow transition">
+                <a href="{{ route('preventive-maintenance.ctrl.index') }}" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded shadow transition">
                     Back
                 </a>
             </div>

@@ -13,7 +13,7 @@
             </div>
         @endif
         
-        <form action="{{ route('downtime-erp2.update', $downtimeErp2->id) }}" method="POST">
+        <form action="{{ route('downtime-erp2.update', ['derp2' => $downtimeErp2->id]) }}" method="POST">
             @csrf
             @method('PUT')
             @if(isset($page))

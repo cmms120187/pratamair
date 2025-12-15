@@ -51,3 +51,5 @@ ls -la database/migrations/*add_work_hours*
 File yang benar adalah yang **tanpa 's'** di akhir (`table` bukan `tables`).
 
 
+
+

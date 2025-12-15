@@ -11,7 +11,7 @@ use App\Http\Controllers\PartController;
 // Machine ERP Routes - Group Leader and above (Shortened: /mach/merp/...)
 Route::middleware(['auth', 'role:group_leader,coordinator,ast_manager,manager,general_manager'])->prefix('mach')->group(function () {
     Route::post('merp/synchronize', [\App\Http\Controllers\MachineErpController::class, 'synchronize'])->name('machine-erp.synchronize');
-    Route::resource('merp', \App\Http\Controllers\MachineErpController::class);
+    Route::resource('merp', \App\Http\Controllers\MachineErpController::class)->names('machine-erp');
     
     // Mutasi Routes
     Route::resource('mutasi', \App\Http\Controllers\MutasiController::class);
@@ -19,12 +19,12 @@ Route::middleware(['auth', 'role:group_leader,coordinator,ast_manager,manager,ge
 
 // Part ERP Routes - Coordinator and above (Shortened: /mach/perp/...)
 Route::middleware(['auth', 'role:coordinator,ast_manager,manager,general_manager'])->prefix('mach')->group(function () {
-    Route::resource('perp', \App\Http\Controllers\PartErpController::class);
+    Route::resource('perp', \App\Http\Controllers\PartErpController::class)->names('part-erp');
 });
 
 // Machinary routes (Shortened: /mach/...)
 Route::middleware('auth')->prefix('mach')->group(function () {
-    Route::resource('mtypes', MachineTypeController::class);
+    Route::resource('mtypes', MachineTypeController::class)->names('machine-types');
     Route::post('mtypes/import-from-machine-erp', [MachineTypeController::class, 'importFromMachineErp'])->name('machine-types.import-from-machine-erp');
     Route::post('mtypes/merge-duplicates', [MachineTypeController::class, 'mergeDuplicates'])->name('machine-types.merge-duplicates');
     

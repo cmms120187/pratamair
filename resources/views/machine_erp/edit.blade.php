@@ -13,7 +13,7 @@
             </div>
         @endif
         
-        <form action="{{ route('machine-erp.update', $machineErp->id) }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('machine-erp.update', ['merp' => $machineErp->id]) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             @if(isset($page))

@@ -327,7 +327,7 @@ class ControllingController extends Controller
             'overdue' => $overdueCount,
         ];
         
-        return view('predictive-maintenance.controlling.index', compact(
+        return view('predictive-maintenance.ctrl.index', compact(
             'machinesData',
             'stats',
             'filterMonth',
@@ -428,7 +428,7 @@ class ControllingController extends Controller
         $redirectMonth = session('predictive_controlling_filter_month', Carbon::parse($validated['scheduled_date'])->month);
         $redirectYear = session('predictive_controlling_filter_year', Carbon::parse($validated['scheduled_date'])->year);
         
-        return redirect()->route('predictive-maintenance.controlling.index', [
+        return redirect()->route('predictive-maintenance.ctrl.index', [
             'month' => $redirectMonth,
             'year' => $redirectYear
         ])->with('success', "Berhasil membuat/update {$executionsCreated} execution(s).");
@@ -502,7 +502,7 @@ class ControllingController extends Controller
         $redirectMonth = session('predictive_controlling_filter_month', Carbon::parse($execution->scheduled_date)->month);
         $redirectYear = session('predictive_controlling_filter_year', Carbon::parse($execution->scheduled_date)->year);
         
-        return redirect()->route('predictive-maintenance.controlling.index', [
+        return redirect()->route('predictive-maintenance.ctrl.index', [
             'month' => $redirectMonth,
             'year' => $redirectYear
         ])->with('success', 'Execution berhasil diupdate.');
@@ -521,7 +521,7 @@ class ControllingController extends Controller
         
         $execution->delete();
 
-        return redirect()->route('predictive-maintenance.controlling.index', [
+        return redirect()->route('predictive-maintenance.ctrl.index', [
             'month' => $redirectMonth,
             'year' => $redirectYear
         ])->with('success', 'Execution berhasil dihapus.');
@@ -937,7 +937,7 @@ class ControllingController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
             
-            return redirect()->route('predictive-maintenance.controlling.index')
+            return redirect()->route('predictive-maintenance.ctrl.index')
                 ->with('error', 'Error generating Excel file: ' . $e->getMessage());
         }
     }
@@ -1139,7 +1139,7 @@ class ControllingController extends Controller
                 }
             }
             
-            return redirect()->route('predictive-maintenance.controlling.index')
+            return redirect()->route('predictive-maintenance.ctrl.index')
                 ->with('success', $message)
                 ->with('import_errors', $errors);
         } catch (\Exception $e) {

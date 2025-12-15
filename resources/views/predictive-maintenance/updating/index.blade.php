@@ -117,7 +117,7 @@
                                     @endphp
                                     <div class="flex items-center justify-center gap-2">
                                     @if($firstExecution)
-                                        <a href="{{ route('predictive-maintenance.updating.edit', $firstExecution->id) }}"
+                                        <a href="{{ route('predictive-maintenance.updating.edit', ['id' => $firstExecution->id]) }}"
                                                class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded shadow transition text-sm"
                                                title="Update Jadwal">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">

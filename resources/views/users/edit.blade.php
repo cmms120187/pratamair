@@ -12,7 +12,7 @@
         </div>
 
         <div class="bg-white rounded-lg shadow p-6">
-            <form action="{{ route('users.update', $user->id) }}" method="POST" enctype="multipart/form-data" x-data="{ 
+            <form action="{{ route('users.update', ['user' => $user->id]) }}" method="POST" enctype="multipart/form-data" x-data="{ 
                 role: '{{ old('role', $user->role) }}',
                 atasanId: '{{ old('atasan_id', $user->atasan_id ?? '') }}',
                 updateAtasanOptions() {

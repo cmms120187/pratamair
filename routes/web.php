@@ -9,7 +9,7 @@ Route::get('/', function () {
 });
 
 // Dashboard Route with Middleware
-Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth'])->name('dashboard');
 
 // Profile Routes with Middleware
 Route::middleware('auth')->group(function () {

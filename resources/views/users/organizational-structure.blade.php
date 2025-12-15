@@ -57,7 +57,7 @@
                                         <div class="flex items-start justify-between mb-2 gap-3">
                                             <div class="flex-1">
                                                 <h3 class="font-semibold text-gray-900 mb-1">
-                                                    <a href="{{ route('users.edit', $user->id) }}" class="text-blue-600 hover:text-blue-800 hover:underline">
+                                                    <a href="{{ route('users.edit', ['user' => $user->id]) }}" class="text-blue-600 hover:text-blue-800 hover:underline">
                                                         {{ $user->name }}
                                                     </a>
                                                 </h3>
@@ -97,7 +97,7 @@
                                                     @endif
                                                 </div>
                                                 <!-- Edit Button -->
-                                                <a href="{{ route('users.edit', $user->id) }}" class="inline-flex items-center justify-center {{ 
+                                                <a href="{{ route('users.edit', ['user' => $user->id]) }}" class="inline-flex items-center justify-center {{ 
                                                     $roleData['level'] == 7 ? 'bg-purple-600 hover:bg-purple-700' : 
                                                     ($roleData['level'] == 6 ? 'bg-indigo-600 hover:bg-indigo-700' : 
                                                     ($roleData['level'] == 5 ? 'bg-blue-600 hover:bg-blue-700' : 
@@ -123,7 +123,7 @@
                                                 ($roleData['level'] == 2 ? 'border-green-200' : 'border-gray-200'))))) 
                                             }}">
                                                 <p class="text-xs text-gray-500 mb-1">Atasan:</p>
-                                                <a href="{{ route('users.edit', $user->atasan->id) }}" class="text-sm font-medium {{ 
+                                                <a href="{{ route('users.edit', ['user' => $user->atasan->id]) }}" class="text-sm font-medium {{ 
                                                     $roleData['level'] == 7 ? 'text-purple-700 hover:text-purple-900' : 
                                                     ($roleData['level'] == 6 ? 'text-indigo-700 hover:text-indigo-900' : 
                                                     ($roleData['level'] == 5 ? 'text-blue-700 hover:text-blue-900' : 
@@ -146,7 +146,7 @@
                                                 <p class="text-xs text-gray-500 mb-1">Bawahan ({{ $user->bawahan->count() }}):</p>
                                                 <div class="flex flex-wrap gap-1">
                                                     @foreach($user->bawahan->take(3) as $bawahan)
-                                                        <a href="{{ route('users.edit', $bawahan->id) }}" class="text-xs {{ 
+                                                        <a href="{{ route('users.edit', ['user' => $bawahan->id]) }}" class="text-xs {{ 
                                                             $roleData['level'] == 7 ? 'bg-purple-100 text-purple-800 hover:bg-purple-200' : 
                                                             ($roleData['level'] == 6 ? 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200' : 
                                                             ($roleData['level'] == 5 ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' : 

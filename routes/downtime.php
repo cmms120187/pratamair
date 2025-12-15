@@ -24,18 +24,18 @@ Route::middleware('auth')->prefix('dt')->group(function () {
     Route::get('derp/download', [DowntimeErpController::class, 'download'])->name('downtime_erp.download')->middleware('role:admin');
     Route::post('derp/upload', [DowntimeErpController::class, 'upload'])->name('downtime_erp.upload')->middleware('role:admin');
     Route::resource('problems', ProblemController::class);
-    Route::resource('problem-mms', ProblemMmController::class);
+    Route::resource('problem-mms', ProblemMmController::class)->names('problem_mms');
     Route::resource('reasons', ReasonController::class);
     Route::resource('actions', ActionController::class);
     
     // Downtime ERP2 Routes - Custom routes must be BEFORE resource route to avoid conflicts
     Route::get('derp2/download', [\App\Http\Controllers\DowntimeErp2Controller::class, 'download'])->name('downtime-erp2.download')->middleware('role:admin');
     Route::post('derp2/upload', [\App\Http\Controllers\DowntimeErp2Controller::class, 'upload'])->name('downtime-erp2.upload')->middleware('role:admin');
-    Route::resource('derp2', \App\Http\Controllers\DowntimeErp2Controller::class);
+    Route::resource('derp2', \App\Http\Controllers\DowntimeErp2Controller::class)->names('downtime-erp2');
     
     // Work Orders - Team Leader and above
     Route::middleware('role:team_leader,group_leader,coordinator,ast_manager,manager,general_manager')->group(function () {
-        Route::resource('wo', \App\Http\Controllers\WorkOrderController::class);
+        Route::resource('wo', \App\Http\Controllers\WorkOrderController::class)->names('work-orders');
     });
 });
 

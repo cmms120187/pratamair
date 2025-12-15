@@ -55,7 +55,7 @@
             @endif
         @endif
 
-        <form action="{{ (isset($singlePoint) && $singlePoint) ? route('predictive-maintenance.updating.update', $execution->id) : route('predictive-maintenance.updating.batch-update') }}" method="POST" id="executionForm" enctype="multipart/form-data">
+        <form action="{{ (isset($singlePoint) && $singlePoint) ? route('predictive-maintenance.updating.update', ['id' => $execution->id]) : route('predictive-maintenance.updating.batch-update') }}" method="POST" id="executionForm" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             

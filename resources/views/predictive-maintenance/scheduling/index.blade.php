@@ -173,7 +173,7 @@
                                     $firstDate = !empty($uniqueDates) ? $uniqueDates[0] : null;
                                 @endphp
                                 @if($firstDate)
-                                <a href="{{ route('predictive-maintenance.controlling.create', ['type_machine_id' => $typeMachineId, 'machine_id' => $machine->id, 'scheduled_date' => $firstDate]) }}"
+                                <a href="{{ route('predictive-maintenance.ctrl.create', ['type_machine_id' => $typeMachineId, 'machine_id' => $machine->id, 'scheduled_date' => $firstDate]) }}"
                                    class="inline-flex items-center justify-center bg-yellow-600 hover:bg-yellow-700 text-white p-2 rounded shadow transition duration-150 ease-in-out" 
                                    title="Execute">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

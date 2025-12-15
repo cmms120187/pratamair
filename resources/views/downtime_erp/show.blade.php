@@ -137,7 +137,7 @@
             </div>
 
             <div class="flex items-center gap-3">
-                <a href="{{ route('downtime_erp.edit', $row->id) }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded shadow transition">Edit</a>
+                <a href="{{ route('downtime_erp.edit', ['downtime_erp' => $row->id]) }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded shadow transition">Edit</a>
                 <a href="{{ route('downtime_erp.index') }}" class="text-gray-600 hover:text-gray-800 font-semibold">Kembali</a>
             </div>
         </div>

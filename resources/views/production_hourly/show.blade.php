@@ -97,10 +97,10 @@
                             </td>
                             <td class="px-3 py-2 whitespace-nowrap text-sm text-center">
                                 <div class="flex items-center justify-center gap-2">
-                                    <a href="{{ route('production-hourly.edit', $item->id) }}" class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white p-1.5 rounded shadow transition" title="Edit">
+                                    <a href="{{ route('production-hourly.edit', ['phourly' => $item->id]) }}" class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white p-1.5 rounded shadow transition" title="Edit">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                                     </a>
-                                    <form action="{{ route('production-hourly.destroy', $item->id) }}" method="POST" class="inline">
+                                    <form action="{{ route('production-hourly.destroy', ['phourly' => $item->id]) }}" method="POST" class="inline">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="inline-flex items-center justify-center bg-red-600 hover:bg-red-700 text-white p-1.5 rounded shadow transition" title="Delete" onclick="return confirm('Hapus data produksi jam {{ str_pad($item->hour, 2, '0', STR_PAD_LEFT) }}:00?')">
