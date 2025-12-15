@@ -7,10 +7,29 @@ use App\Models\Problem;
 
 class ReasonController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $reasons = Reason::orderBy('name', 'asc')->paginate(12);
-        return view('reasons.index', compact('reasons'));
+        $query = Reason::query();
+        
+        // Sorting
+        $sortBy = $request->get('sort_by', 'name');
+        $sortDir = $request->get('sort_dir', 'asc');
+        
+        // Validate sort_by and sort_dir
+        $allowedSorts = ['id', 'name', 'created_at', 'updated_at'];
+        if (!in_array($sortBy, $allowedSorts)) {
+            $sortBy = 'name';
+        }
+        if (!in_array($sortDir, ['asc', 'desc'])) {
+            $sortDir = 'asc';
+        }
+        
+        // Apply sorting
+        $query->orderBy($sortBy, $sortDir);
+        
+        $reasons = $query->paginate(12)->withQueryString();
+        
+        return view('reasons.index', compact('reasons', 'sortBy', 'sortDir'));
     }
 
     public function create()

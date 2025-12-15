@@ -19,10 +19,10 @@
                 <thead class="bg-blue-600">
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">No</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">ID</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Name</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Created At</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Updated At</th>
+                        <x-sortable-header column="id" :currentSort="($sortBy ?? 'name')" :currentDir="($sortDir ?? 'asc')" label="ID" />
+                        <x-sortable-header column="name" :currentSort="($sortBy ?? 'name')" :currentDir="($sortDir ?? 'asc')" label="Name" />
+                        <x-sortable-header column="created_at" :currentSort="($sortBy ?? 'name')" :currentDir="($sortDir ?? 'asc')" label="Created At" />
+                        <x-sortable-header column="updated_at" :currentSort="($sortBy ?? 'name')" :currentDir="($sortDir ?? 'asc')" label="Updated At" />
                         <th class="px-4 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>

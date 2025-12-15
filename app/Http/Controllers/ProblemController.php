@@ -25,15 +25,33 @@ class ProblemController extends Controller
             $query->where('name', 'like', '%' . $request->search . '%');
         }
         
-        $problems = $query->orderBy('problem_header', 'asc')
-            ->orderBy('name', 'asc')
-            ->paginate(12);
+        // Sorting
+        $sortBy = $request->get('sort_by', 'problem_header');
+        $sortDir = $request->get('sort_dir', 'asc');
+        
+        // Validate sort_by and sort_dir
+        $allowedSorts = ['id', 'name', 'problem_header', 'problem_mm', 'created_at'];
+        if (!in_array($sortBy, $allowedSorts)) {
+            $sortBy = 'problem_header';
+        }
+        if (!in_array($sortDir, ['asc', 'desc'])) {
+            $sortDir = 'asc';
+        }
+        
+        // Apply sorting
+        if ($sortBy === 'problem_header') {
+            $query->orderBy('problem_header', $sortDir)->orderBy('name', 'asc');
+        } else {
+            $query->orderBy($sortBy, $sortDir);
+        }
+        
+        $problems = $query->paginate(12)->withQueryString();
         
         // Get filter options
         $systems = \App\Models\System::orderBy('nama_sistem')->get();
         $problemHeaders = Problem::whereNotNull('problem_header')->distinct()->orderBy('problem_header')->pluck('problem_header');
         
-        return view('problems.index', compact('problems', 'systems', 'problemHeaders'));
+        return view('problems.index', compact('problems', 'systems', 'problemHeaders', 'sortBy', 'sortDir'));
     }
 
     public function create()

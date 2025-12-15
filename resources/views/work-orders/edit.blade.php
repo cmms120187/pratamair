@@ -12,7 +12,7 @@
         </div>
 
         <div class="bg-white rounded-lg shadow p-6">
-            <form action="{{ route('work-orders.update', ['wo' => $workOrder->id]) }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('work-orders.update', $workOrder->id) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 

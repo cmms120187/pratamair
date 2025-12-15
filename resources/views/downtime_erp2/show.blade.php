@@ -12,7 +12,7 @@
                     Back
                 </a>
                 @if(Auth::user()->role !== 'mekanik')
-                    <a href="{{ route('downtime-erp2.edit', ['derp2' => $downtimeErp2->id]) }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition">
+                    <a href="{{ route('downtime-erp2.edit', $downtimeErp2->id) }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition">
                         Edit
                     </a>
                 @endif
@@ -239,7 +239,7 @@
                 Back to List
             </a>
             @if(Auth::user()->role !== 'mekanik')
-                <a href="{{ route('downtime-erp2.edit', ['derp2' => $downtimeErp2->id]) }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow transition">
+                <a href="{{ route('downtime-erp2.edit', $downtimeErp2->id) }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow transition">
                     Edit
                 </a>
             @endif

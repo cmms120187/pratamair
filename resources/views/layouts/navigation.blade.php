@@ -18,32 +18,28 @@
                     $userRole = Auth::user()->role ?? 'mekanik';
                     
                     // Function to check menu access
-                    if (!function_exists('canAccessMenu')) {
-                        function canAccessMenu($menuKey, $userRole) {
-                            try {
-                                if (class_exists('\App\Helpers\PermissionHelper')) {
-                                    return \App\Helpers\PermissionHelper::canAccessMenu($userRole, $menuKey);
-                                }
-                            } catch (\Exception $e) {
-                                // If PermissionHelper not available, allow access (fallback)
+                    function canAccessMenu($menuKey, $userRole) {
+                        try {
+                            if (class_exists('\App\Helpers\PermissionHelper')) {
+                                return \App\Helpers\PermissionHelper::canAccessMenu($userRole, $menuKey);
                             }
-                            // Fallback: allow all access if PermissionHelper not available
-                            return true;
+                        } catch (\Exception $e) {
+                            // If PermissionHelper not available, allow access (fallback)
                         }
+                        // Fallback: allow all access if PermissionHelper not available
+                        return true;
                     }
                     
                     // Function to filter menu children
-                    if (!function_exists('filterMenuChildren')) {
-                        function filterMenuChildren($children, $userRole) {
-                            $filtered = [];
-                            foreach ($children as $child) {
-                                $menuKey = $child['menu_key'] ?? strtolower(str_replace([' ', '-'], '_', $child['name']));
-                                if (canAccessMenu($menuKey, $userRole)) {
-                                    $filtered[] = $child;
-                                }
+                    function filterMenuChildren($children, $userRole) {
+                        $filtered = [];
+                        foreach ($children as $child) {
+                            $menuKey = $child['menu_key'] ?? strtolower(str_replace([' ', '-'], '_', $child['name']));
+                            if (canAccessMenu($menuKey, $userRole)) {
+                                $filtered[] = $child;
                             }
-                            return $filtered;
                         }
+                        return $filtered;
                     }
                     
                     // Load menu configuration from config file
@@ -106,50 +102,12 @@
                     }
                     
                     // Check if any child is active for group menus
-                    if (!function_exists('isGroupActive')) {
-                        function isGroupActive($group, $currentUrl) {
-                            if (!isset($group['children'])) return false;
-                            foreach ($group['children'] as $child) {
-                                // Extract path from URL if it's a full URL
-                                $routeUrl = $child['route'];
-                                if (str_starts_with($routeUrl, 'http')) {
-                                    $parsedUrl = parse_url($routeUrl);
-                                    $routePath = trim($parsedUrl['path'] ?? '', '/');
-                                } else {
-                                    $routePath = trim($routeUrl, '/');
-                                }
-                                
-                                // Use exact match or ensure the URL starts with the route path
-                                // This prevents 'predictive-maintenance' from matching 'preventive-maintenance'
-                                if ($currentUrl === $routePath) {
-                                    return true;
-                                }
-                                // Check if current URL starts with route path followed by / or ? or end of string
-                                $routeLength = strlen($routePath);
-                                if (strlen($currentUrl) >= $routeLength && 
-                                    substr($currentUrl, 0, $routeLength) === $routePath) {
-                                    $nextChar = strlen($currentUrl) > $routeLength ? $currentUrl[$routeLength] : '';
-                                    if ($nextChar === '' || $nextChar === '/' || $nextChar === '?') {
-                                        return true;
-                                    }
-                                }
-                            }
-                            return false;
-                        }
-                    }
-                    
-                    // Check if menu item is active
-                    if (!function_exists('isMenuActive')) {
-                        function isMenuActive($route, $name, $currentUrl) {
-                            // Extract path from URL if it's a full URL
-                            if (str_starts_with($route, 'http')) {
-                                $parsedUrl = parse_url($route);
-                                $routePath = trim($parsedUrl['path'] ?? '', '/');
-                            } else {
-                                $routePath = trim($route, '/');
-                            }
-                            
-                            // Use exact match
+                    function isGroupActive($group, $currentUrl) {
+                        if (!isset($group['children'])) return false;
+                        foreach ($group['children'] as $child) {
+                            $routePath = trim($child['route'], '/');
+                            // Use exact match or ensure the URL starts with the route path
+                            // This prevents 'predictive-maintenance' from matching 'preventive-maintenance'
                             if ($currentUrl === $routePath) {
                                 return true;
                             }
@@ -162,8 +120,27 @@
                                     return true;
                                 }
                             }
-                            return false;
                         }
+                        return false;
+                    }
+                    
+                    // Check if menu item is active
+                    function isMenuActive($route, $name, $currentUrl) {
+                        $routePath = trim($route, '/');
+                        // Use exact match
+                        if ($currentUrl === $routePath) {
+                            return true;
+                        }
+                        // Check if current URL starts with route path followed by / or ? or end of string
+                        $routeLength = strlen($routePath);
+                        if (strlen($currentUrl) >= $routeLength && 
+                            substr($currentUrl, 0, $routeLength) === $routePath) {
+                            $nextChar = strlen($currentUrl) > $routeLength ? $currentUrl[$routeLength] : '';
+                            if ($nextChar === '' || $nextChar === '/' || $nextChar === '?') {
+                                return true;
+                            }
+                        }
+                        return false;
                     }
                 @endphp
                 

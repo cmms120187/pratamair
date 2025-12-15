@@ -229,7 +229,7 @@
                         </svg>
                         Edit
                     </a>
-                    <form action="{{ route('machine-erp.destroy', ['merp' => $machineErp->id]) }}" method="POST" class="inline">
+                    <form action="{{ route('machine-erp.destroy', $machineErp->id) }}" method="POST" class="inline">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded shadow transition flex items-center" onclick="return confirm('Delete this machine ERP?')">

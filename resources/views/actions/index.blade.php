@@ -22,7 +22,7 @@
                         <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">System</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Problem</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Reason</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Action Name</th>
+                        <x-sortable-header column="name" :currentSort="($sortBy ?? 'name')" :currentDir="($sortDir ?? 'asc')" label="Action Name" />
                         <th class="px-4 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>

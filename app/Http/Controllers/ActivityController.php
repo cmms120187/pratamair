@@ -7,7 +7,6 @@ use App\Models\Activity;
 use App\Models\User;
 use App\Models\MachineErp;
 use App\Models\RoomErp;
-use App\Models\Plant;
 use App\Helpers\ImageHelper;
 use App\Helpers\DataFilterHelper;
 use Illuminate\Support\Facades\Storage;
@@ -82,13 +81,10 @@ class ActivityController extends Controller
         // Get RoomErp for dropdown (same format as MachineErp)
         $roomErps = RoomErp::orderBy('name', 'asc')->get();
         
-        // Get all plants for dropdown filter
-        $plants = Plant::orderBy('name', 'asc')->get();
-        
         // Get current logged in user
         $currentUser = auth()->user();
         
-        return view('activities.create', compact('mekaniks', 'machines', 'roomErps', 'plants', 'currentUser'));
+        return view('activities.create', compact('mekaniks', 'machines', 'roomErps', 'currentUser'));
     }
 
     /**
@@ -155,14 +151,7 @@ class ActivityController extends Controller
         if ($request->hasFile('photos')) {
             foreach ($request->file('photos') as $photo) {
                 $photoPath = ImageHelper::convertToWebP($photo, 'activities', 85);
-                if ($photoPath) {
-                    $photos[] = $photoPath;
-                } else {
-                    \Log::error('ActivityController: Failed to upload photo', [
-                        'filename' => $photo->getClientOriginalName(),
-                        'size' => $photo->getSize()
-                    ]);
-                }
+                $photos[] = $photoPath;
             }
         }
         $validated['photos'] = !empty($photos) ? $photos : null;
@@ -225,10 +214,7 @@ class ActivityController extends Controller
         // Get RoomErp for dropdown (same format as MachineErp)
         $roomErps = RoomErp::orderBy('name', 'asc')->get();
         
-        // Get all plants for dropdown filter
-        $plants = Plant::orderBy('name', 'asc')->get();
-        
-        return view('activities.edit', compact('activity', 'mekaniks', 'machines', 'roomErps', 'plants', 'page'));
+        return view('activities.edit', compact('activity', 'mekaniks', 'machines', 'roomErps', 'page'));
     }
 
     /**

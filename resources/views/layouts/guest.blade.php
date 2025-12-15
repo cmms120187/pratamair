@@ -108,45 +108,25 @@
                 
                 <div class="relative z-10 animate-fade-in-up" style="animation-delay: 0.4s;">
                     <div class="grid grid-cols-2 gap-6">
-                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 card-hover">
+                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
                             <div class="text-3xl mb-2">📊</div>
                             <h3 class="font-semibold mb-1">Analytics</h3>
                             <p class="text-sm text-blue-100">Data-driven insights</p>
                         </div>
-                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 card-hover">
+                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
                             <div class="text-3xl mb-2">⚡</div>
                             <h3 class="font-semibold mb-1">Real-time</h3>
                             <p class="text-sm text-blue-100">Live monitoring</p>
                         </div>
-                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 card-hover">
+                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
                             <div class="text-3xl mb-2">🔧</div>
                             <h3 class="font-semibold mb-1">Maintenance</h3>
                             <p class="text-sm text-blue-100">Preventive care</p>
                         </div>
-                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 card-hover">
+                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
                             <div class="text-3xl mb-2">📈</div>
                             <h3 class="font-semibold mb-1">Efficiency</h3>
                             <p class="text-sm text-blue-100">Optimize operations</p>
-                        </div>
-                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 card-hover">
-                            <div class="text-3xl mb-2">⏱️</div>
-                            <h3 class="font-semibold mb-1">Downtime</h3>
-                            <p class="text-sm text-blue-100">Track & analyze</p>
-                        </div>
-                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 card-hover">
-                            <div class="text-3xl mb-2">📋</div>
-                            <h3 class="font-semibold mb-1">Work Order</h3>
-                            <p class="text-sm text-blue-100">Manage tasks</p>
-                        </div>
-                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 card-hover">
-                            <div class="text-3xl mb-2">🎯</div>
-                            <h3 class="font-semibold mb-1">OEE</h3>
-                            <p class="text-sm text-blue-100">Equipment effectiveness</p>
-                        </div>
-                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 card-hover">
-                            <div class="text-3xl mb-2">📦</div>
-                            <h3 class="font-semibold mb-1">Inventory</h3>
-                            <p class="text-sm text-blue-100">Parts management</p>
                         </div>
                     </div>
                 </div>

@@ -4,7 +4,7 @@
     <div class="w-full mx-auto max-w-6xl">
         <div class="flex items-center justify-between mb-6">
             <h1 class="text-2xl font-bold text-gray-800">Update Predictive Maintenance Execution</h1>
-            <a href="{{ route('predictive-maintenance.ctrl.index') }}" class="text-gray-600 hover:text-gray-800">
+            <a href="{{ route('predictive-maintenance.controlling.index') }}" class="text-gray-600 hover:text-gray-800">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -21,7 +21,7 @@
             </div>
         @endif
 
-        <form action="{{ route('predictive-maintenance.ctrl.update', ['ctrl' => $execution->id]) }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('predictive-maintenance.controlling.update', $execution->id) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
@@ -261,7 +261,7 @@
 
             <!-- Submit Buttons -->
             <div class="flex justify-end gap-3">
-                <a href="{{ route('predictive-maintenance.ctrl.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded shadow transition">
+                <a href="{{ route('predictive-maintenance.controlling.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded shadow transition">
                     Cancel
                 </a>
                 <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded shadow transition">

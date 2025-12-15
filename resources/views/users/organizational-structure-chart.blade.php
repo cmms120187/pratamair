@@ -345,7 +345,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let html = `
             <div class="${nodeClass}" data-node-id="${node.id}">
-                <a href="{{ url('/usr/users') }}/${node.id}/edit" class="org-node-link">
+                <a href="{{ route('users.edit', '') }}/${node.id}" class="org-node-link">
                     <div class="org-node-card level-${cardLevel}">
         `;
 

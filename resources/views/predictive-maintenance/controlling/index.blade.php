@@ -9,7 +9,7 @@
             </div>
             <div class="flex items-center gap-3">
                 <!-- Filter Section -->
-                <form method="GET" action="{{ route('predictive-maintenance.ctrl.index') }}" class="flex items-center gap-2">
+                <form method="GET" action="{{ route('predictive-maintenance.controlling.index') }}" class="flex items-center gap-2">
                     <div class="flex items-center gap-2">
                         <label for="month" class="text-sm font-medium text-gray-700">Bulan:</label>
                         <select name="month" id="month" class="border rounded px-2 py-1.5 text-sm">
@@ -54,7 +54,7 @@
                         </label>
                     </form>
                 </div>
-                <a href="{{ route('predictive-maintenance.ctrl.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition flex items-center">
+                <a href="{{ route('predictive-maintenance.controlling.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                     Create Execution
                 </a>
@@ -298,7 +298,7 @@
                                                 }
                                             }
                                         @endphp
-                                        <a href="{{ route('predictive-maintenance.ctrl.create', [
+                                        <a href="{{ route('predictive-maintenance.controlling.create', [
                                             'machine_id' => $machine->id,
                                             'type_machine_id' => $machine->machine_type_id,
                                             'scheduled_date' => $date
@@ -329,7 +329,7 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                     </svg>
                                 </a>
-                                <a href="{{ route('predictive-maintenance.ctrl.create', ['machine_id' => $machine->id, 'type_machine_id' => $machine->machine_type_id]) }}"
+                                <a href="{{ route('predictive-maintenance.controlling.create', ['machine_id' => $machine->id, 'type_machine_id' => $machine->machine_type_id]) }}"
                                    class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white p-2 rounded shadow transition duration-150 ease-in-out"
                                    title="Create Execution">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

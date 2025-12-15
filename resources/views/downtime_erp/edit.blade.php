@@ -12,7 +12,7 @@
                 </ul>
             </div>
         @endif
-        <form action="{{ route('downtime_erp.update', ['downtime_erp' => $row->id]) }}" method="POST" class="bg-white rounded-lg shadow p-6">
+        <form action="{{ route('downtime_erp.update', $row->id) }}" method="POST" class="bg-white rounded-lg shadow p-6">
             @csrf
             @method('PUT')
             <!-- Informasi Mesin -->

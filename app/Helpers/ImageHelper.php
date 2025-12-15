@@ -8,159 +8,35 @@ use Illuminate\Http\UploadedFile;
 class ImageHelper
 {
     /**
-     * Resize image to fit within max dimensions while maintaining aspect ratio
-     * 
-     * @param resource $image Image resource
-     * @param int $maxWidth Maximum width
-     * @param int $maxHeight Maximum height
-     * @return resource Resized image resource
-     */
-    private static function resizeImage($image, int $maxWidth, int $maxHeight)
-    {
-        $originalWidth = imagesx($image);
-        $originalHeight = imagesy($image);
-        
-        // Calculate new dimensions maintaining aspect ratio
-        $ratio = min($maxWidth / $originalWidth, $maxHeight / $originalHeight);
-        $newWidth = (int)($originalWidth * $ratio);
-        $newHeight = (int)($originalHeight * $ratio);
-        
-        // Create new image with new dimensions
-        $resized = imagecreatetruecolor($newWidth, $newHeight);
-        
-        // Preserve transparency for PNG
-        imagealphablending($resized, false);
-        imagesavealpha($resized, true);
-        $transparent = imagecolorallocatealpha($resized, 0, 0, 0, 127);
-        imagefill($resized, 0, 0, $transparent);
-        
-        // Resize image
-        imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, $originalWidth, $originalHeight);
-        
-        return $resized;
-    }
-
-    /**
-     * Compress image to target file size (in bytes)
-     * 
-     * @param resource $image Image resource
-     * @param string $outputPath Output file path
-     * @param int $targetSize Target file size in bytes (default: 1MB)
-     * @param int $maxWidth Maximum width (default: 1920)
-     * @param int $maxHeight Maximum height (default: 1920)
-     * @return bool Success status
-     */
-    private static function compressToTargetSize($image, string $outputPath, int $targetSize = 1048576, int $maxWidth = 1920, int $maxHeight = 1920): bool
-    {
-        $originalWidth = imagesx($image);
-        $originalHeight = imagesy($image);
-        
-        // Resize if image is too large
-        if ($originalWidth > $maxWidth || $originalHeight > $maxHeight) {
-            $image = self::resizeImage($image, $maxWidth, $maxHeight);
-        }
-        
-        // Try different quality levels to reach target size
-        $minQuality = 30;
-        $maxQuality = 95;
-        $bestQuality = 85;
-        $bestSize = PHP_INT_MAX;
-        
-        // Binary search for optimal quality
-        while ($maxQuality - $minQuality > 5) {
-            $testQuality = (int)(($minQuality + $maxQuality) / 2);
-            
-            // Save to temporary file to check size
-            $tempPath = $outputPath . '.tmp';
-            @imagewebp($image, $tempPath, $testQuality);
-            
-            if (file_exists($tempPath)) {
-                $fileSize = filesize($tempPath);
-                
-                if ($fileSize <= $targetSize) {
-                    // File size is acceptable, try higher quality
-                    $minQuality = $testQuality;
-                    if ($fileSize < $bestSize) {
-                        $bestSize = $fileSize;
-                        $bestQuality = $testQuality;
-                    }
-                } else {
-                    // File too large, need lower quality
-                    $maxQuality = $testQuality;
-                }
-                
-                @unlink($tempPath);
-            } else {
-                // Failed to save, reduce quality
-                $maxQuality = $testQuality;
-            }
-        }
-        
-        // Save with best quality found
-        $success = @imagewebp($image, $outputPath, $bestQuality);
-        
-        // If still too large, resize more aggressively
-        if ($success && file_exists($outputPath) && filesize($outputPath) > $targetSize) {
-            $currentSize = filesize($outputPath);
-            $scaleFactor = sqrt($targetSize / $currentSize);
-            $newWidth = (int)(imagesx($image) * $scaleFactor);
-            $newHeight = (int)(imagesy($image) * $scaleFactor);
-            
-            if ($newWidth > 0 && $newHeight > 0) {
-                $resized = imagecreatetruecolor($newWidth, $newHeight);
-                imagealphablending($resized, false);
-                imagesavealpha($resized, true);
-                $transparent = imagecolorallocatealpha($resized, 0, 0, 0, 127);
-                imagefill($resized, 0, 0, $transparent);
-                imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, imagesx($image), imagesy($image));
-                
-                @unlink($outputPath);
-                $success = @imagewebp($resized, $outputPath, 85);
-                imagedestroy($resized);
-            }
-        }
-        
-        return $success && file_exists($outputPath) && filesize($outputPath) > 0;
-    }
-
-    /**
      * Convert uploaded image to WebP format and store it
-     * Automatically resizes and compresses to max 1MB
      * 
      * @param UploadedFile $file
      * @param string $directory
      * @param int $quality Quality from 0-100 (default: 85)
-     * @param int $maxSize Maximum file size in bytes (default: 1MB = 1048576)
      * @return string|null Path to stored WebP image or null on failure
      */
-    public static function convertToWebP(UploadedFile $file, string $directory, int $quality = 85, int $maxSize = 1048576): ?string
+    public static function convertToWebP(UploadedFile $file, string $directory, int $quality = 85): ?string
     {
         try {
             // Check if GD extension is available
             if (!extension_loaded('gd')) {
-                \Log::warning('ImageHelper: GD extension is not available, using fallback storage');
+                \Log::error('GD extension is not available for image conversion');
                 // Fallback to original file storage
-                $path = $file->store($directory, 'public');
-                \Log::info('ImageHelper: File stored using fallback method', ['path' => $path]);
-                return $path;
+                return $file->store($directory, 'public');
             }
 
             // Check if WebP is supported
             if (!function_exists('imagewebp')) {
-                \Log::warning('ImageHelper: WebP support is not available in GD, using fallback storage');
+                \Log::error('WebP support is not available in GD');
                 // Fallback to original file storage
-                $path = $file->store($directory, 'public');
-                \Log::info('ImageHelper: File stored using fallback method', ['path' => $path]);
-                return $path;
+                return $file->store($directory, 'public');
             }
 
             // Get image info
             $imageInfo = getimagesize($file->getRealPath());
             if ($imageInfo === false) {
-                \Log::warning('ImageHelper: Unable to get image info, using fallback storage');
-                $path = $file->store($directory, 'public');
-                \Log::info('ImageHelper: File stored using fallback method', ['path' => $path]);
-                return $path;
+                \Log::error('Unable to get image info');
+                return $file->store($directory, 'public');
             }
 
             $mimeType = $imageInfo['mime'];
@@ -171,32 +47,25 @@ class ImageHelper
             $image = null;
             switch ($mimeType) {
                 case 'image/jpeg':
-                    $image = @imagecreatefromjpeg($file->getRealPath());
+                    $image = imagecreatefromjpeg($file->getRealPath());
                     break;
                 case 'image/png':
-                    $image = @imagecreatefrompng($file->getRealPath());
+                    $image = imagecreatefrompng($file->getRealPath());
                     break;
                 case 'image/gif':
-                    $image = @imagecreatefromgif($file->getRealPath());
+                    $image = imagecreatefromgif($file->getRealPath());
                     break;
                 case 'image/webp':
                     // Already WebP, just store it
-                    \Log::info('ImageHelper: File is already WebP, storing directly');
-                    $path = $file->store($directory, 'public');
-                    \Log::info('ImageHelper: WebP file stored', ['path' => $path]);
-                    return $path;
+                    return $file->store($directory, 'public');
                 default:
-                    \Log::warning('ImageHelper: Unsupported image type, using fallback storage', ['mime' => $mimeType]);
-                    $path = $file->store($directory, 'public');
-                    \Log::info('ImageHelper: File stored using fallback method', ['path' => $path]);
-                    return $path;
+                    \Log::error('Unsupported image type: ' . $mimeType);
+                    return $file->store($directory, 'public');
             }
 
             if ($image === false) {
-                \Log::warning('ImageHelper: Failed to create image resource, using fallback storage');
-                $path = $file->store($directory, 'public');
-                \Log::info('ImageHelper: File stored using fallback method', ['path' => $path]);
-                return $path;
+                \Log::error('Failed to create image resource');
+                return $file->store($directory, 'public');
             }
 
             // Generate unique filename with .webp extension
@@ -207,60 +76,25 @@ class ImageHelper
             // Ensure directory exists
             $dir = dirname($fullPath);
             if (!is_dir($dir)) {
-                if (!mkdir($dir, 0755, true)) {
-                    \Log::error('ImageHelper: Failed to create directory', ['dir' => $dir]);
-                    imagedestroy($image);
-                    $path = $file->store($directory, 'public');
-                    \Log::info('ImageHelper: File stored using fallback method after directory creation failure', ['path' => $path]);
-                    return $path;
-                }
+                mkdir($dir, 0755, true);
             }
 
-            // Compress image to target size (max 1MB)
-            $success = self::compressToTargetSize($image, $fullPath, $maxSize, 1920, 1920);
+            // Convert and save as WebP
+            $success = imagewebp($image, $fullPath, $quality);
 
             // Free memory
             imagedestroy($image);
 
-            if ($success && file_exists($fullPath) && filesize($fullPath) > 0) {
-                $finalSize = filesize($fullPath);
-                \Log::info('ImageHelper: Successfully converted, resized and compressed WebP image', [
-                    'path' => $path,
-                    'size' => $finalSize,
-                    'size_mb' => round($finalSize / 1048576, 2) . ' MB'
-                ]);
+            if ($success) {
                 return $path;
             } else {
-                \Log::warning('ImageHelper: Failed to save WebP image or file is empty, using fallback storage', [
-                    'success' => $success,
-                    'exists' => file_exists($fullPath),
-                    'size' => file_exists($fullPath) ? filesize($fullPath) : 0
-                ]);
-                // Clean up failed file if it exists
-                if (file_exists($fullPath)) {
-                    @unlink($fullPath);
-                }
-                $path = $file->store($directory, 'public');
-                \Log::info('ImageHelper: File stored using fallback method', ['path' => $path]);
-                return $path;
+                \Log::error('Failed to save WebP image');
+                return $file->store($directory, 'public');
             }
         } catch (\Exception $e) {
-            \Log::error('ImageHelper: Exception during WebP conversion', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            // Fallback to original file storage - ensure file is always saved
-            try {
-                $path = $file->store($directory, 'public');
-                \Log::info('ImageHelper: File stored using fallback method after exception', ['path' => $path]);
-                return $path;
-            } catch (\Exception $fallbackException) {
-                \Log::error('ImageHelper: Critical error - both WebP conversion and fallback storage failed', [
-                    'original_error' => $e->getMessage(),
-                    'fallback_error' => $fallbackException->getMessage()
-                ]);
-                return null;
-            }
+            \Log::error('Error converting image to WebP: ' . $e->getMessage());
+            // Fallback to original file storage
+            return $file->store($directory, 'public');
         }
     }
 

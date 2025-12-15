@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         @endif
 
-        <form action="{{ route('preventive-maintenance.scheduling.update', ['scheduling' => $schedule->id]) }}" method="POST">
+        <form action="{{ route('preventive-maintenance.scheduling.update', $schedule->id) }}" method="POST">
             @csrf
             @method('PUT')
             <div class="bg-white rounded-lg shadow p-6">

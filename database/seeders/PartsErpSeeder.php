@@ -33,9 +33,7 @@ class PartsErpSeeder extends Seeder
             ['id' => 18, 'part_number' => 'X006216B2600', 'name' => 'SCUND RING', 'description' => 'SC 25 - 8', 'category' => 'Electrical / Instrument', 'brand' => '-', 'unit' => 'EA', 'stock' => 0, 'price' => null, 'location' => null, 'created_at' => '2025-11-27 02:20:34', 'updated_at' => '2025-11-27 18:54:40'],
             ['id' => 19, 'part_number' => 'X006216DH300', 'name' => 'SCUND RING', 'description' => 'SC 50 - 8', 'category' => 'Electrical / Instrument', 'brand' => '-', 'unit' => 'EA', 'stock' => 0, 'price' => null, 'location' => null, 'created_at' => '2025-11-27 02:20:34', 'updated_at' => '2025-11-27 18:54:50'],
         ];
-        foreach ($parts as $part) {
-            DB::table('part_erp')->updateOrInsert(['id' => $part['id']], $part);
-        }
+        DB::table('part_erp')->insert($parts);
 
         // Part ERP Machine Type
         $partMachineTypes = [
@@ -79,8 +77,6 @@ class PartsErpSeeder extends Seeder
             ['id' => 38, 'part_erp_id' => 13, 'machine_type_id' => 8, 'created_at' => null, 'updated_at' => null],
             ['id' => 39, 'part_erp_id' => 13, 'machine_type_id' => 6, 'created_at' => null, 'updated_at' => null],
         ];
-        foreach ($partMachineTypes as $pmt) {
-            DB::table('part_erp_machine_type')->updateOrInsert(['id' => $pmt['id']], $pmt);
-        }
+        DB::table('part_erp_machine_type')->insert($partMachineTypes);
     }
 }

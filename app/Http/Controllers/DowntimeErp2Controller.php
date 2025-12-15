@@ -24,7 +24,7 @@ class DowntimeErp2Controller extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $query = DowntimeErp2::query();
         
@@ -33,8 +33,25 @@ class DowntimeErp2Controller extends Controller
             DataFilterHelper::filterByUserRole($query, auth()->user(), 'idMekanik');
         }
         
-        $downtimeErp2s = $query->orderBy('date', 'desc')->paginate(12);
-        return view('downtime_erp2.index', compact('downtimeErp2s'));
+        // Sorting
+        $sortBy = $request->get('sort_by', 'date');
+        $sortDir = $request->get('sort_dir', 'desc');
+        
+        // Validate sort_by and sort_dir
+        $allowedSorts = ['date', 'kode_room', 'plant', 'process', 'line', 'roomName', 'idMachine', 'problemDowntime', 'duration'];
+        if (!in_array($sortBy, $allowedSorts)) {
+            $sortBy = 'date';
+        }
+        if (!in_array($sortDir, ['asc', 'desc'])) {
+            $sortDir = 'desc';
+        }
+        
+        // Apply sorting
+        $query->orderBy($sortBy, $sortDir);
+        
+        $downtimeErp2s = $query->paginate(12)->withQueryString();
+        
+        return view('downtime_erp2.index', compact('downtimeErp2s', 'sortBy', 'sortDir'));
     }
 
     /**
@@ -134,18 +151,20 @@ class DowntimeErp2Controller extends Controller
             ];
         }
         
-        // Get all reasons for dropdown
-        $reasonsQuery = Reason::orderBy('name', 'asc')->get();
+        // Get all reasons with relationships for dropdown
+        $reasonsQuery = Reason::with(['system', 'problem'])->orderBy('name', 'asc')->get();
         
         // Get all actions with relationships for dropdown and autocomplete
         $actionsQuery = Action::with(['system', 'problem', 'reason'])->orderBy('name', 'asc')->get();
         
-        // Map reasons data for JavaScript
+        // Map reasons data for JavaScript (with problem_id and system_id)
         $reasons = [];
         foreach ($reasonsQuery as $reason) {
             $reasons[] = [
                 'id' => (string)$reason->id,
                 'name' => $reason->name ?? '',
+                'problem_id' => $reason->problem_id ? (string)$reason->problem_id : null,
+                'system_id' => $reason->system_id ? (string)$reason->system_id : null,
             ];
         }
         
@@ -365,7 +384,97 @@ class DowntimeErp2Controller extends Controller
         // Get all Room ERP for location dropdown
         $roomErps = RoomErp::orderBy('name', 'asc')->get();
         
-        return view('downtime_erp2.edit', compact('downtimeErp2', 'stopTime', 'responTime', 'startTime', 'mekaniks', 'groups', 'groupsData', 'roomErps', 'page'));
+        // Get all systems for dropdown
+        $systemsQuery = System::orderBy('nama_sistem', 'asc')->get();
+        
+        // Get all problems with their systems for client-side filtering
+        $problemsQuery = Problem::with('systems')->orderBy('problem_header', 'asc')->orderBy('name', 'asc')->get();
+        
+        // Get all reasons with relationships
+        $reasonsQuery = Reason::with(['system', 'problem'])->orderBy('name', 'asc')->get();
+        
+        // Get all actions with relationships for dropdown and autocomplete
+        $actionsQuery = Action::with(['system', 'problem', 'reason'])->orderBy('name', 'asc')->get();
+        
+        // Get all parts from PartErp (category stores nama_sistem)
+        $partsQuery = PartErp::orderBy('name', 'asc')->get();
+        
+        // Map systems data for JavaScript
+        $systems = [];
+        foreach ($systemsQuery as $system) {
+            $systems[] = [
+                'id' => (string)$system->id,
+                'nama_sistem' => $system->nama_sistem ?? '',
+            ];
+        }
+        
+        // Map problems data with their system IDs for JavaScript
+        $problems = [];
+        foreach ($problemsQuery as $problem) {
+            $systemIds = $problem->systems->pluck('id')->map(function($id) {
+                return (string)$id;
+            })->toArray();
+            
+            $problems[] = [
+                'id' => (string)$problem->id,
+                'name' => $problem->name ?? '',
+                'problem_header' => $problem->problem_header ?? '',
+                'problem_mm' => $problem->problem_mm ?? '',
+                'system_ids' => $systemIds,
+            ];
+        }
+        
+        // Map reasons data for JavaScript (with problem_id and system_id)
+        $reasons = [];
+        foreach ($reasonsQuery as $reason) {
+            $reasons[] = [
+                'id' => (string)$reason->id,
+                'name' => $reason->name ?? '',
+                'problem_id' => $reason->problem_id ? (string)$reason->problem_id : null,
+                'system_id' => $reason->system_id ? (string)$reason->system_id : null,
+            ];
+        }
+        
+        // Map actions data for JavaScript (with system, problem, reason info)
+        $actions = [];
+        foreach ($actionsQuery as $action) {
+            $actions[] = [
+                'id' => (string)$action->id,
+                'name' => $action->name ?? '',
+                'system_id' => $action->system_id ? (string)$action->system_id : null,
+                'system_name' => $action->system ? $action->system->nama_sistem : '',
+                'problem_id' => $action->problem_id ? (string)$action->problem_id : null,
+                'problem_name' => $action->problem ? $action->problem->name : '',
+                'problem_header' => $action->problem ? $action->problem->problem_header : '',
+                'reason_id' => $action->reason_id ? (string)$action->reason_id : null,
+                'reason_name' => $action->reason ? $action->reason->name : '',
+            ];
+        }
+        
+        // Map parts data with their category (nama_sistem) for JavaScript
+        $parts = [];
+        foreach ($partsQuery as $part) {
+            $parts[] = [
+                'id' => (string)$part->id,
+                'name' => $part->name ?? '',
+                'description' => $part->description ?? '',
+                'category' => $part->category ?? '',
+            ];
+        }
+        
+        // Get machine ERP data if idMachine exists
+        $machineErp = null;
+        $systemIds = [];
+        if ($downtimeErp2->idMachine) {
+            $machineErp = MachineErp::where('idMachine', $downtimeErp2->idMachine)->with('machineType.systems')->first();
+            if ($machineErp && $machineErp->machineType && $machineErp->machineType->systems) {
+                $systemIds = $machineErp->machineType->systems->pluck('id')->map(function($id) {
+                    return (string)$id;
+                })->toArray();
+            }
+        }
+        
+        return view('downtime_erp2.edit', compact('downtimeErp2', 'stopTime', 'responTime', 'startTime', 'mekaniks', 'groups', 'groupsData', 'roomErps', 'page', 'systems', 'problems', 'reasons', 'actions', 'parts', 'systemIds'));
     }
     
     /**
@@ -442,15 +551,21 @@ class DowntimeErp2Controller extends Controller
             'groupProblem' => 'nullable|string|max:255',
             'system_select' => 'nullable|exists:systems,id', // Only for filtering, not stored
             'problem_select' => 'nullable|exists:problems,id', // Only for filtering, not stored
+            'reason_select' => 'nullable|exists:reasons,id', // Only for filtering, not stored
+            'action_select' => 'nullable|exists:actions,id', // Only for filtering, not stored
+            'part_select' => 'nullable|exists:part_erps,id', // Only for filtering, not stored
             'include_oee' => 'nullable|boolean',
         ]);
 
         // Handle checkbox (include_oee)
         $validated['include_oee'] = $request->has('include_oee') ? true : false;
         
-        // Remove system_select and problem_select from validated data (they are only for filtering)
+        // Remove system_select, problem_select, reason_select, action_select, and part_select from validated data (they are only for filtering)
         unset($validated['system_select']);
         unset($validated['problem_select']);
+        unset($validated['reason_select']);
+        unset($validated['action_select']);
+        unset($validated['part_select']);
 
         // Combine date with time fields (stopProduction, responMechanic, startProduction)
         $date = $validated['date'];

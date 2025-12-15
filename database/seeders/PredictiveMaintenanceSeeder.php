@@ -63,9 +63,7 @@ class PredictiveMaintenanceSeeder extends Seeder
             ['id' => 47, 'machine_erp_id' => 5, 'maintenance_point_id' => 4, 'standard_id' => 13, 'title' => 'Penyebaran Suhu Motor', 'description' => 'Cek selisih suhu tertinggi dan terendah', 'frequency_type' => 'monthly', 'frequency_value' => 1, 'start_date' => '2024-11-19', 'end_date' => '2024-12-31', 'preferred_time' => null, 'estimated_duration' => null, 'status' => 'active', 'assigned_to' => 8, 'notes' => null, 'created_at' => '2025-11-30 17:50:32', 'updated_at' => '2025-11-30 19:33:08'],
             ['id' => 48, 'machine_erp_id' => 5, 'maintenance_point_id' => 4, 'standard_id' => 13, 'title' => 'Penyebaran Suhu Motor', 'description' => 'Cek selisih suhu tertinggi dan terendah', 'frequency_type' => 'monthly', 'frequency_value' => 1, 'start_date' => '2024-12-19', 'end_date' => '2024-12-31', 'preferred_time' => null, 'estimated_duration' => null, 'status' => 'active', 'assigned_to' => 12, 'notes' => null, 'created_at' => '2025-11-30 17:50:32', 'updated_at' => '2025-11-30 19:33:08'],
         ];
-        foreach ($schedules as $schedule) {
-            DB::table('predictive_maintenance_schedules')->updateOrInsert(['id' => $schedule['id']], $schedule);
-        }
+        DB::table('predictive_maintenance_schedules')->insert($schedules);
 
         // Predictive Maintenance Executions
         $executions = [
@@ -74,8 +72,6 @@ class PredictiveMaintenanceSeeder extends Seeder
             ['id' => 3, 'schedule_id' => 25, 'scheduled_date' => '2024-01-19', 'actual_start_time' => null, 'actual_end_time' => null, 'status' => 'completed', 'performed_by' => 4, 'measured_value' => 1.2000, 'measurement_status' => 'normal', 'findings' => null, 'actions_taken' => null, 'notes' => null, 'checklist' => null, 'cost' => null, 'photo_before' => null, 'photo_after' => null, 'created_at' => '2025-11-30 19:42:40', 'updated_at' => '2025-11-30 19:42:40'],
             ['id' => 4, 'schedule_id' => 37, 'scheduled_date' => '2024-01-19', 'actual_start_time' => null, 'actual_end_time' => null, 'status' => 'completed', 'performed_by' => 4, 'measured_value' => 2.0000, 'measurement_status' => 'normal', 'findings' => null, 'actions_taken' => null, 'notes' => null, 'checklist' => null, 'cost' => null, 'photo_before' => null, 'photo_after' => null, 'created_at' => '2025-11-30 19:42:40', 'updated_at' => '2025-11-30 20:04:35'],
         ];
-        foreach ($executions as $execution) {
-            DB::table('predictive_maintenance_executions')->updateOrInsert(['id' => $execution['id']], $execution);
-        }
+        DB::table('predictive_maintenance_executions')->insert($executions);
     }
 }

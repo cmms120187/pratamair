@@ -13,7 +13,7 @@
             </div>
         @endif
         
-        <form action="{{ route('room-erp.update', ['room_erp' => $roomErp->id]) }}" method="POST">
+        <form action="{{ route('room-erp.update', $roomErp->id) }}" method="POST">
             @csrf
             @method('PUT')
             <div class="mb-4">

@@ -1,7 +1,4 @@
 @extends('layouts.app')
-@php
-    use Illuminate\Support\Facades\Storage;
-@endphp
 @section('content')
 <div class="w-full p-4 sm:p-6 lg:p-8">
     <div class="max-w-4xl mx-auto bg-white rounded-lg shadow p-6 sm:p-8">
@@ -16,7 +13,7 @@
             </div>
         @endif
         
-        <form action="{{ route('activities.update', ['activity' => $activity->id]) }}" method="POST" id="activityForm" enctype="multipart/form-data">
+        <form action="{{ route('activities.update', $activity->id) }}" method="POST" id="activityForm" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             @if(isset($page))
@@ -30,43 +27,28 @@
             </div>
 
             <div class="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <div class="mb-3">
-                    <label for="plant_filter" class="block text-sm font-semibold text-gray-700 mb-2">
-                        Pilih Plant (untuk filter Room ERP)
-                    </label>
-                    <select id="plant_filter" 
-                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-                        <option value="">-- Pilih Plant (opsional) --</option>
-                        @foreach($plants as $plant)
-                            <option value="{{ $plant->name }}" @if($activity->plant == $plant->name) selected @endif>{{ $plant->name }}</option>
-                        @endforeach
-                    </select>
-                    <p class="text-xs text-gray-500 mt-1">Pilih plant untuk memfilter pilihan Room ERP</p>
-                </div>
-                <div>
-                    <label for="room_erp_select" class="block text-sm font-semibold text-gray-700 mb-2">
-                        Pilih Room ERP (untuk auto-fill Plant/Process/Line/Room)
-                    </label>
-                    <select id="room_erp_select" 
-                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-                        <option value="">-- Pilih Room ERP atau isi manual --</option>
-                        @foreach($roomErps as $roomErp)
-                            <option value="{{ $roomErp->id }}" 
-                                    data-plant="{{ $roomErp->plant_name ?? '' }}"
-                                    data-process="{{ $roomErp->process_name ?? '' }}"
-                                    data-line="{{ $roomErp->line_name ?? '' }}"
-                                    data-room="{{ $roomErp->name ?? '' }}"
-                                    data-kode-room="{{ $roomErp->kode_room ?? '' }}"
-                                    @if($activity->kode_room == $roomErp->kode_room || ($activity->plant == $roomErp->plant_name && $activity->process == $roomErp->process_name && $activity->line == $roomErp->line_name && $activity->room_name == $roomErp->name)) selected @endif>
-                                {{ $roomErp->kode_room ? $roomErp->kode_room . ' - ' : '' }}{{ $roomErp->name }}
-                                @if($roomErp->plant_name)
-                                    ({{ $roomErp->plant_name }})
-                                @endif
-                            </option>
-                        @endforeach
-                    </select>
-                    <p class="text-xs text-gray-500 mt-1">Pilih room untuk mengisi otomatis field Plant, Process, Line, dan Room Name</p>
-                </div>
+                <label for="room_erp_select" class="block text-sm font-semibold text-gray-700 mb-2">
+                    Pilih Room ERP (untuk auto-fill Plant/Process/Line/Room)
+                </label>
+                <select id="room_erp_select" 
+                        class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    <option value="">-- Pilih Room ERP atau isi manual --</option>
+                    @foreach($roomErps as $roomErp)
+                        <option value="{{ $roomErp->id }}" 
+                                data-plant="{{ $roomErp->plant_name ?? '' }}"
+                                data-process="{{ $roomErp->process_name ?? '' }}"
+                                data-line="{{ $roomErp->line_name ?? '' }}"
+                                data-room="{{ $roomErp->name ?? '' }}"
+                                data-kode-room="{{ $roomErp->kode_room ?? '' }}"
+                                @if($activity->kode_room == $roomErp->kode_room || ($activity->plant == $roomErp->plant_name && $activity->process == $roomErp->process_name && $activity->line == $roomErp->line_name && $activity->room_name == $roomErp->name)) selected @endif>
+                            {{ $roomErp->kode_room ? $roomErp->kode_room . ' - ' : '' }}{{ $roomErp->name }}
+                            @if($roomErp->plant_name)
+                                ({{ $roomErp->plant_name }})
+                            @endif
+                        </option>
+                    @endforeach
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Pilih room untuk mengisi otomatis field Plant, Process, Line, dan Room Name</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -197,11 +179,7 @@
                         <div class="grid grid-cols-3 gap-4 mb-4">
                             @foreach($activity->photos as $index => $photo)
                                 <div class="relative">
-                                    @php
-                                        $photoPath = is_string($photo) ? $photo : null;
-                                        $photoUrl = $photoPath ? Storage::url($photoPath) : null;
-                                    @endphp
-                                    <img src="{{ $photoUrl ?? asset('images/placeholder.jpg') }}" alt="Photo {{ $index + 1 }}" class="w-full h-32 object-cover rounded border" onerror="this.src='{{ asset('images/placeholder.jpg') }}'; this.onerror=null;">
+                                    <img src="{{ asset('storage/' . $photo) }}" alt="Photo {{ $index + 1 }}" class="w-full h-32 object-cover rounded border" onerror="this.src='{{ asset('images/placeholder.jpg') }}'; this.onerror=null;">
                                     <button type="button" onclick="removeExistingPhoto({{ $index }})" class="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -340,70 +318,17 @@ const mekaniks = @json($mekaniks);
 // Machine data from server
 const machines = @json($machines);
 
-// Filter Room ERP based on selected Plant
-const plantFilter = document.getElementById('plant_filter');
+// Room ERP dropdown handler
 const roomErpSelect = document.getElementById('room_erp_select');
-
-function filterRoomErpByPlant() {
-    if (!roomErpSelect) return;
-    
-    const selectedPlant = plantFilter ? plantFilter.value : '';
-    const allOptions = Array.from(roomErpSelect.querySelectorAll('option'));
-    
-    // Store all options data if not already stored
-    if (!roomErpSelect.dataset.allOptionsStored) {
-        allOptions.forEach(option => {
-            option.dataset.originalDisplay = option.style.display || '';
-        });
-        roomErpSelect.dataset.allOptionsStored = 'true';
-    }
-    
-    // Show/hide options based on plant filter
-    allOptions.forEach(option => {
-        if (option.value === '') {
-            // Always show the default option
-            option.style.display = '';
-        } else {
-            const optionPlant = option.dataset.plant || '';
-            if (!selectedPlant || optionPlant === selectedPlant) {
-                option.style.display = '';
-            } else {
-                option.style.display = 'none';
-            }
-        }
-    });
-    
-    // Reset selection if current selection is hidden
-    if (selectedPlant && roomErpSelect.value) {
-        const selectedOption = roomErpSelect.options[roomErpSelect.selectedIndex];
-        if (selectedOption && selectedOption.style.display === 'none') {
-            roomErpSelect.value = '';
-        }
-    }
-}
-
-// Add event listener for plant filter
-if (plantFilter) {
-    plantFilter.addEventListener('change', filterRoomErpByPlant);
-    // Filter on page load
-    filterRoomErpByPlant();
-}
-
 if (roomErpSelect) {
     roomErpSelect.addEventListener('change', function() {
         const selectedOption = this.options[this.selectedIndex];
         if (selectedOption && selectedOption.value) {
-            const plantValue = selectedOption.dataset.plant || '';
-            document.getElementById('plant').value = plantValue;
+            document.getElementById('plant').value = selectedOption.dataset.plant || '';
             document.getElementById('process').value = selectedOption.dataset.process || '';
             document.getElementById('line').value = selectedOption.dataset.line || '';
             document.getElementById('room_name').value = selectedOption.dataset.room || '';
             document.getElementById('kode_room').value = selectedOption.dataset.kodeRoom || '';
-            
-            // Auto-select plant filter if not already selected
-            if (plantFilter && plantValue && !plantFilter.value) {
-                plantFilter.value = plantValue;
-            }
         } else {
             // Clear fields if no selection
             document.getElementById('plant').value = '';
@@ -420,13 +345,6 @@ if (roomErpSelect) {
         const currentProcess = '{{ $activity->process }}';
         const currentLine = '{{ $activity->line }}';
         const currentRoomName = '{{ $activity->room_name }}';
-        
-        // Auto-select plant filter if activity has plant
-        if (plantFilter && currentPlant) {
-            plantFilter.value = currentPlant;
-            // Trigger filter to update Room ERP options
-            filterRoomErpByPlant();
-        }
         
         const currentKodeRoom = '{{ $activity->kode_room ?? '' }}';
         if (currentKodeRoom || currentPlant || currentProcess || currentLine || currentRoomName) {

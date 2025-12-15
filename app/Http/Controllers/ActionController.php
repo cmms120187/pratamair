@@ -8,12 +8,37 @@ use App\Models\Reason;
 
 class ActionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $actions = Action::with(['system', 'problem', 'reason'])
-            ->orderBy('name', 'asc')
-            ->paginate(12);
-        return view('actions.index', compact('actions'));
+        $query = Action::with(['system', 'problem', 'reason']);
+        
+        // Sorting
+        $sortBy = $request->get('sort_by', 'name');
+        $sortDir = $request->get('sort_dir', 'asc');
+        
+        // Validate sort_by and sort_dir
+        $allowedSorts = ['name', 'created_at', 'updated_at'];
+        if (!in_array($sortBy, $allowedSorts)) {
+            $sortBy = 'name';
+        }
+        if (!in_array($sortDir, ['asc', 'desc'])) {
+            $sortDir = 'asc';
+        }
+        
+        // Handle sorting for related models using subqueries to avoid duplicates
+        if ($sortBy === 'system') {
+            $query->orderByRaw("(SELECT nama_sistem FROM systems WHERE systems.id = actions.system_id) {$sortDir}");
+        } elseif ($sortBy === 'problem') {
+            $query->orderByRaw("(SELECT name FROM problems WHERE problems.id = actions.problem_id) {$sortDir}");
+        } elseif ($sortBy === 'reason') {
+            $query->orderByRaw("(SELECT name FROM reasons WHERE reasons.id = actions.reason_id) {$sortDir}");
+        } else {
+            $query->orderBy($sortBy, $sortDir);
+        }
+        
+        $actions = $query->paginate(12)->withQueryString();
+        
+        return view('actions.index', compact('actions', 'sortBy', 'sortDir'));
     }
 
     public function create()

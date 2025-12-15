@@ -16,7 +16,7 @@
                 <p class="text-sm text-gray-500 mt-1">Maintenance Points</p>
             </div>
             <div class="flex items-center gap-3">
-                <a href="{{ route('machine-types.edit', ['mtype' => $machineType->id]) }}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
+                <a href="{{ route('machine-types.edit', $machineType->id) }}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
                     Edit
                 </a>
                 <a href="{{ route('machine-types.index') }}" class="text-gray-600 hover:text-gray-800">

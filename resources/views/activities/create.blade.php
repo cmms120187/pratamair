@@ -23,47 +23,32 @@
             </div>
 
             <div class="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <div class="mb-3">
-                    <label for="plant_filter" class="block text-sm font-semibold text-gray-700 mb-2">
-                        Pilih Gedung (untuk filter Area)
-                    </label>
-                    <select id="plant_filter" 
-                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-                        <option value="">-- Pilih Gedung (opsional) --</option>
-                        @foreach($plants as $plant)
-                            <option value="{{ $plant->name }}">{{ $plant->name }}</option>
-                        @endforeach
-                    </select>
-                    <p class="text-xs text-gray-500 mt-1">Pilih Gedung untuk memfilter pilihan Area</p>
-                </div>
-                <div>
-                    <label for="room_erp_select" class="block text-sm font-semibold text-gray-700 mb-2">
-                        Pilih Area (untuk auto-fill Plant/Process/Line/Room)
-                    </label>
-                    <select id="room_erp_select" 
-                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
-                        <option value="">-- Pilih Area --</option>
-                        @foreach($roomErps as $roomErp)
-                            <option value="{{ $roomErp->id }}" 
-                                    data-plant="{{ $roomErp->plant_name ?? '' }}"
-                                    data-process="{{ $roomErp->process_name ?? '' }}"
-                                    data-line="{{ $roomErp->line_name ?? '' }}"
-                                    data-room="{{ $roomErp->name ?? '' }}"
-                                    data-kode-room="{{ $roomErp->kode_room ?? '' }}">
-                                {{ $roomErp->kode_room ? $roomErp->kode_room . ' - ' : '' }}{{ $roomErp->name }}
-                                @if($roomErp->plant_name)
-                                    ({{ $roomErp->plant_name }})
-                                @endif
-                            </option>
-                        @endforeach
-                    </select>
-                    <p class="text-xs text-gray-500 mt-1">Pilih area untuk mengisi otomatis field Plant, Process, Line, dan Room Name</p>
-                </div>
+                <label for="room_erp_select" class="block text-sm font-semibold text-gray-700 mb-2">
+                    Pilih Room ERP (untuk auto-fill Plant/Process/Line/Room)
+                </label>
+                <select id="room_erp_select" 
+                        class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    <option value="">-- Pilih Room ERP atau isi manual --</option>
+                    @foreach($roomErps as $roomErp)
+                        <option value="{{ $roomErp->id }}" 
+                                data-plant="{{ $roomErp->plant_name ?? '' }}"
+                                data-process="{{ $roomErp->process_name ?? '' }}"
+                                data-line="{{ $roomErp->line_name ?? '' }}"
+                                data-room="{{ $roomErp->name ?? '' }}"
+                                data-kode-room="{{ $roomErp->kode_room ?? '' }}">
+                            {{ $roomErp->kode_room ? $roomErp->kode_room . ' - ' : '' }}{{ $roomErp->name }}
+                            @if($roomErp->plant_name)
+                                ({{ $roomErp->plant_name }})
+                            @endif
+                        </option>
+                    @endforeach
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Pilih room untuk mengisi otomatis field Plant, Process, Line, dan Room Name</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
-                    <label for="plant" class="block text-sm font-semibold text-gray-700 mb-2">Gedung</label>
+                    <label for="plant" class="block text-sm font-semibold text-gray-700 mb-2">Plant</label>
                     <input type="text" name="plant" id="plant" value="{{ old('plant') }}" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('plant') border-red-500 @enderror" placeholder="Akan terisi otomatis dari Room ERP" readonly>
                     @error('plant')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
@@ -73,15 +58,15 @@
                     @error('process')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
                 <div>
-                    <label for="line" class="block text-sm font-semibold text-gray-700 mb-2">Line/Lantai</label>
+                    <label for="line" class="block text-sm font-semibold text-gray-700 mb-2">Line</label>
                     <input type="text" name="line" id="line" value="{{ old('line') }}" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('line') border-red-500 @enderror" placeholder="Akan terisi otomatis dari Room ERP" readonly>
                     @error('line')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
             </div>
 
             <div class="mb-4">
-                <label for="room_name" class="block text-sm font-semibold text-gray-700 mb-2">Area</label>
-                <input type="text" name="room_name" id="room_name" value="{{ old('room_name') }}" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('room_name') border-red-500 @enderror" placeholder="Akan terisi otomatis dari Area terpilih" readonly>
+                <label for="room_name" class="block text-sm font-semibold text-gray-700 mb-2">Room Name</label>
+                <input type="text" name="room_name" id="room_name" value="{{ old('room_name') }}" class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('room_name') border-red-500 @enderror" placeholder="Akan terisi otomatis dari Room ERP" readonly>
                 @error('room_name')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
             </div>
 
@@ -111,7 +96,7 @@
             </div>
 
             <div class="mb-4">
-                <label for="remarks" class="block text-sm font-semibold text-gray-700 mb-2">Remarks / Detail Kegiatan</label>
+                <label for="remarks" class="block text-sm font-semibold text-gray-700 mb-2">Remarks</label>
                 <textarea name="remarks" id="remarks" rows="3" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('remarks') border-red-500 @enderror" placeholder="Enter remarks">{{ old('remarks') }}</textarea>
                 @error('remarks')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
             </div>
@@ -321,69 +306,15 @@ const mekaniks = @json($mekaniks);
 const machines = @json($machines);
 
 // Room ERP dropdown handler
-// Filter Room ERP based on selected Plant
-const plantFilter = document.getElementById('plant_filter');
 const roomErpSelect = document.getElementById('room_erp_select');
-
-function filterRoomErpByPlant() {
-    if (!roomErpSelect) return;
-    
-    const selectedPlant = plantFilter ? plantFilter.value : '';
-    const allOptions = Array.from(roomErpSelect.querySelectorAll('option'));
-    
-    // Store all options data if not already stored
-    if (!roomErpSelect.dataset.allOptionsStored) {
-        allOptions.forEach(option => {
-            option.dataset.originalDisplay = option.style.display || '';
-        });
-        roomErpSelect.dataset.allOptionsStored = 'true';
-    }
-    
-    // Show/hide options based on plant filter
-    allOptions.forEach(option => {
-        if (option.value === '') {
-            // Always show the default option
-            option.style.display = '';
-        } else {
-            const optionPlant = option.dataset.plant || '';
-            if (!selectedPlant || optionPlant === selectedPlant) {
-                option.style.display = '';
-            } else {
-                option.style.display = 'none';
-            }
-        }
-    });
-    
-    // Reset selection if current selection is hidden
-    if (selectedPlant && roomErpSelect.value) {
-        const selectedOption = roomErpSelect.options[roomErpSelect.selectedIndex];
-        if (selectedOption && selectedOption.style.display === 'none') {
-            roomErpSelect.value = '';
-        }
-    }
-}
-
-// Add event listener for plant filter
-if (plantFilter) {
-    plantFilter.addEventListener('change', filterRoomErpByPlant);
-    // Filter on page load
-    filterRoomErpByPlant();
-}
-
 if (roomErpSelect) {
     roomErpSelect.addEventListener('change', function() {
         const selectedOption = this.options[this.selectedIndex];
         if (selectedOption && selectedOption.value) {
-            const plantValue = selectedOption.dataset.plant || '';
-            document.getElementById('plant').value = plantValue;
+            document.getElementById('plant').value = selectedOption.dataset.plant || '';
             document.getElementById('process').value = selectedOption.dataset.process || '';
             document.getElementById('line').value = selectedOption.dataset.line || '';
             document.getElementById('room_name').value = selectedOption.dataset.room || '';
-            
-            // Auto-select plant filter if not already selected
-            if (plantFilter && plantValue && !plantFilter.value) {
-                plantFilter.value = plantValue;
-            }
         } else {
             // Clear fields if no selection
             document.getElementById('plant').value = '';

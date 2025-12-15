@@ -18,9 +18,7 @@ class MaintenancePointsSeeder extends Seeder
             ['id' => 3, 'machine_type_id' => 8, 'category' => 'predictive', 'standard_id' => 9, 'frequency_type' => 'monthly', 'frequency_value' => 1, 'name' => 'Getaran Bearing Motor Penggerak (bagian depan / DE)', 'instruction' => 'Cek Getaran Motor, agar motor bekerja sesuai standard', 'photo' => 'maintenance-points/UrtdBGbi2VxSbsUMeQLpC5fWiAkwHutP5CsOtN0P.jpg', 'sequence' => 2, 'duration' => null, 'created_at' => '2025-11-28 16:40:09', 'updated_at' => '2025-11-28 17:05:18'],
             ['id' => 4, 'machine_type_id' => 8, 'category' => 'predictive', 'standard_id' => 13, 'frequency_type' => 'monthly', 'frequency_value' => 1, 'name' => 'Penyebaran Suhu Motor', 'instruction' => 'Cek selisih suhu tertinggi dan terendah', 'photo' => 'maintenance-points/VErNEQRDHYXi31FJgXv7SVxB5cX8AuNaFBEjty61.jpg', 'sequence' => 4, 'duration' => 3, 'created_at' => '2025-11-28 21:14:56', 'updated_at' => '2025-11-30 19:33:02'],
         ];
-        foreach ($maintenancePoints as $point) {
-            DB::table('maintenance_points')->updateOrInsert(['id' => $point['id']], $point);
-        }
+        DB::table('maintenance_points')->insert($maintenancePoints);
     }
 }
 

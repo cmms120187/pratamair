@@ -14,7 +14,7 @@
             </div>
         @endif
 
-        <form action="{{ route('predictive-maintenance.ctrl.store') }}" method="POST" id="executionForm">
+        <form action="{{ route('predictive-maintenance.controlling.store') }}" method="POST" id="executionForm">
             @csrf
             <div class="bg-white rounded-lg shadow p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -133,7 +133,7 @@
                 </div>
 
                 <div class="mt-6 flex justify-end gap-3">
-                    <a href="{{ route('predictive-maintenance.ctrl.index') }}" class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50">
+                    <a href="{{ route('predictive-maintenance.controlling.index') }}" class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50">
                         Cancel
                     </a>
                     <button type="submit" id="submitBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded transition disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>

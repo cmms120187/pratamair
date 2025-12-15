@@ -5,8 +5,8 @@ use App\Http\Controllers\ProcessController;
 use App\Http\Controllers\LineController;
 use App\Http\Controllers\RoomController;
 
-// Location routes - Coordinator and above (Shortened URLs: /loc/...)
-Route::middleware(['auth', 'role:coordinator,ast_manager,manager,general_manager'])->prefix('loc')->group(function () {
+// Location routes - Coordinator and above
+Route::middleware(['auth', 'role:coordinator,ast_manager,manager,general_manager'])->group(function () {
     Route::resource('plants', PlantController::class);
     Route::post('plants/import-from-room-erp', [PlantController::class, 'importFromRoomErp'])->name('plants.import-from-room-erp');
     

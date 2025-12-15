@@ -45,11 +45,12 @@
                 <thead class="bg-blue-600">
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">No</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">ID</th>
+                        <x-sortable-header column="id" :currentSort="($sortBy ?? 'problem_header')" :currentDir="($sortDir ?? 'asc')" label="ID" />
                         <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Systems</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Problem Detail (Name)</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Problem MM</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Created At</th>
+                        <x-sortable-header column="name" :currentSort="($sortBy ?? 'problem_header')" :currentDir="($sortDir ?? 'asc')" label="Problem Detail (Name)" />
+                        <x-sortable-header column="problem_header" :currentSort="($sortBy ?? 'problem_header')" :currentDir="($sortDir ?? 'asc')" label="Problem Header" />
+                        <x-sortable-header column="problem_mm" :currentSort="($sortBy ?? 'problem_header')" :currentDir="($sortDir ?? 'asc')" label="Problem MM" />
+                        <x-sortable-header column="created_at" :currentSort="($sortBy ?? 'problem_header')" :currentDir="($sortDir ?? 'asc')" label="Created At" />
                         <th class="px-4 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>

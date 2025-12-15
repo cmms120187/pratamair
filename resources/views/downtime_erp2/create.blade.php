@@ -1099,18 +1099,29 @@ if (problemSelect) {
                 problemDowntime.value = selectedProblem.name;
             }
             
-            // Populate reason dropdown (all reasons available)
-            reasons.forEach(reason => {
-                const option = document.createElement('option');
-                option.value = reason.id;
-                option.textContent = reason.name;
-                option.setAttribute('data-reason-name', reason.name);
-                reasonSelect.appendChild(option);
+            // Filter reasons based on selected problem (reason.problem_id must match selectedProblemId)
+            const filteredReasons = reasons.filter(reason => {
+                return reason.problem_id === selectedProblemId;
             });
             
-            // Enable reason select
-            reasonSelect.disabled = false;
-            reasonSelect.classList.remove('bg-gray-100');
+            if (filteredReasons.length === 0) {
+                reasonSelect.innerHTML = '<option value="">-- Tidak ada reason untuk problem ini --</option>';
+                reasonSelect.disabled = true;
+                reasonSelect.classList.add('bg-gray-100');
+            } else {
+                // Populate reason dropdown (filtered by problem_id)
+                filteredReasons.forEach(reason => {
+                    const option = document.createElement('option');
+                    option.value = reason.id;
+                    option.textContent = reason.name;
+                    option.setAttribute('data-reason-name', reason.name);
+                    reasonSelect.appendChild(option);
+                });
+                
+                // Enable reason select
+                reasonSelect.disabled = false;
+                reasonSelect.classList.remove('bg-gray-100');
+            }
         }
     });
 }
@@ -1141,18 +1152,35 @@ if (reasonSelect) {
                 reasonDowntime.value = selectedReason.name;
             }
             
-            // Populate action dropdown (all actions available)
-            actions.forEach(action => {
-                const option = document.createElement('option');
-                option.value = action.id;
-                option.textContent = action.name;
-                option.setAttribute('data-action-name', action.name);
-                actionSelect.appendChild(option);
+            // Get selected problem ID from problem select
+            const selectedProblemId = problemSelect ? problemSelect.value : null;
+            
+            // Filter actions based on selected problem and reason
+            // Action must match both problem_id and reason_id
+            const filteredActions = actions.filter(action => {
+                const matchesProblem = !selectedProblemId || action.problem_id === selectedProblemId;
+                const matchesReason = action.reason_id === selectedReasonId;
+                return matchesProblem && matchesReason;
             });
             
-            // Enable action select
-            actionSelect.disabled = false;
-            actionSelect.classList.remove('bg-gray-100');
+            if (filteredActions.length === 0) {
+                actionSelect.innerHTML = '<option value="">-- Tidak ada action untuk reason ini --</option>';
+                actionSelect.disabled = true;
+                actionSelect.classList.add('bg-gray-100');
+            } else {
+                // Populate action dropdown (filtered by problem_id and reason_id)
+                filteredActions.forEach(action => {
+                    const option = document.createElement('option');
+                    option.value = action.id;
+                    option.textContent = action.name;
+                    option.setAttribute('data-action-name', action.name);
+                    actionSelect.appendChild(option);
+                });
+                
+                // Enable action select
+                actionSelect.disabled = false;
+                actionSelect.classList.remove('bg-gray-100');
+            }
         }
     });
 }
@@ -1265,17 +1293,29 @@ function filterProblemReasonAction(searchText) {
     let actionsToShow = [];
     
     if (matchingActions.length > 0) {
-        // If actions match, show all problems (filtered by system if system selected) and all reasons
+        // If actions match, show problems (filtered by system if system selected) and reasons that match the actions
         problemsToShow = currentSystemId 
             ? problems.filter(p => p.system_ids && p.system_ids.includes(currentSystemId))
             : problems;
-        reasonsToShow = reasons; // All reasons (because action can be selected after any reason)
+        
+        // Filter reasons: show reasons that are related to matching actions' problem_id
+        const actionProblemIds = matchingActions.map(a => a.problem_id).filter(id => id);
+        const actionReasonIds = matchingActions.map(a => a.reason_id).filter(id => id);
+        reasonsToShow = reasons.filter(r => {
+            // Show if reason matches any action's problem_id or reason_id
+            return (r.problem_id && actionProblemIds.includes(r.problem_id)) || 
+                   actionReasonIds.includes(r.id);
+        });
         actionsToShow = matchingActions;
     } else if (matchingReasons.length > 0) {
-        // If reasons match, show all problems (filtered by system if system selected)
+        // If reasons match, show problems (filtered by system if system selected) that match the reasons
         problemsToShow = currentSystemId 
-            ? problems.filter(p => p.system_ids && p.system_ids.includes(currentSystemId))
-            : problems;
+            ? problems.filter(p => {
+                const matchesSystem = p.system_ids && p.system_ids.includes(currentSystemId);
+                const matchesReason = matchingReasons.some(r => r.problem_id === p.id);
+                return matchesSystem && matchesReason;
+            })
+            : problems.filter(p => matchingReasons.some(r => r.problem_id === p.id));
         reasonsToShow = matchingReasons;
         actionsToShow = []; // Clear actions
     } else if (matchingProblems.length > 0) {

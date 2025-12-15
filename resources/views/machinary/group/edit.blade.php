@@ -28,7 +28,7 @@
             </div>
         @endif
 
-        <form action="{{ route('machine-types.update', ['mtype' => $machineType->id]) }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('machine-types.update', $machineType->id) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             

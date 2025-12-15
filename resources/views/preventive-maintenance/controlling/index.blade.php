@@ -9,7 +9,7 @@
             </div>
             <div class="flex items-center gap-3">
                 <!-- Filter Section -->
-                <form method="GET" action="{{ route('preventive-maintenance.ctrl.index') }}" class="flex items-center gap-2">
+                <form method="GET" action="{{ route('preventive-maintenance.controlling.index') }}" class="flex items-center gap-2">
                     <div class="flex items-center gap-2">
                         <label for="month" class="text-sm font-medium text-gray-700">Bulan:</label>
                         <select name="month" id="month" class="border rounded px-2 py-1.5 text-sm">
@@ -35,7 +35,7 @@
                         Filter
                     </button>
                 </form>
-                <a href="{{ route('preventive-maintenance.ctrl.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition flex items-center">
+                <a href="{{ route('preventive-maintenance.controlling.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                     Create Execution
                 </a>
@@ -221,7 +221,7 @@
                                                 }
                                             }
                                         @endphp
-                                        <a href="{{ route('preventive-maintenance.ctrl.create', [
+                                        <a href="{{ route('preventive-maintenance.controlling.create', [
                                             'machine_id' => $machine->id,
                                             'type_machine_id' => $machine->type_id,
                                             'scheduled_date' => $date
@@ -244,7 +244,7 @@
                         </td>
                         <td class="px-3 py-3 whitespace-nowrap text-sm text-center">
                             <div class="flex flex-row justify-center items-center gap-2">
-                                <a href="{{ route('preventive-maintenance.ctrl.create', ['machine_id' => $machine->id, 'type_machine_id' => $machine->type_id]) }}" 
+                                <a href="{{ route('preventive-maintenance.controlling.create', ['machine_id' => $machine->id, 'type_machine_id' => $machine->type_id]) }}" 
                                    class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white p-2 rounded shadow transition duration-150 ease-in-out" 
                                    title="Create Execution">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

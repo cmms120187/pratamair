@@ -23,8 +23,8 @@ class DatabaseSeeder extends Seeder
             PredictiveMaintenanceSeeder::class,
             PartsErpSeeder::class,
             ProblemsSeeder::class,
-            // Dummy data for testing (run last)
-            DummyDataSeeder::class,
+            // Import PLANT 5 RUBBER PROCESS data from CSV
+            Plant5RubberProcessSeeder::class,
         ]);
     }
 }

@@ -34,9 +34,7 @@ class MachineErpSeeder extends Seeder
             ['id' => 19, 'idMachine' => 'ENG-00002A', 'kode_room' => '*000078*', 'plant_name' => 'Engineering', 'process_name' => 'Supporting', 'line_name' => 'Utility', 'room_name' => 'Panel MDB', 'type_name' => 'Generator Set', 'machine_type_id' => 9, 'brand_name' => 'CATERPILLAR', 'model_name' => 'CAT  3516 ,1.825 KVA', 'serial_number' => null, 'tahun_production' => null, 'no_document' => null, 'photo' => null, 'created_at' => '2025-11-26 20:50:22', 'updated_at' => '2025-11-28 19:34:33'],
             ['id' => 20, 'idMachine' => 'ENG-00002B', 'kode_room' => '*000078*', 'plant_name' => 'Engineering', 'process_name' => 'Supporting', 'line_name' => 'Utility', 'room_name' => 'Panel MDB', 'type_name' => 'Generator Set', 'machine_type_id' => 9, 'brand_name' => 'CATERPILLAR', 'model_name' => 'CAT  3516 ,1.825 KVA', 'serial_number' => null, 'tahun_production' => null, 'no_document' => null, 'photo' => null, 'created_at' => '2025-11-26 20:50:22', 'updated_at' => '2025-11-28 19:34:33'],
         ];
-        foreach ($machines as $machine) {
-            DB::table('machine_erp')->updateOrInsert(['id' => $machine['id']], $machine);
-        }
+        DB::table('machine_erp')->insert($machines);
     }
 }
 

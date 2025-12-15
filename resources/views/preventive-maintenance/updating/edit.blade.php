@@ -21,7 +21,7 @@
             </div>
         @endif
 
-        <form action="{{ route('preventive-maintenance.updating.update', ['id' => $execution->id]) }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('preventive-maintenance.updating.update', $execution->id) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             

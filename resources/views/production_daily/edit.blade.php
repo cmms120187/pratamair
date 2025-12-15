@@ -17,7 +17,7 @@
             </div>
         @endif
         
-        <form action="{{ route('production-daily.update', ['pdaily' => $productionDaily->id]) }}" method="POST">
+        <form action="{{ route('production-daily.update', $productionDaily->id) }}" method="POST">
             @csrf
             @method('PUT')
             

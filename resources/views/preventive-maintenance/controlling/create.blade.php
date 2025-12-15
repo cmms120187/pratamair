@@ -14,7 +14,7 @@
             </div>
         @endif
 
-        <form action="{{ route('preventive-maintenance.ctrl.store') }}" method="POST" id="executionForm">
+        <form action="{{ route('preventive-maintenance.controlling.store') }}" method="POST" id="executionForm">
             @csrf
             <div class="bg-white rounded-lg shadow p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -148,7 +148,7 @@
                 </div>
                 
                 <div class="mt-6 flex justify-end gap-3">
-                    <a href="{{ route('preventive-maintenance.ctrl.index') }}" class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50">
+                    <a href="{{ route('preventive-maintenance.controlling.index') }}" class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50">
                         Cancel
                     </a>
                     <button type="submit" id="submitBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded transition disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            const url = `{{ route('preventive-maintenance.ctrl.get-machines-by-type') }}?type_id=${typeId}`;
+            const url = `{{ route('preventive-maintenance.controlling.get-machines-by-type') }}?type_id=${typeId}`;
             
             fetch(url, {
                 method: 'GET',
@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        const url = `{{ route('preventive-maintenance.ctrl.get-maintenance-points-by-machine-and-date') }}?machine_id=${machineId}&scheduled_date=${scheduledDate}`;
+        const url = `{{ route('preventive-maintenance.controlling.get-maintenance-points-by-machine-and-date') }}?machine_id=${machineId}&scheduled_date=${scheduledDate}`;
         
         showBtn.disabled = true;
         showBtn.innerHTML = '<span class="animate-spin mr-2">⏳</span>Loading...';

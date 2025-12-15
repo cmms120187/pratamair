@@ -13,7 +13,7 @@
             </div>
         @endif
         
-        <form action="{{ route('downtime-erp2.update', ['derp2' => $downtimeErp2->id]) }}" method="POST">
+        <form action="{{ route('downtime-erp2.update', $downtimeErp2->id) }}" method="POST">
             @csrf
             @method('PUT')
             @if(isset($page))
@@ -186,32 +186,75 @@
 
             <!-- Problem Information -->
             <div class="mb-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Problem Information</h3>
+                <div class="flex items-center justify-between mb-4 border-b pb-2">
+                    <h3 class="text-lg font-semibold text-gray-800">Problem Information</h3>
+                    <div class="flex items-center gap-2">
+                        <label for="problem_search" class="text-sm font-medium text-gray-700">Cari:</label>
+                        <div class="relative" style="width: 300px;">
+                            <input type="text" 
+                                   id="problem_search" 
+                                   class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" 
+                                   placeholder="Ketik untuk filter atau cari Action..."
+                                   autocomplete="off">
+                            <div id="action_suggestions" class="hidden absolute z-50 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg w-full max-h-60 overflow-y-auto"></div>
+                        </div>
+                    </div>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Hidden field for problemDowntime (auto-filled from problem) -->
+                    <input type="hidden" name="problemDowntime" id="problemDowntime" value="{{ old('problemDowntime', $downtimeErp2->problemDowntime) }}" required>
+                    
                     <div>
-                        <label for="problemDowntime" class="block text-sm font-semibold text-gray-700 mb-2">Problem Downtime <span class="text-red-500">*</span></label>
-                        <input type="text" name="problemDowntime" id="problemDowntime" value="{{ old('problemDowntime', $downtimeErp2->problemDowntime) }}" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('problemDowntime') border-red-500 @enderror">
-                        @error('problemDowntime')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                        <label for="system_select" class="block text-sm font-semibold text-gray-700 mb-2">System</label>
+                        <select name="system_select" id="system_select" disabled class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('system_select') border-red-500 @enderror">
+                            <option value="">-- Pilih Machine terlebih dahulu --</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Otomatis terfilter berdasarkan machine yang dipilih</p>
+                        @error('system_select')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label for="problem_select" class="block text-sm font-semibold text-gray-700 mb-2">Problem <span class="text-red-500">*</span></label>
+                        <select name="problem_select" id="problem_select" required disabled class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('problem_select') border-red-500 @enderror">
+                            <option value="">-- Pilih System terlebih dahulu --</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Pilih problem setelah memilih system (akan mengisi Problem Downtime)</p>
+                        @error('problem_select')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
                         <label for="Problem_MM" class="block text-sm font-semibold text-gray-700 mb-2">Problem MM</label>
                         <input type="text" name="Problem_MM" id="Problem_MM" value="{{ old('Problem_MM', $downtimeErp2->Problem_MM) }}" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('Problem_MM') border-red-500 @enderror">
+                        <p class="text-xs text-gray-500 mt-1">Default: "other" (dapat diedit)</p>
                         @error('Problem_MM')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
-                        <label for="reasonDowntime" class="block text-sm font-semibold text-gray-700 mb-2">Reason Downtime <span class="text-red-500">*</span></label>
-                        <input type="text" name="reasonDowntime" id="reasonDowntime" value="{{ old('reasonDowntime', $downtimeErp2->reasonDowntime) }}" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('reasonDowntime') border-red-500 @enderror">
-                        @error('reasonDowntime')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                        <label for="reason_select" class="block text-sm font-semibold text-gray-700 mb-2">Reason Downtime <span class="text-red-500">*</span></label>
+                        <select name="reason_select" id="reason_select" required disabled class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('reason_select') border-red-500 @enderror">
+                            <option value="">-- Pilih Problem terlebih dahulu --</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Pilih reason setelah memilih problem</p>
+                        @error('reason_select')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                        <!-- Hidden field for reasonDowntime (auto-filled from reason) -->
+                        <input type="hidden" name="reasonDowntime" id="reasonDowntime" value="{{ old('reasonDowntime', $downtimeErp2->reasonDowntime) }}" required>
                     </div>
                     <div>
-                        <label for="actionDowtime" class="block text-sm font-semibold text-gray-700 mb-2">Action Downtime <span class="text-red-500">*</span></label>
-                        <input type="text" name="actionDowtime" id="actionDowtime" value="{{ old('actionDowtime', $downtimeErp2->actionDowtime) }}" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('actionDowtime') border-red-500 @enderror">
-                        @error('actionDowtime')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                        <label for="action_select" class="block text-sm font-semibold text-gray-700 mb-2">Action Downtime <span class="text-red-500">*</span></label>
+                        <select name="action_select" id="action_select" required disabled class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('action_select') border-red-500 @enderror">
+                            <option value="">-- Pilih Reason terlebih dahulu --</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Pilih action setelah memilih reason</p>
+                        @error('action_select')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                        <!-- Hidden field for actionDowtime (auto-filled from action) -->
+                        <input type="hidden" name="actionDowtime" id="actionDowtime" value="{{ old('actionDowtime', $downtimeErp2->actionDowtime) }}" required>
                     </div>
                     <div>
-                        <label for="Part" class="block text-sm font-semibold text-gray-700 mb-2">Part</label>
-                        <input type="text" name="Part" id="Part" value="{{ old('Part', $downtimeErp2->Part) }}" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('Part') border-red-500 @enderror">
-                        @error('Part')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                        <label for="part_select" class="block text-sm font-semibold text-gray-700 mb-2">Part</label>
+                        <select name="part_select" id="part_select" disabled class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('part_select') border-red-500 @enderror">
+                            <option value="">-- Pilih System terlebih dahulu --</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Pilih part setelah memilih system (terfilter berdasarkan system)</p>
+                        @error('part_select')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                        <!-- Hidden field for Part (auto-filled from part_select) -->
+                        <input type="hidden" name="Part" id="Part" value="{{ old('Part', $downtimeErp2->Part) }}">
                     </div>
                     <div>
                         <label for="groupProblem" class="block text-sm font-semibold text-gray-700 mb-2">Group Problem</label>
@@ -341,6 +384,20 @@ const mekaniks = @json($mekaniks);
 
 // Groups data from server (already mapped in controller)
 const groupsData = @json($groupsData);
+
+// System, Problem, Reason, Action, and Part data from server (already mapped in controller)
+const systems = @json($systems ?? []);
+const problems = @json($problems ?? []);
+const reasons = @json($reasons ?? []);
+const actions = @json($actions ?? []);
+const parts = @json($parts ?? []);
+
+// Current values from database
+const currentProblemDowntime = '{{ old("problemDowntime", $downtimeErp2->problemDowntime) }}';
+const currentReasonDowntime = '{{ old("reasonDowntime", $downtimeErp2->reasonDowntime) }}';
+const currentActionDowntime = '{{ old("actionDowtime", $downtimeErp2->actionDowtime) }}';
+const currentPart = '{{ old("Part", $downtimeErp2->Part) }}';
+const currentSystemIds = @json($systemIds ?? []);
 
 // DOM elements
 const mekanikSearch = document.getElementById('mekanik_search');
@@ -573,6 +630,487 @@ if (groupSelect && systemsInfo && systemsList) {
     if (groupSelect.value) {
         groupSelect.dispatchEvent(new Event('change'));
     }
+}
+
+// System, Problem, Reason, Action, and Part filtering functionality (similar to create form)
+const systemSelect = document.getElementById('system_select');
+const problemSelect = document.getElementById('problem_select');
+const reasonSelect = document.getElementById('reason_select');
+const actionSelect = document.getElementById('action_select');
+const partSelect = document.getElementById('part_select');
+const problemDowntime = document.getElementById('problemDowntime');
+const reasonDowntime = document.getElementById('reasonDowntime');
+const actionDowtime = document.getElementById('actionDowtime');
+const partField = document.getElementById('Part');
+
+// Initialize system dropdown if machine has system_ids
+document.addEventListener('DOMContentLoaded', function() {
+    if (systemSelect && currentSystemIds && currentSystemIds.length > 0) {
+        systemSelect.innerHTML = '<option value="">-- Pilih System --</option>';
+        const filteredSystems = systems.filter(s => currentSystemIds.includes(s.id));
+        filteredSystems.forEach(system => {
+            const option = document.createElement('option');
+            option.value = system.id;
+            option.textContent = system.nama_sistem;
+            systemSelect.appendChild(option);
+        });
+        systemSelect.disabled = false;
+        systemSelect.classList.remove('bg-gray-100');
+        
+        // Try to find and select current problem, reason, action
+        if (currentProblemDowntime) {
+            const matchingProblem = problems.find(p => p.name === currentProblemDowntime || p.problem_header === currentProblemDowntime);
+            if (matchingProblem && matchingProblem.system_ids && matchingProblem.system_ids.some(id => currentSystemIds.includes(id))) {
+                // Find matching system
+                const matchingSystemId = matchingProblem.system_ids.find(id => currentSystemIds.includes(id));
+                if (matchingSystemId) {
+                    currentSystemId = matchingSystemId;
+                    systemSelect.value = matchingSystemId;
+                    systemSelect.dispatchEvent(new Event('change'));
+                    
+                    setTimeout(() => {
+                        if (problemSelect) {
+                            problemSelect.value = matchingProblem.id;
+                            problemSelect.dispatchEvent(new Event('change'));
+                            
+                            setTimeout(() => {
+                                if (currentReasonDowntime && reasonSelect) {
+                                    const matchingReason = reasons.find(r => r.name === currentReasonDowntime && r.problem_id === matchingProblem.id);
+                                    if (matchingReason) {
+                                        reasonSelect.value = matchingReason.id;
+                                        reasonSelect.dispatchEvent(new Event('change'));
+                                        
+                                        setTimeout(() => {
+                                            if (currentActionDowntime && actionSelect) {
+                                                const matchingAction = actions.find(a => a.name === currentActionDowntime && a.problem_id === matchingProblem.id && a.reason_id === matchingReason.id);
+                                                if (matchingAction) {
+                                                    actionSelect.value = matchingAction.id;
+                                                    actionSelect.dispatchEvent(new Event('change'));
+                                                }
+                                            }
+                                        }, 300);
+                                    }
+                                }
+                            }, 300);
+                        }
+                    }, 300);
+                }
+            }
+        }
+        
+        // Try to find and select current part
+        if (currentPart && partSelect) {
+            const matchingPart = parts.find(p => p.name === currentPart);
+            if (matchingPart && systemSelect.value) {
+                const selectedSystem = systems.find(s => s.id === systemSelect.value);
+                if (selectedSystem && matchingPart.category === selectedSystem.nama_sistem) {
+                    partSelect.value = matchingPart.id;
+                    partSelect.dispatchEvent(new Event('change'));
+                }
+            }
+        }
+    }
+});
+
+// Filter problems based on selected system (client-side filtering)
+if (systemSelect) {
+    systemSelect.addEventListener('change', function() {
+        const selectedSystemId = this.value;
+        currentSystemId = selectedSystemId; // Store current system ID for filter
+        
+        // If search filter is active, re-apply it
+        if (problemSearchInput && problemSearchInput.value.trim() !== '') {
+            filterProblemReasonAction(problemSearchInput.value);
+            return; // Don't do normal filtering if search is active
+        }
+        
+        // Clear problem, reason, action, part, and hidden fields
+        problemSelect.innerHTML = '<option value="">-- Pilih Problem --</option>';
+        problemSelect.value = '';
+        reasonSelect.innerHTML = '<option value="">-- Pilih Problem terlebih dahulu --</option>';
+        reasonSelect.value = '';
+        reasonSelect.disabled = true;
+        reasonSelect.classList.add('bg-gray-100');
+        actionSelect.innerHTML = '<option value="">-- Pilih Reason terlebih dahulu --</option>';
+        actionSelect.value = '';
+        actionSelect.disabled = true;
+        actionSelect.classList.add('bg-gray-100');
+        partSelect.innerHTML = '<option value="">-- Pilih Part --</option>';
+        partSelect.value = '';
+        partSelect.disabled = true;
+        partSelect.classList.add('bg-gray-100');
+        if (problemDowntime) problemDowntime.value = '';
+        if (reasonDowntime) reasonDowntime.value = '';
+        if (actionDowtime) actionDowtime.value = '';
+        if (partField) partField.value = '';
+        
+        if (!selectedSystemId) {
+            problemSelect.disabled = true;
+            problemSelect.classList.add('bg-gray-100');
+            return;
+        }
+        
+        // Filter problems that belong to the selected system
+        const filteredProblems = problems.filter(problem => {
+            return problem.system_ids && problem.system_ids.includes(selectedSystemId);
+        });
+        
+        if (filteredProblems.length === 0) {
+            problemSelect.innerHTML = '<option value="">-- Tidak ada problem untuk system ini --</option>';
+            problemSelect.disabled = true;
+            problemSelect.classList.add('bg-gray-100');
+            return;
+        }
+        
+        // Populate problem dropdown
+        filteredProblems.forEach(problem => {
+            const option = document.createElement('option');
+            option.value = problem.id;
+            option.textContent = problem.problem_header || problem.name;
+            option.setAttribute('data-problem-name', problem.name);
+            problemSelect.appendChild(option);
+        });
+        
+        problemSelect.disabled = false;
+        problemSelect.classList.remove('bg-gray-100');
+        
+        // Filter and populate part dropdown
+        const selectedSystem = systems.find(s => s.id === selectedSystemId);
+        const selectedSystemName = selectedSystem ? selectedSystem.nama_sistem : '';
+        const filteredParts = parts.filter(part => {
+            return part.category && part.category === selectedSystemName;
+        });
+        
+        if (filteredParts.length === 0) {
+            partSelect.innerHTML = '<option value="">-- Tidak ada part untuk system ini --</option>';
+            partSelect.disabled = true;
+            partSelect.classList.add('bg-gray-100');
+        } else {
+            filteredParts.forEach(part => {
+                const option = document.createElement('option');
+                option.value = part.id;
+                const displayText = part.description 
+                    ? `${part.name} - ${part.description}` 
+                    : part.name;
+                option.textContent = displayText;
+                option.setAttribute('data-part-name', part.name);
+                option.setAttribute('data-part-description', part.description || '');
+                partSelect.appendChild(option);
+            });
+            partSelect.disabled = false;
+            partSelect.classList.remove('bg-gray-100');
+        }
+    });
+}
+
+// Auto-fill problemDowntime and enable reason when problem is selected
+if (problemSelect) {
+    problemSelect.addEventListener('change', function() {
+        const selectedProblemId = this.value;
+        
+        reasonSelect.innerHTML = '<option value="">-- Pilih Reason --</option>';
+        reasonSelect.value = '';
+        reasonSelect.disabled = true;
+        reasonSelect.classList.add('bg-gray-100');
+        actionSelect.innerHTML = '<option value="">-- Pilih Reason terlebih dahulu --</option>';
+        actionSelect.value = '';
+        actionSelect.disabled = true;
+        actionSelect.classList.add('bg-gray-100');
+        if (reasonDowntime) reasonDowntime.value = '';
+        if (actionDowtime) actionDowtime.value = '';
+        
+        if (!selectedProblemId) {
+            if (problemDowntime) problemDowntime.value = '';
+            return;
+        }
+        
+        const selectedProblem = problems.find(p => p.id === selectedProblemId);
+        
+        if (selectedProblem) {
+            if (problemDowntime) {
+                problemDowntime.value = selectedProblem.name;
+            }
+            
+            // Filter reasons based on selected problem
+            const filteredReasons = reasons.filter(reason => {
+                return reason.problem_id === selectedProblemId;
+            });
+            
+            if (filteredReasons.length === 0) {
+                reasonSelect.innerHTML = '<option value="">-- Tidak ada reason untuk problem ini --</option>';
+                reasonSelect.disabled = true;
+                reasonSelect.classList.add('bg-gray-100');
+            } else {
+                filteredReasons.forEach(reason => {
+                    const option = document.createElement('option');
+                    option.value = reason.id;
+                    option.textContent = reason.name;
+                    option.setAttribute('data-reason-name', reason.name);
+                    reasonSelect.appendChild(option);
+                });
+                reasonSelect.disabled = false;
+                reasonSelect.classList.remove('bg-gray-100');
+            }
+        }
+    });
+}
+
+// Auto-fill reasonDowntime and enable action when reason is selected
+if (reasonSelect) {
+    reasonSelect.addEventListener('change', function() {
+        const selectedReasonId = this.value;
+        
+        actionSelect.innerHTML = '<option value="">-- Pilih Action --</option>';
+        actionSelect.value = '';
+        actionSelect.disabled = true;
+        actionSelect.classList.add('bg-gray-100');
+        if (actionDowtime) actionDowtime.value = '';
+        
+        if (!selectedReasonId) {
+            if (reasonDowntime) reasonDowntime.value = '';
+            return;
+        }
+        
+        const selectedReason = reasons.find(r => r.id === selectedReasonId);
+        
+        if (selectedReason) {
+            if (reasonDowntime) {
+                reasonDowntime.value = selectedReason.name;
+            }
+            
+            const selectedProblemId = problemSelect ? problemSelect.value : null;
+            const filteredActions = actions.filter(action => {
+                const matchesProblem = !selectedProblemId || action.problem_id === selectedProblemId;
+                const matchesReason = action.reason_id === selectedReasonId;
+                return matchesProblem && matchesReason;
+            });
+            
+            if (filteredActions.length === 0) {
+                actionSelect.innerHTML = '<option value="">-- Tidak ada action untuk reason ini --</option>';
+                actionSelect.disabled = true;
+                actionSelect.classList.add('bg-gray-100');
+            } else {
+                filteredActions.forEach(action => {
+                    const option = document.createElement('option');
+                    option.value = action.id;
+                    option.textContent = action.name;
+                    option.setAttribute('data-action-name', action.name);
+                    actionSelect.appendChild(option);
+                });
+                actionSelect.disabled = false;
+                actionSelect.classList.remove('bg-gray-100');
+            }
+        }
+    });
+}
+
+// Auto-fill actionDowtime when action is selected
+if (actionSelect) {
+    actionSelect.addEventListener('change', function() {
+        const selectedActionId = this.value;
+        
+        if (!selectedActionId) {
+            if (actionDowtime) actionDowtime.value = '';
+            return;
+        }
+        
+        const selectedAction = actions.find(a => a.id === selectedActionId);
+        
+        if (selectedAction && actionDowtime) {
+            actionDowtime.value = selectedAction.name;
+        }
+    });
+}
+
+// Auto-fill Part field when part is selected
+if (partSelect) {
+    partSelect.addEventListener('change', function() {
+        const selectedPartId = this.value;
+        
+        if (!selectedPartId) {
+            if (partField) partField.value = '';
+            return;
+        }
+        
+        const selectedPart = parts.find(p => p.id === selectedPartId);
+        
+        if (selectedPart && partField) {
+            partField.value = selectedPart.name;
+        }
+    });
+}
+
+// Problem search filter (similar to create form)
+const problemSearchInput = document.getElementById('problem_search');
+const actionSuggestionsDiv = document.getElementById('action_suggestions');
+let currentSystemId = null;
+let isFiltering = false;
+let selectedActionIndex = -1;
+
+// Function to filter dropdowns based on search text (same as create form)
+function filterProblemReasonAction(searchText) {
+    const searchLower = (searchText || '').toLowerCase().trim();
+    
+    if (!searchText || searchLower === '') {
+        isFiltering = false;
+        if (currentSystemId && systemSelect && systemSelect.value) {
+            const systemValue = systemSelect.value;
+            systemSelect.value = '';
+            setTimeout(() => {
+                systemSelect.value = systemValue;
+                systemSelect.dispatchEvent(new Event('change'));
+            }, 10);
+        } else if (systemSelect && !systemSelect.value) {
+            if (problemSelect) {
+                problemSelect.innerHTML = '<option value="">-- Pilih System terlebih dahulu --</option>';
+                problemSelect.disabled = true;
+                problemSelect.classList.add('bg-gray-100');
+            }
+            if (reasonSelect) {
+                reasonSelect.innerHTML = '<option value="">-- Pilih Problem terlebih dahulu --</option>';
+                reasonSelect.disabled = true;
+                reasonSelect.classList.add('bg-gray-100');
+            }
+            if (actionSelect) {
+                actionSelect.innerHTML = '<option value="">-- Pilih Reason terlebih dahulu --</option>';
+                actionSelect.disabled = true;
+                actionSelect.classList.add('bg-gray-100');
+            }
+        }
+        return;
+    }
+    
+    isFiltering = true;
+    
+    const matchingProblems = problems.filter(p => {
+        const nameMatch = (p.name || '').toLowerCase().includes(searchLower);
+        const headerMatch = (p.problem_header || '').toLowerCase().includes(searchLower);
+        return nameMatch || headerMatch;
+    });
+    
+    const matchingReasons = reasons.filter(r => {
+        return (r.name || '').toLowerCase().includes(searchLower);
+    });
+    
+    const matchingActions = actions.filter(a => {
+        return (a.name || '').toLowerCase().includes(searchLower);
+    });
+    
+    let problemsToShow = [];
+    let reasonsToShow = [];
+    let actionsToShow = [];
+    
+    if (matchingActions.length > 0) {
+        problemsToShow = currentSystemId 
+            ? problems.filter(p => p.system_ids && p.system_ids.includes(currentSystemId))
+            : problems;
+        const actionProblemIds = matchingActions.map(a => a.problem_id).filter(id => id);
+        const actionReasonIds = matchingActions.map(a => a.reason_id).filter(id => id);
+        reasonsToShow = reasons.filter(r => {
+            return (r.problem_id && actionProblemIds.includes(r.problem_id)) || 
+                   actionReasonIds.includes(r.id);
+        });
+        actionsToShow = matchingActions;
+    } else if (matchingReasons.length > 0) {
+        problemsToShow = currentSystemId 
+            ? problems.filter(p => {
+                const matchesSystem = p.system_ids && p.system_ids.includes(currentSystemId);
+                const matchesReason = matchingReasons.some(r => r.problem_id === p.id);
+                return matchesSystem && matchesReason;
+            })
+            : problems.filter(p => matchingReasons.some(r => r.problem_id === p.id));
+        reasonsToShow = matchingReasons;
+        actionsToShow = [];
+    } else if (matchingProblems.length > 0) {
+        problemsToShow = matchingProblems.filter(p => {
+            if (currentSystemId) {
+                return p.system_ids && p.system_ids.includes(currentSystemId);
+            }
+            return true;
+        });
+        reasonsToShow = [];
+        actionsToShow = [];
+    } else {
+        problemsToShow = [];
+        reasonsToShow = [];
+        actionsToShow = [];
+    }
+    
+    if (problemSelect) {
+        problemSelect.innerHTML = '<option value="">-- Pilih Problem --</option>';
+        problemsToShow.forEach(problem => {
+            const option = document.createElement('option');
+            option.value = problem.id;
+            option.textContent = problem.problem_header || problem.name;
+            option.setAttribute('data-problem-name', problem.name);
+            option.setAttribute('data-problem-header', problem.problem_header || '');
+            problemSelect.appendChild(option);
+        });
+        
+        if (problemsToShow.length > 0) {
+            problemSelect.disabled = false;
+            problemSelect.classList.remove('bg-gray-100');
+        } else {
+            problemSelect.disabled = true;
+            problemSelect.classList.add('bg-gray-100');
+        }
+    }
+    
+    if (reasonSelect) {
+        reasonSelect.innerHTML = '<option value="">-- Pilih Reason --</option>';
+        if (problemsToShow.length > 0 || matchingReasons.length > 0 || matchingActions.length > 0) {
+            reasonsToShow.forEach(reason => {
+                const option = document.createElement('option');
+                option.value = reason.id;
+                option.textContent = reason.name;
+                option.setAttribute('data-reason-name', reason.name);
+                reasonSelect.appendChild(option);
+            });
+            
+            if (reasonsToShow.length > 0) {
+                reasonSelect.disabled = false;
+                reasonSelect.classList.remove('bg-gray-100');
+            } else {
+                reasonSelect.disabled = true;
+                reasonSelect.classList.add('bg-gray-100');
+            }
+        } else {
+            reasonSelect.disabled = true;
+            reasonSelect.classList.add('bg-gray-100');
+        }
+    }
+    
+    if (actionSelect) {
+        actionSelect.innerHTML = '<option value="">-- Pilih Action --</option>';
+        if (reasonsToShow.length > 0 || matchingActions.length > 0) {
+            actionsToShow.forEach(action => {
+                const option = document.createElement('option');
+                option.value = action.id;
+                option.textContent = action.name;
+                option.setAttribute('data-action-name', action.name);
+                actionSelect.appendChild(option);
+            });
+            
+            if (actionsToShow.length > 0) {
+                actionSelect.disabled = false;
+                actionSelect.classList.remove('bg-gray-100');
+            } else {
+                actionSelect.disabled = true;
+                actionSelect.classList.add('bg-gray-100');
+            }
+        } else {
+            actionSelect.disabled = true;
+            actionSelect.classList.add('bg-gray-100');
+        }
+    }
+}
+
+// Add event listener for problem search
+if (problemSearchInput) {
+    problemSearchInput.addEventListener('input', function() {
+        const searchText = this.value;
+        filterProblemReasonAction(searchText);
+    });
 }
 </script>
 @endsection
