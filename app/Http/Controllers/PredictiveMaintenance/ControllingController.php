@@ -8,6 +8,7 @@ use App\Models\PredictiveMaintenanceSchedule;
 use App\Models\MachineErp;
 use App\Models\Standard;
 use App\Models\User;
+use App\Services\PredictiveRedStatusService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;

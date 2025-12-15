@@ -27,7 +27,10 @@ use App\Models\PredictiveMaintenanceSchedule;
 use App\Models\PredictiveMaintenanceExecution;
 use App\Models\WorkOrder;
 use App\Models\Standard;
+use App\Models\PartErp;
+use App\Models\System;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardController extends Controller
 {
@@ -55,144 +58,291 @@ class DashboardController extends Controller
         $currentMonth = $filterMonth;
         $currentYear = $filterYear;
         
-        // ========== THIS MONTH STATISTICS ==========
+        // ========== THIS MONTH STATISTICS (CACHED) ==========
+        // Cache key based on data source, year, and month
+        $statsCacheKey = 'dashboard_stats_' . $dataSource . '_' . $currentYear . '_' . $currentMonth;
         
-        if ($dataSource === 'downtime_erp2') {
-            // Use DowntimeErp2 model
-            $stats = $this->getDowntimeErp2Stats($currentYear, $currentMonth);
-        } elseif ($dataSource === 'downtime_erp') {
-            // Use DowntimeErp model
-            $stats = $this->getDowntimeErpStats($currentYear, $currentMonth);
-        } else {
-            // Use Downtime model
-            $stats = $this->getDowntimeStats($currentYear, $currentMonth);
-        }
+        // Cache for 1 hour (3600 seconds) - can be cleared manually when data changes
+        $stats = Cache::remember($statsCacheKey, 3600, function() use ($dataSource, $currentYear, $currentMonth) {
+            if ($dataSource === 'downtime_erp2') {
+                return $this->getDowntimeErp2Stats($currentYear, $currentMonth);
+            } elseif ($dataSource === 'downtime_erp') {
+                return $this->getDowntimeErpStats($currentYear, $currentMonth);
+            } else {
+                return $this->getDowntimeStats($currentYear, $currentMonth);
+            }
+        });
         
-        // ========== PREVENTIVE MAINTENANCE STATISTICS ==========
-        $pmSchedulesThisMonth = PreventiveMaintenanceSchedule::whereYear('start_date', $currentYear)
-            ->whereMonth('start_date', $currentMonth)
-            ->count();
+        // ========== PREVENTIVE MAINTENANCE STATISTICS (CACHED) ==========
+        $pmCacheKey = 'pm_stats_' . $currentYear . '_' . $currentMonth;
+        $pmStats = Cache::remember($pmCacheKey, 7200, function() use ($currentYear, $currentMonth) {
+            return [
+                'pmSchedulesThisMonth' => PreventiveMaintenanceSchedule::whereYear('start_date', $currentYear)
+                    ->whereMonth('start_date', $currentMonth)
+                    ->count(),
+                'pmSchedulesPending' => PreventiveMaintenanceSchedule::whereYear('start_date', $currentYear)
+                    ->whereMonth('start_date', $currentMonth)
+                    ->where('status', 'active')
+                    ->whereDoesntHave('executions')
+                    ->count(),
+                'pmSchedulesCompleted' => PreventiveMaintenanceSchedule::whereYear('start_date', $currentYear)
+                    ->whereMonth('start_date', $currentMonth)
+                    ->whereHas('executions', function($q) {
+                        $q->where('status', 'completed');
+                    })
+                    ->count(),
+                'pmSchedulesInProgress' => PreventiveMaintenanceSchedule::whereYear('start_date', $currentYear)
+                    ->whereMonth('start_date', $currentMonth)
+                    ->whereHas('executions', function($q) {
+                        $q->where('status', 'in_progress');
+                    })
+                    ->count(),
+            ];
+        });
         
-        $pmSchedulesPending = PreventiveMaintenanceSchedule::whereYear('start_date', $currentYear)
-            ->whereMonth('start_date', $currentMonth)
-            ->where('status', 'active')
-            ->whereDoesntHave('executions')
-            ->count();
-        
-        $pmSchedulesCompleted = PreventiveMaintenanceSchedule::whereYear('start_date', $currentYear)
-            ->whereMonth('start_date', $currentMonth)
-            ->whereHas('executions', function($q) {
-                $q->where('status', 'completed');
-            })
-            ->count();
-        
-        $pmSchedulesInProgress = PreventiveMaintenanceSchedule::whereYear('start_date', $currentYear)
-            ->whereMonth('start_date', $currentMonth)
-            ->whereHas('executions', function($q) {
-                $q->where('status', 'in_progress');
-            })
-            ->count();
-        
+        $pmSchedulesThisMonth = $pmStats['pmSchedulesThisMonth'];
+        $pmSchedulesPending = $pmStats['pmSchedulesPending'];
+        $pmSchedulesCompleted = $pmStats['pmSchedulesCompleted'];
+        $pmSchedulesInProgress = $pmStats['pmSchedulesInProgress'];
         $pmCompletionRate = $pmSchedulesThisMonth > 0 ? ($pmSchedulesCompleted / $pmSchedulesThisMonth) * 100 : 0;
 
-        // ========== PREDICTIVE MAINTENANCE STATISTICS ==========
-        $pdmSchedulesThisMonth = PredictiveMaintenanceSchedule::whereYear('start_date', $currentYear)
-            ->whereMonth('start_date', $currentMonth)
-            ->count();
+        // ========== PREDICTIVE MAINTENANCE STATISTICS (CACHED) ==========
+        $pdmCacheKey = 'pdm_stats_' . $currentYear . '_' . $currentMonth;
+        $pdmStats = Cache::remember($pdmCacheKey, 7200, function() use ($currentYear, $currentMonth) {
+            return [
+                'pdmSchedulesThisMonth' => PredictiveMaintenanceSchedule::whereYear('start_date', $currentYear)
+                    ->whereMonth('start_date', $currentMonth)
+                    ->count(),
+                'pdmSchedulesPending' => PredictiveMaintenanceSchedule::whereYear('start_date', $currentYear)
+                    ->whereMonth('start_date', $currentMonth)
+                    ->where('status', 'active')
+                    ->whereDoesntHave('executions')
+                    ->count(),
+                'pdmSchedulesCompleted' => PredictiveMaintenanceSchedule::whereYear('start_date', $currentYear)
+                    ->whereMonth('start_date', $currentMonth)
+                    ->whereHas('executions', function($q) {
+                        $q->where('status', 'completed');
+                    })
+                    ->count(),
+            ];
+        });
         
-        $pdmSchedulesPending = PredictiveMaintenanceSchedule::whereYear('start_date', $currentYear)
-            ->whereMonth('start_date', $currentMonth)
-            ->where('status', 'active')
-            ->whereDoesntHave('executions')
-            ->count();
-        
-        $pdmSchedulesCompleted = PredictiveMaintenanceSchedule::whereYear('start_date', $currentYear)
-            ->whereMonth('start_date', $currentMonth)
-            ->whereHas('executions', function($q) {
-                $q->where('status', 'completed');
-            })
-            ->count();
-        
+        $pdmSchedulesThisMonth = $pdmStats['pdmSchedulesThisMonth'];
+        $pdmSchedulesPending = $pdmStats['pdmSchedulesPending'];
+        $pdmSchedulesCompleted = $pdmStats['pdmSchedulesCompleted'];
         $pdmCompletionRate = $pdmSchedulesThisMonth > 0 ? ($pdmSchedulesCompleted / $pdmSchedulesThisMonth) * 100 : 0;
 
-        // ========== WORK ORDERS STATISTICS ==========
-        $workOrdersTotal = WorkOrder::count();
-        $workOrdersPending = WorkOrder::where('status', 'pending')->count();
-        $workOrdersInProgress = WorkOrder::where('status', 'in_progress')->count();
-        $workOrdersCompleted = WorkOrder::where('status', 'completed')->count();
-        $workOrdersThisMonth = WorkOrder::whereYear('order_date', $currentYear)
-            ->whereMonth('order_date', $currentMonth)
-            ->count();
-
-        // ========== MACHINES STATISTICS ==========
-        $totalMachines = Machine::count();
-        if ($dataSource === 'downtime_erp2') {
-            $machinesWithDowntime = DowntimeErp2::whereYear('date', $currentYear)
-                ->whereMonth('date', $currentMonth)
-                ->whereNotNull('idMachine')
-                ->where('idMachine', '!=', '')
-                ->distinct('idMachine')
-                ->count('idMachine');
-        } elseif ($dataSource === 'downtime_erp') {
-            $machinesWithDowntime = DowntimeErp::whereYear('date', $currentYear)
-                ->whereMonth('date', $currentMonth)
-                ->whereNotNull('idMachine')
-                ->where('idMachine', '!=', '')
-                ->distinct('idMachine')
-                ->count('idMachine');
-        } else {
-            $machinesWithDowntime = Downtime::whereYear('date', $currentYear)
-                ->whereMonth('date', $currentMonth)
-                ->whereNotNull('machine_id')
-                ->distinct('machine_id')
-                ->count('machine_id');
-        }
+        // ========== WORK ORDERS STATISTICS (CACHED) ==========
+        $woCacheKey = 'wo_stats_' . $currentYear . '_' . $currentMonth;
+        $woStats = Cache::remember($woCacheKey, 1800, function() use ($currentYear, $currentMonth) {
+            return [
+                'workOrdersTotal' => WorkOrder::count(),
+                'workOrdersPending' => WorkOrder::where('status', 'pending')->count(),
+                'workOrdersInProgress' => WorkOrder::where('status', 'in_progress')->count(),
+                'workOrdersCompleted' => WorkOrder::where('status', 'completed')->count(),
+                'workOrdersThisMonth' => WorkOrder::whereYear('order_date', $currentYear)
+                    ->whereMonth('order_date', $currentMonth)
+                    ->count(),
+            ];
+        });
         
-        $machinesWithPM = PreventiveMaintenanceSchedule::whereYear('start_date', $currentYear)
-            ->whereMonth('start_date', $currentMonth)
-            ->distinct('machine_erp_id')
-            ->count('machine_erp_id');
+        $workOrdersTotal = $woStats['workOrdersTotal'];
+        $workOrdersPending = $woStats['workOrdersPending'];
+        $workOrdersInProgress = $woStats['workOrdersInProgress'];
+        $workOrdersCompleted = $woStats['workOrdersCompleted'];
+        $workOrdersThisMonth = $woStats['workOrdersThisMonth'];
 
-        // ========== USERS STATISTICS ==========
-        $totalUsers = User::count();
-        $totalMechanics = User::whereIn('role', ['mekanik', 'team_leader', 'group_leader'])->count();
+        // ========== MACHINES STATISTICS (CACHED) ==========
+        $machinesCacheKey = 'machines_stats_' . $dataSource . '_' . $currentYear . '_' . $currentMonth;
+        $machinesStats = Cache::remember($machinesCacheKey, 3600, function() use ($dataSource, $currentYear, $currentMonth) {
+            $totalMachines = Machine::count();
+            
+            if ($dataSource === 'downtime_erp2') {
+                $machinesWithDowntime = DowntimeErp2::whereYear('date', $currentYear)
+                    ->whereMonth('date', $currentMonth)
+                    ->whereNotNull('idMachine')
+                    ->where('idMachine', '!=', '')
+                    ->distinct('idMachine')
+                    ->count('idMachine');
+            } elseif ($dataSource === 'downtime_erp') {
+                $machinesWithDowntime = DowntimeErp::whereYear('date', $currentYear)
+                    ->whereMonth('date', $currentMonth)
+                    ->whereNotNull('idMachine')
+                    ->where('idMachine', '!=', '')
+                    ->distinct('idMachine')
+                    ->count('idMachine');
+            } else {
+                $machinesWithDowntime = Downtime::whereYear('date', $currentYear)
+                    ->whereMonth('date', $currentMonth)
+                    ->whereNotNull('machine_id')
+                    ->distinct('machine_id')
+                    ->count('machine_id');
+            }
+            
+            $machinesWithPM = PreventiveMaintenanceSchedule::whereYear('start_date', $currentYear)
+                ->whereMonth('start_date', $currentMonth)
+                ->distinct('machine_erp_id')
+                ->count('machine_erp_id');
+            
+            return [
+                'totalMachines' => $totalMachines,
+                'machinesWithDowntime' => $machinesWithDowntime,
+                'machinesWithPM' => $machinesWithPM,
+            ];
+        });
         
-        // Active mechanics are those who have downtime records this month
-        if ($dataSource === 'downtime_erp2') {
-            $activeMechanicNames = DowntimeErp2::whereYear('date', $currentYear)
-                ->whereMonth('date', $currentMonth)
-                ->whereNotNull('nameMekanik')
-                ->where('nameMekanik', '!=', '')
-                ->distinct()
-                ->pluck('nameMekanik')
-                ->toArray();
-            
-            $activeMechanics = User::whereIn('role', ['mekanik', 'team_leader', 'group_leader'])
-                ->whereIn('name', $activeMechanicNames)
-                ->count();
-        } elseif ($dataSource === 'downtime_erp') {
-            $activeMechanicNames = DowntimeErp::whereYear('date', $currentYear)
-                ->whereMonth('date', $currentMonth)
-                ->whereNotNull('nameMekanik')
-                ->where('nameMekanik', '!=', '')
-                ->distinct()
-                ->pluck('nameMekanik')
-                ->toArray();
-            
-            $activeMechanics = User::whereIn('role', ['mekanik', 'team_leader', 'group_leader'])
-                ->whereIn('name', $activeMechanicNames)
-                ->count();
-        } else {
-            $activeMechanics = Downtime::whereYear('date', $currentYear)
-                ->whereMonth('date', $currentMonth)
-                ->whereNotNull('mekanik_id')
-                ->distinct('mekanik_id')
-                ->count('mekanik_id');
-        }
+        $totalMachines = $machinesStats['totalMachines'];
+        $machinesWithDowntime = $machinesStats['machinesWithDowntime'];
+        $machinesWithPM = $machinesStats['machinesWithPM'];
 
-        // ========== STANDARDS STATISTICS ==========
-        $totalStandards = Standard::count();
-        $activeStandards = Standard::where('status', 'active')->count();
+        // ========== USERS STATISTICS (CACHED) ==========
+        $usersCacheKey = 'users_stats_' . $dataSource . '_' . $currentYear . '_' . $currentMonth;
+        $usersStats = Cache::remember($usersCacheKey, 3600, function() use ($dataSource, $currentYear, $currentMonth) {
+            $totalUsers = User::count();
+            $totalMechanics = User::whereIn('role', ['mekanik', 'team_leader', 'group_leader'])->count();
+            
+            // Active mechanics are those who have downtime records this month
+            if ($dataSource === 'downtime_erp2') {
+                $activeMechanicNames = DowntimeErp2::whereYear('date', $currentYear)
+                    ->whereMonth('date', $currentMonth)
+                    ->whereNotNull('nameMekanik')
+                    ->where('nameMekanik', '!=', '')
+                    ->distinct()
+                    ->pluck('nameMekanik')
+                    ->toArray();
+                
+                $activeMechanics = User::whereIn('role', ['mekanik', 'team_leader', 'group_leader'])
+                    ->whereIn('name', $activeMechanicNames)
+                    ->count();
+            } elseif ($dataSource === 'downtime_erp') {
+                $activeMechanicNames = DowntimeErp::whereYear('date', $currentYear)
+                    ->whereMonth('date', $currentMonth)
+                    ->whereNotNull('nameMekanik')
+                    ->where('nameMekanik', '!=', '')
+                    ->distinct()
+                    ->pluck('nameMekanik')
+                    ->toArray();
+                
+                $activeMechanics = User::whereIn('role', ['mekanik', 'team_leader', 'group_leader'])
+                    ->whereIn('name', $activeMechanicNames)
+                    ->count();
+            } else {
+                $activeMechanics = Downtime::whereYear('date', $currentYear)
+                    ->whereMonth('date', $currentMonth)
+                    ->whereNotNull('mekanik_id')
+                    ->distinct('mekanik_id')
+                    ->count('mekanik_id');
+            }
+            
+            return [
+                'totalUsers' => $totalUsers,
+                'totalMechanics' => $totalMechanics,
+                'activeMechanics' => $activeMechanics,
+            ];
+        });
+        
+        $totalUsers = $usersStats['totalUsers'];
+        $totalMechanics = $usersStats['totalMechanics'];
+        $activeMechanics = $usersStats['activeMechanics'];
+
+        // ========== STANDARDS STATISTICS (CACHED) ==========
+        $standardsCacheKey = 'standards_stats';
+        $standardsStats = Cache::remember($standardsCacheKey, 7200, function() {
+            return [
+                'totalStandards' => Standard::count(),
+                'activeStandards' => Standard::where('status', 'active')->count(),
+            ];
+        });
+        
+        $totalStandards = $standardsStats['totalStandards'];
+        $activeStandards = $standardsStats['activeStandards'];
+
+        // ========== SPAREPART STATISTICS (CACHED) ==========
+        $sparepartCacheKey = 'sparepart_stats';
+        $sparepartStats = Cache::remember($sparepartCacheKey, 3600, function() {
+            return [
+                'totalSpareparts' => PartErp::count(),
+                'lowStockSpareparts' => PartErp::whereColumn('stock', '<', 'minimum_stock')
+                    ->where('minimum_stock', '>', 0)
+                    ->count(),
+                'totalStockValue' => PartErp::sum(DB::raw('stock * COALESCE(price, 0)')),
+            ];
+        });
+        
+        $totalSpareparts = $sparepartStats['totalSpareparts'];
+        $lowStockSpareparts = $sparepartStats['lowStockSpareparts'];
+        $totalStockValue = $sparepartStats['totalStockValue'];
+
+        // ========== LOCATION STATISTICS (CACHED) ==========
+        $locationCacheKey = 'location_stats';
+        $locationStats = Cache::remember($locationCacheKey, 7200, function() {
+            return [
+                'totalPlants' => Plant::count(),
+                'totalProcesses' => Process::count(),
+                'totalLines' => Line::count(),
+                'totalRooms' => Room::count(),
+            ];
+        });
+        
+        $totalPlants = $locationStats['totalPlants'];
+        $totalProcesses = $locationStats['totalProcesses'];
+        $totalLines = $locationStats['totalLines'];
+        $totalRooms = $locationStats['totalRooms'];
+
+        // ========== PROBLEM, REASON, ACTION STATISTICS (CACHED) ==========
+        $problemReasonActionCacheKey = 'problem_reason_action_stats';
+        $problemReasonActionStats = Cache::remember($problemReasonActionCacheKey, 7200, function() {
+            return [
+                'uniqueProblems' => Problem::distinct('name')->count('name'),
+                'uniqueReasons' => Reason::distinct('name')->count('name'),
+                'uniqueActions' => Action::distinct('name')->count('name'),
+                'uniqueProblemMms' => ProblemMm::distinct('name')->count('name'),
+            ];
+        });
+        
+        $uniqueProblems = $problemReasonActionStats['uniqueProblems'];
+        $uniqueReasons = $problemReasonActionStats['uniqueReasons'];
+        $uniqueActions = $problemReasonActionStats['uniqueActions'];
+        $uniqueProblemMms = $problemReasonActionStats['uniqueProblemMms'];
+
+        // ========== PREDICTIVE RED STATUS STATISTICS (CACHED) ==========
+        $predictiveRedCacheKey = 'predictive_red_stats';
+        $predictiveRedStats = Cache::remember($predictiveRedCacheKey, 1800, function() {
+            return [
+                'redStatusCount' => PredictiveMaintenanceExecution::where('measurement_status', 'critical')->count(),
+                'redStatusThisMonth' => PredictiveMaintenanceExecution::where('measurement_status', 'critical')
+                    ->whereYear('created_at', now()->year)
+                    ->whereMonth('created_at', now()->month)
+                    ->count(),
+            ];
+        });
+        
+        $redStatusCount = $predictiveRedStats['redStatusCount'];
+        $redStatusThisMonth = $predictiveRedStats['redStatusThisMonth'];
+
+        // ========== MACHINERY STATISTICS (CACHED) ==========
+        $machineryCacheKey = 'machinery_stats';
+        $machineryStats = Cache::remember($machineryCacheKey, 7200, function() {
+            return [
+                'totalSystems' => System::count(),
+                'totalGroups' => Group::count(),
+                'totalMachineTypes' => MachineType::count(),
+                'totalBrands' => Brand::count(),
+                'totalModels' => Model::count(),
+                'machinesWithBrand' => Machine::whereNotNull('brand_id')->distinct()->count('brand_id'),
+                'machinesWithModel' => Machine::whereNotNull('model_id')->distinct()->count('model_id'),
+                'machinesWithType' => Machine::whereNotNull('type_id')->distinct()->count('type_id'),
+            ];
+        });
+        
+        $totalSystems = $machineryStats['totalSystems'];
+        $totalGroups = $machineryStats['totalGroups'];
+        $totalMachineTypes = $machineryStats['totalMachineTypes'];
+        $totalBrands = $machineryStats['totalBrands'];
+        $totalModels = $machineryStats['totalModels'];
+        $machinesWithBrand = $machineryStats['machinesWithBrand'];
+        $machinesWithModel = $machineryStats['machinesWithModel'];
+        $machinesWithType = $machineryStats['machinesWithType'];
 
         // ========== RECENT WORK ORDERS ==========
         $recentWorkOrders = WorkOrder::orderBy('order_date', 'desc')
@@ -238,7 +388,33 @@ class DashboardController extends Controller
             'activeMechanics' => $activeMechanics,
             // Standards Stats
             'totalStandards' => $totalStandards,
-            'activeStandards' => $activeStandards
+            'activeStandards' => $activeStandards,
+            // Sparepart Stats
+            'totalSpareparts' => $totalSpareparts,
+            'lowStockSpareparts' => $lowStockSpareparts,
+            'totalStockValue' => $totalStockValue,
+            // Location Stats
+            'totalPlants' => $totalPlants,
+            'totalProcesses' => $totalProcesses,
+            'totalLines' => $totalLines,
+            'totalRooms' => $totalRooms,
+            // Problem, Reason, Action Stats
+            'uniqueProblems' => $uniqueProblems,
+            'uniqueReasons' => $uniqueReasons,
+            'uniqueActions' => $uniqueActions,
+            'uniqueProblemMms' => $uniqueProblemMms,
+            // Predictive Red Status Stats
+            'redStatusCount' => $redStatusCount,
+            'redStatusThisMonth' => $redStatusThisMonth,
+            // Machinery Stats
+            'totalSystems' => $totalSystems,
+            'totalGroups' => $totalGroups,
+            'totalMachineTypes' => $totalMachineTypes,
+            'totalBrands' => $totalBrands,
+            'totalModels' => $totalModels,
+            'machinesWithBrand' => $machinesWithBrand,
+            'machinesWithModel' => $machinesWithModel,
+            'machinesWithType' => $machinesWithType
         ]));
     }
     

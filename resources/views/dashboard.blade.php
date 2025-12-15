@@ -511,6 +511,428 @@
                 @endforelse
             </div>
         </div>
+
+        <!-- Comprehensive Statistics Section -->
+        <div class="mt-8 space-y-6">
+            <h2 class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-6 animate-fade-in-up">
+                <i class="fas fa-chart-pie mr-2"></i>Comprehensive System Statistics
+            </h2>
+
+            <!-- Row 1: Sparepart, Location, Problem/Reason/Action -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                <!-- Sparepart Statistics -->
+                <div class="info-card rounded-xl shadow-lg p-6 animate-fade-in-up delay-100">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                        Sparepart Statistics
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Total Spareparts</p>
+                            <p class="text-xl font-bold text-orange-600">{{ number_format($totalSpareparts ?? 0) }}</p>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-red-50 to-pink-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Low Stock Items</p>
+                            <p class="text-xl font-bold text-red-600">{{ number_format($lowStockSpareparts ?? 0) }}</p>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Total Stock Value</p>
+                            <p class="text-lg font-bold text-green-600">Rp {{ number_format($totalStockValue ?? 0, 0, ',', '.') }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location Statistics -->
+                <div class="info-card rounded-xl shadow-lg p-6 animate-fade-in-up delay-200">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Location Statistics
+                    </h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Plants</p>
+                            <p class="text-xl font-bold text-green-600">{{ number_format($totalPlants ?? 0) }}</p>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Processes</p>
+                            <p class="text-xl font-bold text-blue-600">{{ number_format($totalProcesses ?? 0) }}</p>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Lines</p>
+                            <p class="text-xl font-bold text-purple-600">{{ number_format($totalLines ?? 0) }}</p>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Rooms</p>
+                            <p class="text-xl font-bold text-yellow-600">{{ number_format($totalRooms ?? 0) }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Problem/Reason/Action Statistics -->
+                <div class="info-card rounded-xl shadow-lg p-6 animate-fade-in-up delay-300">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        Problem/Reason/Action (Unique)
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-gradient-to-r from-red-50 to-pink-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Unique Problems</p>
+                            <p class="text-xl font-bold text-red-600">{{ number_format($uniqueProblems ?? 0) }}</p>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Unique Reasons</p>
+                            <p class="text-xl font-bold text-blue-600">{{ number_format($uniqueReasons ?? 0) }}</p>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-green-50 to-teal-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Unique Actions</p>
+                            <p class="text-xl font-bold text-green-600">{{ number_format($uniqueActions ?? 0) }}</p>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Unique Problem MMs</p>
+                            <p class="text-xl font-bold text-purple-600">{{ number_format($uniqueProblemMms ?? 0) }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Machines, SDM, Standards, Predictive Red Status -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <!-- Machines Statistics -->
+                <div class="info-card rounded-xl shadow-lg p-6 animate-fade-in-up delay-400">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                        </svg>
+                        Machines
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Total Machines</p>
+                            <p class="text-xl font-bold text-blue-600">{{ number_format($totalMachines ?? 0) }}</p>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">With Downtime</p>
+                            <p class="text-xl font-bold text-orange-600">{{ number_format($machinesWithDowntime ?? 0) }}</p>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">With PM</p>
+                            <p class="text-xl font-bold text-green-600">{{ number_format($machinesWithPM ?? 0) }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SDM Statistics -->
+                <div class="info-card rounded-xl shadow-lg p-6 animate-fade-in-up delay-500">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        SDM (Human Resources)
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Total Users</p>
+                            <p class="text-xl font-bold text-indigo-600">{{ number_format($totalUsers ?? 0) }}</p>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Total Mechanics</p>
+                            <p class="text-xl font-bold text-blue-600">{{ number_format($totalMechanics ?? 0) }}</p>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-green-50 to-teal-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Active Mechanics</p>
+                            <p class="text-xl font-bold text-green-600">{{ number_format($activeMechanics ?? 0) }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Standards Statistics -->
+                <div class="info-card rounded-xl shadow-lg p-6 animate-fade-in-up delay-600">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Standards (PdM)
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Total Standards</p>
+                            <p class="text-xl font-bold text-teal-600">{{ number_format($totalStandards ?? 0) }}</p>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Active Standards</p>
+                            <p class="text-xl font-bold text-green-600">{{ number_format($activeStandards ?? 0) }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Predictive Red Status -->
+                <div class="info-card rounded-xl shadow-lg p-6 animate-fade-in-up delay-700">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        Predictive Red Status
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-gradient-to-r from-red-50 to-pink-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Total Red Status</p>
+                            <p class="text-xl font-bold text-red-600">{{ number_format($redStatusCount ?? 0) }}</p>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">This Month</p>
+                            <p class="text-xl font-bold text-orange-600">{{ number_format($redStatusThisMonth ?? 0) }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: Work Orders, PM, PdM -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <!-- Work Orders Statistics -->
+                <div class="info-card rounded-xl shadow-lg p-6 animate-fade-in-up delay-800">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        Work Orders
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Total Work Orders</p>
+                            <p class="text-xl font-bold text-yellow-600">{{ number_format($workOrdersTotal ?? 0) }}</p>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="p-2 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg text-center">
+                                <p class="text-xs text-gray-600 mb-1">Pending</p>
+                                <p class="text-lg font-bold text-orange-600">{{ number_format($workOrdersPending ?? 0) }}</p>
+                            </div>
+                            <div class="p-2 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg text-center">
+                                <p class="text-xs text-gray-600 mb-1">In Progress</p>
+                                <p class="text-lg font-bold text-blue-600">{{ number_format($workOrdersInProgress ?? 0) }}</p>
+                            </div>
+                            <div class="p-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg text-center">
+                                <p class="text-xs text-gray-600 mb-1">Completed</p>
+                                <p class="text-lg font-bold text-green-600">{{ number_format($workOrdersCompleted ?? 0) }}</p>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">This Month</p>
+                            <p class="text-xl font-bold text-purple-600">{{ number_format($workOrdersThisMonth ?? 0) }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preventive Maintenance Statistics -->
+                <div class="info-card rounded-xl shadow-lg p-6 animate-fade-in-up delay-900">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Preventive Maintenance
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Schedules This Month</p>
+                            <p class="text-xl font-bold text-purple-600">{{ number_format($pmSchedulesThisMonth ?? 0) }}</p>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="p-2 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg text-center">
+                                <p class="text-xs text-gray-600 mb-1">Pending</p>
+                                <p class="text-lg font-bold text-orange-600">{{ number_format($pmSchedulesPending ?? 0) }}</p>
+                            </div>
+                            <div class="p-2 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg text-center">
+                                <p class="text-xs text-gray-600 mb-1">In Progress</p>
+                                <p class="text-lg font-bold text-blue-600">{{ number_format($pmSchedulesInProgress ?? 0) }}</p>
+                            </div>
+                            <div class="p-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg text-center">
+                                <p class="text-xs text-gray-600 mb-1">Completed</p>
+                                <p class="text-lg font-bold text-green-600">{{ number_format($pmSchedulesCompleted ?? 0) }}</p>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-green-50 to-teal-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Completion Rate</p>
+                            <p class="text-xl font-bold text-green-600">{{ number_format($pmCompletionRate ?? 0, 1) }}%</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Predictive Maintenance Statistics -->
+                <div class="info-card rounded-xl shadow-lg p-6 animate-fade-in-up delay-1000">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Predictive Maintenance
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Schedules This Month</p>
+                            <p class="text-xl font-bold text-indigo-600">{{ number_format($pdmSchedulesThisMonth ?? 0) }}</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="p-2 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg text-center">
+                                <p class="text-xs text-gray-600 mb-1">Pending</p>
+                                <p class="text-lg font-bold text-orange-600">{{ number_format($pdmSchedulesPending ?? 0) }}</p>
+                            </div>
+                            <div class="p-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg text-center">
+                                <p class="text-xs text-gray-600 mb-1">Completed</p>
+                                <p class="text-lg font-bold text-green-600">{{ number_format($pdmSchedulesCompleted ?? 0) }}</p>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-green-50 to-teal-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Completion Rate</p>
+                            <p class="text-xl font-bold text-green-600">{{ number_format($pdmCompletionRate ?? 0, 1) }}%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 4: Machinery Statistics -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <!-- System Statistics -->
+                <div class="info-card rounded-xl shadow-lg p-6 animate-fade-in-up delay-1100">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                        </svg>
+                        Systems
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Total Systems</p>
+                            <p class="text-xl font-bold text-indigo-600">{{ number_format($totalSystems ?? 0) }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Group Statistics -->
+                <div class="info-card rounded-xl shadow-lg p-6 animate-fade-in-up delay-1200">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        Groups
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Total Groups</p>
+                            <p class="text-xl font-bold text-blue-600">{{ number_format($totalGroups ?? 0) }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Machine Type Statistics -->
+                <div class="info-card rounded-xl shadow-lg p-6 animate-fade-in-up delay-1300">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Machine Types
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Total Types</p>
+                            <p class="text-xl font-bold text-teal-600">{{ number_format($totalMachineTypes ?? 0) }}</p>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Used in Machines</p>
+                            <p class="text-xl font-bold text-green-600">{{ number_format($machinesWithType ?? 0) }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Brand Statistics -->
+                <div class="info-card rounded-xl shadow-lg p-6 animate-fade-in-up delay-1400">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                        Brands
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Total Brands</p>
+                            <p class="text-xl font-bold text-orange-600">{{ number_format($totalBrands ?? 0) }}</p>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Used in Machines</p>
+                            <p class="text-xl font-bold text-yellow-600">{{ number_format($machinesWithBrand ?? 0) }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 5: Model Statistics -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Model Statistics -->
+                <div class="info-card rounded-xl shadow-lg p-6 animate-fade-in-up delay-1500">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                        </svg>
+                        Models
+                    </h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="p-3 bg-gradient-to-r from-pink-50 to-rose-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Total Models</p>
+                            <p class="text-xl font-bold text-pink-600">{{ number_format($totalModels ?? 0) }}</p>
+                        </div>
+                        <div class="p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Used in Machines</p>
+                            <p class="text-xl font-bold text-purple-600">{{ number_format($machinesWithModel ?? 0) }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Machinery Summary -->
+                <div class="info-card rounded-xl shadow-lg p-6 animate-fade-in-up delay-1600">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Machinery Summary
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="p-3 bg-gradient-to-r from-violet-50 to-purple-50 rounded-lg">
+                            <p class="text-xs text-gray-600 mb-1">Total Machines</p>
+                            <p class="text-2xl font-bold text-violet-600">{{ number_format($totalMachines ?? 0) }}</p>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="p-2 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg text-center">
+                                <p class="text-xs text-gray-600 mb-1">Systems</p>
+                                <p class="text-lg font-bold text-indigo-600">{{ number_format($totalSystems ?? 0) }}</p>
+                            </div>
+                            <div class="p-2 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg text-center">
+                                <p class="text-xs text-gray-600 mb-1">Groups</p>
+                                <p class="text-lg font-bold text-blue-600">{{ number_format($totalGroups ?? 0) }}</p>
+                            </div>
+                            <div class="p-2 bg-gradient-to-r from-teal-50 to-green-50 rounded-lg text-center">
+                                <p class="text-xs text-gray-600 mb-1">Types</p>
+                                <p class="text-lg font-bold text-teal-600">{{ number_format($totalMachineTypes ?? 0) }}</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="p-2 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg text-center">
+                                <p class="text-xs text-gray-600 mb-1">Brands</p>
+                                <p class="text-lg font-bold text-orange-600">{{ number_format($totalBrands ?? 0) }}</p>
+                            </div>
+                            <div class="p-2 bg-gradient-to-r from-pink-50 to-rose-50 rounded-lg text-center">
+                                <p class="text-xs text-gray-600 mb-1">Models</p>
+                                <p class="text-lg font-bold text-pink-600">{{ number_format($totalModels ?? 0) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 

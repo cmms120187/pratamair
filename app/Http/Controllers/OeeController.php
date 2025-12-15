@@ -10,10 +10,19 @@ use App\Models\Line;
 use App\Models\Process;
 use App\Models\Plant;
 use App\Models\RoomErp;
+use App\Services\OeeCalculationService;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class OeeController extends Controller
 {
+    protected $oeeService;
+    
+    public function __construct(OeeCalculationService $oeeService)
+    {
+        $this->oeeService = $oeeService;
+    }
+    
     /**
      * Display OEE report
      */
@@ -25,8 +34,8 @@ class OeeController extends Controller
         $lineId = $request->input('line_id');
         $processId = $request->input('process_id');
         
-        // Build query for production daily data - date range
-        $query = ProductionDailyGrade::with(['line', 'process'])
+        // Build query for production daily data - date range with eager loading
+        $query = ProductionDailyGrade::with(['line.plant', 'process'])
             ->whereBetween('production_date', [$startDate, $endDate]);
         
         if ($lineId) {
@@ -42,166 +51,81 @@ class OeeController extends Controller
             ->orderBy('line_id', 'asc')
             ->get();
         
-        // Calculate OEE for each production record
+        // OPTIMIZATION: Pre-load all data needed (BATCH QUERIES instead of N+1)
+        $productionDates = $productionData->pluck('production_date')
+            ->map(function($date) {
+                return $date->format('Y-m-d');
+            })
+            ->unique()
+            ->values()
+            ->toArray();
+        
+        $lineIds = $productionData->pluck('line_id')->unique()->filter()->values()->toArray();
+        $processIds = $productionData->pluck('process_id')->unique()->filter()->values()->toArray();
+        $productionIds = $productionData->pluck('id')->toArray();
+        
+        // Batch query ProductionHourly - group by line_id, process_id, and date
+        $hourlyDataRaw = ProductionHourly::whereIn('line_id', $lineIds)
+            ->whereIn('process_id', $processIds)
+            ->whereIn(DB::raw('DATE(production_date)'), $productionDates)
+            ->whereNotNull('total_production')
+            ->where('total_production', '!=', '')
+            ->get()
+            ->groupBy(function($item) {
+                return $item->line_id . '-' . $item->process_id . '-' . $item->production_date->format('Y-m-d');
+            });
+        
+        // Batch query DowntimeErp2
+        $downtimeDataRaw = DowntimeErp2::whereIn('date', $productionDates)
+            ->where('include_oee', true)
+            ->get()
+            ->groupBy(function($item) {
+                return $item->date . '-' . ($item->plant ?? '') . '-' . ($item->process ?? '') . '-' . ($item->line ?? '');
+            });
+        
+        // Batch query ProductionDailyDowntime
+        $productionDowntimeDataRaw = \App\Models\ProductionDailyDowntime::whereIn('production_daily_grade_id', $productionIds)
+            ->where('include_oee', true)
+            ->get()
+            ->groupBy('production_daily_grade_id');
+        
+        // Calculate OEE for each production record using pre-loaded data
         $oeeData = [];
         foreach ($productionData as $production) {
-            // Get Grade A from ProductionHourly
-            $gradeA = ProductionHourly::where('line_id', $production->line_id)
-                ->where('process_id', $production->process_id)
-                ->whereDate('production_date', $production->production_date)
-                ->where('hour', 0)
-                ->whereNotNull('total_production')
-                ->where('total_production', '!=', '')
-                ->value('total_production');
+            // Ensure production_date is Carbon instance
+            $productionDate = $production->production_date instanceof \Carbon\Carbon 
+                ? $production->production_date 
+                : \Carbon\Carbon::parse($production->production_date);
+            $dateKey = $productionDate->format('Y-m-d');
+            $lineProcessKey = $production->line_id . '-' . $production->process_id . '-' . $dateKey;
             
-            // If not found with hour = 0, try sum of all hours
-            if (!$gradeA) {
-                $gradeA = ProductionHourly::where('line_id', $production->line_id)
-                    ->where('process_id', $production->process_id)
-                    ->whereDate('production_date', $production->production_date)
-                    ->whereNotNull('total_production')
-                    ->where('total_production', '!=', '')
-                    ->sum('total_production');
-            }
+            // Get hourly data for this production
+            $hourlyRecords = $hourlyDataRaw->get($lineProcessKey) ?? collect();
             
-            $gradeA = (int) $gradeA;
-            $gradeB = $production->grade_b ?? 0;
-            $gradeC = $production->grade_c ?? 0;
-            $totalProduction = $gradeA + $gradeB + $gradeC;
-            
-            // Get target_per_hour
-            $targetPerHour = ProductionHourly::where('line_id', $production->line_id)
-                ->where('process_id', $production->process_id)
-                ->whereDate('production_date', $production->production_date)
-                ->where('hour', 0)
-                ->value('target_per_hour');
-            
-            if ($targetPerHour === null) {
-                $targetPerHour = $production->target_per_hour ?? 0;
-            }
-            
-            // Calculate production hours (end_time - start_time - break_duration)
-            $productionHours = 0;
-            if ($production->start_time && $production->end_time) {
-                $startParts = explode(':', $production->start_time);
-                $endParts = explode(':', $production->end_time);
-                
-                $startMinutes = (int)$startParts[0] * 60 + (int)($startParts[1] ?? 0);
-                $endMinutes = (int)$endParts[0] * 60 + (int)($endParts[1] ?? 0);
-                
-                // Handle case where end_time is next day
-                if ($endMinutes < $startMinutes) {
-                    $endMinutes += 24 * 60;
-                }
-                
-                $totalMinutes = $endMinutes - $startMinutes;
-                $totalHours = $totalMinutes / 60;
-                $breakDuration = $production->break_duration ?? 0;
-                $productionHours = max(0, $totalHours - $breakDuration);
-            }
-            
-            // Get downtime from DowntimeErp2 where include_oee = true
-            // Match by date, plant, process, and line
+            // Get downtime records for this production
             $line = $production->line;
             $process = $production->process;
-            
-            // Get plant from line (line has plant_id)
             $plant = $line ? $line->plant : null;
             
             $plantName = $plant ? $plant->name : null;
             $processName = $process ? $process->name : null;
             $lineName = $line ? $line->name : null;
             
-            // Get downtime records where include_oee = true
-            // Match by specific production date, plant, process, and line
-            $downtimeRecords = DowntimeErp2::where('date', $production->production_date)
-                ->where('include_oee', true)
-                ->where(function($q) use ($plantName, $processName, $lineName) {
-                    if ($plantName) {
-                        $q->where('plant', $plantName);
-                    }
-                    if ($processName) {
-                        $q->where('process', $processName);
-                    }
-                    if ($lineName) {
-                        $q->where('line', $lineName);
-                    }
-                })
-                ->get();
+            $downtimeKey = $dateKey . '-' . ($plantName ?? '') . '-' . ($processName ?? '') . '-' . ($lineName ?? '');
+            $downtimeRecords = $downtimeDataRaw->get($downtimeKey) ?? collect();
             
-            // Calculate total downtime in minutes from DowntimeErp2 (machine breakdown)
-            $totalDowntimeMinutes = 0;
-            foreach ($downtimeRecords as $downtime) {
-                // Parse duration string (format: "X minutes")
-                $durationStr = $downtime->duration ?? '';
-                if (preg_match('/(\d+)\s*minutes?/i', $durationStr, $matches)) {
-                    $totalDowntimeMinutes += (int)$matches[1];
-                }
-            }
+            // Get production downtimes for this production
+            $productionDowntimes = $productionDowntimeDataRaw->get($production->id) ?? collect();
             
-            // Get production downtimes (process, quality, material, etc.) where include_oee = true
-            $productionDowntimes = \App\Models\ProductionDailyDowntime::where('production_daily_grade_id', $production->id)
-                ->where('include_oee', true)
-                ->get();
+            // Use service to calculate OEE
+            $oeeResult = $this->oeeService->calculateOeeForProduction(
+                $production,
+                $hourlyRecords,
+                $downtimeRecords,
+                $productionDowntimes
+            );
             
-            // Add production downtime minutes
-            foreach ($productionDowntimes as $prodDowntime) {
-                $totalDowntimeMinutes += $prodDowntime->duration_minutes;
-            }
-            
-            $totalDowntimeHours = $totalDowntimeMinutes / 60;
-            
-            // Calculate OEE components
-            // Planned Production Time = Production Hours
-            $plannedProductionTime = $productionHours;
-            
-            // Operating Time = Planned Production Time - Downtime
-            $operatingTime = max(0, $plannedProductionTime - $totalDowntimeHours);
-            
-            // Availability = (Operating Time / Planned Production Time) × 100
-            $availability = $plannedProductionTime > 0 
-                ? ($operatingTime / $plannedProductionTime) * 100 
-                : 0;
-            
-            // Target Output = Target per Hour × Production Hours
-            $targetOutput = $targetPerHour * $productionHours;
-            
-            // Performance = (Actual Output / Target Output) × 100
-            $performance = $targetOutput > 0 
-                ? ($totalProduction / $targetOutput) * 100 
-                : 0;
-            
-            // Quality = (Good Units / Total Units) × 100
-            $quality = $totalProduction > 0 
-                ? ($gradeA / $totalProduction) * 100 
-                : 0;
-            
-            // OEE = Availability × Performance × Quality / 10000
-            $oee = ($availability * $performance * $quality) / 10000;
-            
-            $oeeData[] = [
-                'production' => $production,
-                'line' => $line,
-                'process' => $process,
-                'plant' => $plant,
-                'production_date' => $production->production_date,
-                'production_hours' => $productionHours,
-                'target_per_hour' => $targetPerHour,
-                'target_output' => $targetOutput,
-                'grade_a' => $gradeA,
-                'grade_b' => $gradeB,
-                'grade_c' => $gradeC,
-                'total_production' => $totalProduction,
-                'total_downtime_hours' => $totalDowntimeHours,
-                'total_downtime_minutes' => $totalDowntimeMinutes,
-                'downtime_count' => $downtimeRecords->count(),
-                'planned_production_time' => $plannedProductionTime,
-                'operating_time' => $operatingTime,
-                'availability' => $availability,
-                'performance' => $performance,
-                'quality' => $quality,
-                'oee' => $oee,
-            ];
+            $oeeData[] = $oeeResult;
         }
         
         // Get lines and processes for filters

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\PartErp;
 use App\Models\System;
 use App\Models\MachineType;
+use App\Services\SparepartLowStockService;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -44,6 +45,7 @@ class PartErpController extends Controller
             'brand' => 'nullable|string|max:255',
             'unit' => 'nullable|string|max:255',
             'stock' => 'nullable|integer',
+            'minimum_stock' => 'nullable|integer|min:0',
             'price' => 'nullable|numeric',
             'machine_type_ids' => 'nullable|array',
             'machine_type_ids.*' => 'exists:machine_types,id',
@@ -56,6 +58,7 @@ class PartErpController extends Controller
             'brand' => $validated['brand'] ?? null,
             'unit' => $validated['unit'] ?? null,
             'stock' => $validated['stock'] ?? 0,
+            'minimum_stock' => $validated['minimum_stock'] ?? 0,
             'price' => $validated['price'] ?? null,
         ];
 
@@ -73,6 +76,10 @@ class PartErpController extends Controller
         if ($request->has('machine_type_ids')) {
             $partErp->machineTypes()->sync($request->machine_type_ids);
         }
+
+        // Check and send low stock alert
+        $lowStockService = new SparepartLowStockService();
+        $lowStockService->checkAndSendAlerts($partErp);
 
         return redirect()->route('part-erp.index')->with('success', 'Part ERP created successfully.');
     }
@@ -143,6 +150,10 @@ class PartErpController extends Controller
         } else {
             $partErp->machineTypes()->sync([]);
         }
+
+        // Check and send low stock alert
+        $lowStockService = new SparepartLowStockService();
+        $lowStockService->checkAndSendAlerts($partErp->fresh());
 
         // Get page from request or default to 1
         $page = $request->input('page', 1);

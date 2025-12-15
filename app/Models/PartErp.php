@@ -16,6 +16,7 @@ class PartErp extends Model
         'brand',
         'unit',
         'stock',
+        'minimum_stock',
         'price',
         'location'
     ];

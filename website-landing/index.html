@@ -130,6 +130,44 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
+        .module-tab {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-radius: 8px;
+        }
+        .module-tab:hover {
+            transform: translateY(-2px);
+        }
+        .module-panel {
+            display: none;
+        }
+        .module-panel.active {
+            display: block;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        .module-panel.active {
+            animation: slideIn 0.5s ease-out;
+        }
+        /* System Modal Styles */
+        #systemModal {
+            backdrop-filter: blur(4px);
+        }
+        #systemModal .bg-white {
+            transition: all 0.3s ease-out;
+        }
+        #systemModal:not(.hidden) .bg-white {
+            transform: scale(1);
+            opacity: 1;
+        }
         .demo-panel {
             display: none;
         }
@@ -165,6 +203,7 @@
                     <a href="#home" class="text-gray-700 hover:text-blue-600 font-medium transition">Beranda</a>
                     <a href="#features" class="text-gray-700 hover:text-blue-600 font-medium transition">Fitur</a>
                     <a href="#demo" class="text-gray-700 hover:text-blue-600 font-medium transition">Demo</a>
+                    <a href="#guide" class="text-gray-700 hover:text-blue-600 font-medium transition">Panduan</a>
                     <a href="#benefits" class="text-gray-700 hover:text-blue-600 font-medium transition">Manfaat</a>
                     <a href="#pricing" class="text-gray-700 hover:text-blue-600 font-medium transition">Harga</a>
                     <a href="#contact" class="text-gray-700 hover:text-blue-600 font-medium transition">Login</a>
@@ -181,6 +220,7 @@
                 <a href="#home" class="block text-gray-700 hover:text-blue-600 font-medium">Beranda</a>
                 <a href="#features" class="block text-gray-700 hover:text-blue-600 font-medium">Fitur</a>
                 <a href="#demo" class="block text-gray-700 hover:text-blue-600 font-medium">Demo</a>
+                <a href="#guide" class="block text-gray-700 hover:text-blue-600 font-medium">Panduan</a>
                 <a href="#benefits" class="block text-gray-700 hover:text-blue-600 font-medium">Manfaat</a>
                 <a href="#pricing" class="block text-gray-700 hover:text-blue-600 font-medium">Harga</a>
                 <a href="#contact" class="block text-gray-700 hover:text-blue-600 font-medium">Login</a>
@@ -387,99 +427,13 @@
                         <li><i class="fas fa-check text-green-600 mr-2"></i> Machine Search</li>
                     </ul>
                     
-                    <!-- System Menu -->
+                    <!-- System Menu Button -->
                     <div class="mt-4 pt-4 border-t border-teal-200">
-                        <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                            <i class="fas fa-cogs text-teal-600 mr-2"></i> System
-                        </h4>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm text-left text-gray-700">
-                                <thead class="bg-teal-100 text-teal-800">
-                                    <tr>
-                                        <th class="px-2 py-2 font-semibold">ID</th>
-                                        <th class="px-2 py-2 font-semibold">Nama Sistem</th>
-                                        <th class="px-2 py-2 font-semibold">Deskripsi</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-teal-50">
-                                    <tr class="hover:bg-teal-50 transition">
-                                        <td class="px-2 py-2 font-medium">1</td>
-                                        <td class="px-2 py-2">Mechanical</td>
-                                        <td class="px-2 py-2">Sistem mekanik mesin termasuk gear, bearing, belt, chain, pulley, shaft, dan komponen mekanis lainnya</td>
-                                    </tr>
-                                    <tr class="hover:bg-teal-50 transition">
-                                        <td class="px-2 py-2 font-medium">2</td>
-                                        <td class="px-2 py-2">Electrical</td>
-                                        <td class="px-2 py-2">Sistem kelistrikan mesin termasuk motor, kabel, panel kontrol, switch, relay, MCC, dan komponen elektrik</td>
-                                    </tr>
-                                    <tr class="hover:bg-teal-50 transition">
-                                        <td class="px-2 py-2 font-medium">3</td>
-                                        <td class="px-2 py-2">Thermal System</td>
-                                        <td class="px-2 py-2">Sistem termal untuk pendinginan dan pemanasan termasuk chiller, radiator, heater, furnace, boiler, dan heat exchanger</td>
-                                    </tr>
-                                    <tr class="hover:bg-teal-50 transition">
-                                        <td class="px-2 py-2 font-medium">4</td>
-                                        <td class="px-2 py-2">Fluid Power System</td>
-                                        <td class="px-2 py-2">Sistem tenaga fluida termasuk pneumatik (udara bertekanan) dan hidrolik (fluida bertekanan) dengan pump, cylinder, valve, dan regulator</td>
-                                    </tr>
-                                    <tr class="hover:bg-teal-50 transition">
-                                        <td class="px-2 py-2 font-medium">5</td>
-                                        <td class="px-2 py-2">Control & Automation System</td>
-                                        <td class="px-2 py-2">Sistem kontrol dan otomasi mesin termasuk PLC, SCADA, HMI, control panel, dan control logic untuk operasi otomatis</td>
-                                    </tr>
-                                    <tr class="hover:bg-teal-50 transition">
-                                        <td class="px-2 py-2 font-medium">6</td>
-                                        <td class="px-2 py-2">Sensor & Actuator System</td>
-                                        <td class="px-2 py-2">Sistem sensor untuk deteksi kondisi (proximity, temperature, pressure) dan aktuator untuk penggerak (motor actuator, solenoid, servo)</td>
-                                    </tr>
-                                    <tr class="hover:bg-teal-50 transition">
-                                        <td class="px-2 py-2 font-medium">7</td>
-                                        <td class="px-2 py-2">Drive & Transmission System</td>
-                                        <td class="px-2 py-2">Sistem penggerak dan transmisi tenaga termasuk motor drive, gearbox, coupling, gear, belt, chain untuk transfer tenaga</td>
-                                    </tr>
-                                    <tr class="hover:bg-teal-50 transition">
-                                        <td class="px-2 py-2 font-medium">8</td>
-                                        <td class="px-2 py-2">Air Handling System</td>
-                                        <td class="px-2 py-2">Sistem penanganan udara termasuk exhaust fan, ventilation fan, ducting, filter, dan air handling unit untuk sirkulasi udara</td>
-                                    </tr>
-                                    <tr class="hover:bg-teal-50 transition">
-                                        <td class="px-2 py-2 font-medium">9</td>
-                                        <td class="px-2 py-2">Process Fluid System</td>
-                                        <td class="px-2 py-2">Sistem fluida proses termasuk water system (water pump, treatment, piping) dan steam system (boiler, steam trap, distribution)</td>
-                                    </tr>
-                                    <tr class="hover:bg-teal-50 transition">
-                                        <td class="px-2 py-2 font-medium">10</td>
-                                        <td class="px-2 py-2">Safety & Emergency System</td>
-                                        <td class="px-2 py-2">Sistem keselamatan dan darurat termasuk safety interlock, guard, emergency stop, E-stop button, safety relay, dan interlock</td>
-                                    </tr>
-                                    <tr class="hover:bg-teal-50 transition">
-                                        <td class="px-2 py-2 font-medium">11</td>
-                                        <td class="px-2 py-2">Monitoring & Instrumentation System</td>
-                                        <td class="px-2 py-2">Sistem monitoring dan instrumentasi untuk pengukuran parameter mesin termasuk sensor, transmitter, gauge, SCADA, HMI, dan data logger</td>
-                                    </tr>
-                                    <tr class="hover:bg-teal-50 transition">
-                                        <td class="px-2 py-2 font-medium">12</td>
-                                        <td class="px-2 py-2">Lubrication System</td>
-                                        <td class="px-2 py-2">Sistem pelumasan untuk mengurangi gesekan dan keausan komponen mesin termasuk oil pump, grease pump, dan filter</td>
-                                    </tr>
-                                    <tr class="hover:bg-teal-50 transition">
-                                        <td class="px-2 py-2 font-medium">13</td>
-                                        <td class="px-2 py-2">Power Distribution System</td>
-                                        <td class="px-2 py-2">Sistem distribusi tenaga listrik untuk mesin termasuk MCC, distribution panel, transformer, dan circuit breaker</td>
-                                    </tr>
-                                    <tr class="hover:bg-teal-50 transition">
-                                        <td class="px-2 py-2 font-medium">14</td>
-                                        <td class="px-2 py-2">Compressed Air & Vacuum System</td>
-                                        <td class="px-2 py-2">Sistem udara terkompresi (compressor, air receiver, dryer) dan sistem vakum (vacuum pump, vacuum chamber, valve)</td>
-                                    </tr>
-                                    <tr class="hover:bg-teal-50 transition">
-                                        <td class="px-2 py-2 font-medium">15</td>
-                                        <td class="px-2 py-2">Fire Suppression System</td>
-                                        <td class="px-2 py-2">Sistem pemadam kebakaran untuk melindungi mesin dan area produksi termasuk sprinkler, fire alarm, dan extinguisher</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                        <button onclick="openSystemModal()" class="w-full bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+                            <i class="fas fa-cogs text-xl"></i>
+                            <span>Lihat Daftar System</span>
+                            <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
                     </div>
                 </div>
 
@@ -1304,6 +1258,1124 @@
         </div>
     </section>
 
+    <!-- User Guide & Documentation Section -->
+    <section id="guide" class="py-12 sm:py-20 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12 sm:mb-16 animate-fade-in">
+                <h2 class="text-3xl sm:text-4xl font-bold gradient-text mb-4">
+                    <i class="fas fa-book-open mr-3"></i>Panduan Lengkap Penggunaan Sistem
+                </h2>
+                <p class="text-lg sm:text-xl text-gray-700 max-w-3xl mx-auto">
+                    Pelajari semua fitur dan cara penggunaan sistem TPM ERP OEE dengan panduan lengkap dan interaktif
+                </p>
+            </div>
+
+            <!-- Module Navigation Tabs -->
+            <div class="mb-8 flex flex-wrap justify-center gap-2 sm:gap-4">
+                <button class="module-tab active bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-lg" data-module="dashboard">
+                    <i class="fas fa-home mr-2"></i>Dashboard
+                </button>
+                <button class="module-tab bg-white text-gray-700 px-4 py-2 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-md hover:shadow-lg" data-module="location">
+                    <i class="fas fa-map-marked-alt mr-2"></i>Location
+                </button>
+                <button class="module-tab bg-white text-gray-700 px-4 py-2 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-md hover:shadow-lg" data-module="machinery">
+                    <i class="fas fa-server mr-2"></i>Machinery
+                </button>
+                <button class="module-tab bg-white text-gray-700 px-4 py-2 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-md hover:shadow-lg" data-module="downtime">
+                    <i class="fas fa-clock mr-2"></i>Downtime
+                </button>
+                <button class="module-tab bg-white text-gray-700 px-4 py-2 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-md hover:shadow-lg" data-module="production">
+                    <i class="fas fa-chart-bar mr-2"></i>Production
+                </button>
+                <button class="module-tab bg-white text-gray-700 px-4 py-2 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-md hover:shadow-lg" data-module="preventive">
+                    <i class="fas fa-wrench mr-2"></i>Preventive
+                </button>
+                <button class="module-tab bg-white text-gray-700 px-4 py-2 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-md hover:shadow-lg" data-module="predictive">
+                    <i class="fas fa-chart-line mr-2"></i>Predictive
+                </button>
+                <button class="module-tab bg-white text-gray-700 px-4 py-2 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-md hover:shadow-lg" data-module="reports">
+                    <i class="fas fa-chart-pie mr-2"></i>Reports
+                </button>
+                <button class="module-tab bg-white text-gray-700 px-4 py-2 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-md hover:shadow-lg" data-module="users">
+                    <i class="fas fa-users mr-2"></i>Users
+                </button>
+            </div>
+
+            <!-- Module Content Panels -->
+            <div class="module-content">
+                <!-- Dashboard Module -->
+                <div class="module-panel active bg-white rounded-2xl shadow-xl p-6 sm:p-8 animate-fade-in-up" data-panel="dashboard">
+                    <div class="flex items-center mb-6">
+                        <div class="bg-gradient-to-r from-blue-500 to-purple-500 w-16 h-16 rounded-full flex items-center justify-center mr-4 animate-pulse-slow">
+                            <i class="fas fa-home text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl sm:text-3xl font-bold gradient-text">Dashboard</h3>
+                            <p class="text-gray-600">Overview komprehensif semua aktivitas maintenance</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-l-4 border-blue-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-info-circle text-blue-600 mr-2"></i>Fitur Utama</h4>
+                            <ul class="space-y-2 text-gray-700">
+                                <li><i class="fas fa-check-circle text-green-500 mr-2"></i>Statistik real-time downtime</li>
+                                <li><i class="fas fa-check-circle text-green-500 mr-2"></i>PM & PdM completion rate</li>
+                                <li><i class="fas fa-check-circle text-green-500 mr-2"></i>Work order status tracking</li>
+                                <li><i class="fas fa-check-circle text-green-500 mr-2"></i>Machine & user statistics</li>
+                                <li><i class="fas fa-check-circle text-green-500 mr-2"></i>Top machines dengan downtime tertinggi</li>
+                                <li><i class="fas fa-check-circle text-green-500 mr-2"></i>Downtime trend per hari</li>
+                            </ul>
+                        </div>
+                        <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border-l-4 border-purple-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-cog text-purple-600 mr-2"></i>Cara Menggunakan</h4>
+                            <ol class="space-y-3 text-gray-700 list-decimal list-inside">
+                                <li>Pilih <strong>data source</strong> (Downtime ERP2/ERP/Downtime)</li>
+                                <li>Filter berdasarkan <strong>bulan dan tahun</strong></li>
+                                <li>Lihat statistik di kartu-kartu dashboard</li>
+                                <li>Scroll untuk melihat chart dan top lists</li>
+                                <li>Klik detail untuk informasi lebih lanjut</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-6 border-l-4 border-yellow-500 mb-6">
+                        <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-lightbulb text-yellow-600 mr-2"></i>Tips & Trik</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
+                            <div>
+                                <p><strong>💡 Filter Persistence:</strong> Filter yang dipilih akan tersimpan di session, jadi tidak perlu set ulang setiap kali masuk.</p>
+                            </div>
+                            <div>
+                                <p><strong>💡 Data Source:</strong> Pilih data source sesuai kebutuhan - ERP2 untuk data terbaru, ERP untuk data legacy.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alert System Section -->
+                    <div class="bg-gradient-to-br from-red-50 to-pink-50 rounded-xl p-6 border-l-4 border-red-500 mb-6">
+                        <h4 class="font-bold text-lg mb-4 text-gray-900">
+                            <i class="fas fa-bell text-red-600 mr-2 animate-pulse-slow"></i>Sistem Alert Otomatis
+                        </h4>
+                        <p class="text-gray-700 mb-4">Sistem akan otomatis mengirim email alert ke managers untuk kondisi-kondisi penting:</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <!-- Sparepart Low Stock Alert -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-box text-orange-600 text-xl mr-2"></i>
+                                    <h5 class="font-bold text-gray-900">Sparepart Low Stock Alert</h5>
+                                </div>
+                                <p class="text-sm text-gray-700 mb-2">Alert otomatis dikirim jika:</p>
+                                <ul class="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                                    <li>Stock sparepart <strong>di bawah minimum stock</strong></li>
+                                    <li>Terjadi saat create/update sparepart</li>
+                                    <li>Email dikirim ke managers yang dikonfigurasi</li>
+                                </ul>
+                                <div class="mt-3 pt-3 border-t border-gray-200">
+                                    <p class="text-xs text-gray-500"><i class="fas fa-info-circle mr-1"></i>Setting minimum stock di form create/edit sparepart</p>
+                                </div>
+                            </div>
+
+                            <!-- Predictive Red Status Alert -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-exclamation-triangle text-red-600 text-xl mr-2"></i>
+                                    <h5 class="font-bold text-gray-900">Predictive Red Status Alert</h5>
+                                </div>
+                                <p class="text-sm text-gray-700 mb-2">Alert otomatis dikirim jika:</p>
+                                <ul class="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                                    <li>Inputan Predictive Maintenance memiliki <strong>status merah (critical)</strong></li>
+                                    <li>Terjadi saat input/update measurement value</li>
+                                    <li>Email dikirim ke managers yang dikonfigurasi</li>
+                                </ul>
+                                <div class="mt-3 pt-3 border-t border-gray-200">
+                                    <p class="text-xs text-gray-500"><i class="fas fa-info-circle mr-1"></i>Status: 🟢 Normal | 🟡 Warning | 🟠 Caution | 🔴 Critical (Alert)</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 shadow-md">
+                            <h5 class="font-bold text-gray-900 mb-2">
+                                <i class="fas fa-cog text-blue-600 mr-2"></i>Setting Email Managers
+                            </h5>
+                            <p class="text-sm text-gray-700 mb-2">Konfigurasi recipients untuk alert (sama dengan Downtime Alert):</p>
+                            <div class="bg-gray-50 rounded p-3 text-xs font-mono text-gray-800">
+                                <p class="mb-1">Edit file <strong>.env</strong>:</p>
+                                <p class="mb-1">DOWNTIME_ALERT_ENABLED=true</p>
+                                <p>DOWNTIME_ALERT_ROLES=manager,general_manager,coordinator</p>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2"><i class="fas fa-lightbulb mr-1"></i>Bisa juga set via email spesifik atau user IDs di config file</p>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard Statistics Section -->
+                    <div class="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-6 border-l-4 border-cyan-500">
+                        <h4 class="font-bold text-lg mb-4 text-gray-900">
+                            <i class="fas fa-chart-bar text-cyan-600 mr-2"></i>Statistik Dashboard Lengkap
+                        </h4>
+                        <p class="text-gray-700 mb-4">Dashboard menampilkan informasi komprehensif dari berbagai entitas:</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <!-- Sparepart Statistics -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-boxes text-orange-500 text-lg mr-2"></i>
+                                    <h5 class="font-bold text-gray-900 text-sm">Sparepart</h5>
+                                </div>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li>• Total Sparepart</li>
+                                    <li>• Low Stock Count</li>
+                                    <li>• Total Stock Value</li>
+                                </ul>
+                            </div>
+
+                            <!-- Location Statistics -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-map-marked-alt text-green-500 text-lg mr-2"></i>
+                                    <h5 class="font-bold text-gray-900 text-sm">Lokasi</h5>
+                                </div>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li>• Total Plants</li>
+                                    <li>• Total Processes</li>
+                                    <li>• Total Lines</li>
+                                    <li>• Total Rooms</li>
+                                </ul>
+                            </div>
+
+                            <!-- Problem/Reason/Action Statistics -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-list text-purple-500 text-lg mr-2"></i>
+                                    <h5 class="font-bold text-gray-900 text-sm">Problem/Reason/Action</h5>
+                                </div>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li>• Unique Problems</li>
+                                    <li>• Unique Reasons</li>
+                                    <li>• Unique Actions</li>
+                                    <li>• Unique Problem MMs</li>
+                                </ul>
+                            </div>
+
+                            <!-- Predictive Red Status -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-exclamation-circle text-red-500 text-lg mr-2"></i>
+                                    <h5 class="font-bold text-gray-900 text-sm">Predictive Red Status</h5>
+                                </div>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li>• Total Red Status</li>
+                                    <li>• Red Status This Month</li>
+                                </ul>
+                            </div>
+
+                            <!-- Machines Statistics -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-server text-blue-500 text-lg mr-2"></i>
+                                    <h5 class="font-bold text-gray-900 text-sm">Mesin</h5>
+                                </div>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li>• Total Machines</li>
+                                    <li>• Machines with Downtime</li>
+                                    <li>• Machines with PM</li>
+                                </ul>
+                            </div>
+
+                            <!-- SDM Statistics -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-users text-indigo-500 text-lg mr-2"></i>
+                                    <h5 class="font-bold text-gray-900 text-sm">SDM</h5>
+                                </div>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li>• Total Users</li>
+                                    <li>• Total Mechanics</li>
+                                    <li>• Active Mechanics</li>
+                                </ul>
+                            </div>
+
+                            <!-- Standards Statistics -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-ruler text-teal-500 text-lg mr-2"></i>
+                                    <h5 class="font-bold text-gray-900 text-sm">Standar PdM</h5>
+                                </div>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li>• Total Standards</li>
+                                    <li>• Active Standards</li>
+                                </ul>
+                            </div>
+
+                            <!-- Work Orders -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-clipboard-list text-yellow-500 text-lg mr-2"></i>
+                                    <h5 class="font-bold text-gray-900 text-sm">Work Orders</h5>
+                                </div>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li>• Total Work Orders</li>
+                                    <li>• Pending/In Progress/Completed</li>
+                                    <li>• This Month Count</li>
+                                </ul>
+                            </div>
+
+                            <!-- PM & PdM -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-tools text-gray-500 text-lg mr-2"></i>
+                                    <h5 class="font-bold text-gray-900 text-sm">PM & PdM</h5>
+                                </div>
+                                <ul class="text-xs text-gray-600 space-y-1">
+                                    <li>• PM Schedules & Completion</li>
+                                    <li>• PdM Schedules & Completion</li>
+                                    <li>• Completion Rates</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 bg-white rounded-lg p-4 shadow-md">
+                            <p class="text-sm text-gray-700">
+                                <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                                <strong>Note:</strong> Semua statistik di-cache untuk performa optimal. Data akan otomatis refresh setiap 1-2 jam atau setelah ada perubahan data.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Downtime Statistics Section -->
+                    <div class="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-6 border-l-4 border-red-500 mt-6">
+                        <h4 class="font-bold text-lg mb-4 text-gray-900">
+                            <i class="fas fa-clock text-red-600 mr-2"></i>Statistik Downtime (Bulan Ini)
+                        </h4>
+                        <p class="text-gray-700 mb-4">Dashboard menampilkan analisis lengkap downtime berdasarkan filter bulan dan tahun yang dipilih:</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                            <!-- Total Downtime Count -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-list-ol text-red-500 text-lg mr-2"></i>
+                                    <h5 class="font-bold text-gray-900 text-sm">Total Downtime</h5>
+                                </div>
+                                <p class="text-xs text-gray-600">Jumlah kejadian downtime bulan ini</p>
+                                <p class="text-lg font-bold text-red-600 mt-2">monthDowntimeCount</p>
+                            </div>
+
+                            <!-- Total Downtime Duration -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-hourglass-half text-orange-500 text-lg mr-2"></i>
+                                    <h5 class="font-bold text-gray-900 text-sm">Total Duration</h5>
+                                </div>
+                                <p class="text-xs text-gray-600">Total durasi downtime (jam)</p>
+                                <p class="text-lg font-bold text-orange-600 mt-2">monthDowntime</p>
+                            </div>
+
+                            <!-- Average Duration -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-chart-line text-yellow-500 text-lg mr-2"></i>
+                                    <h5 class="font-bold text-gray-900 text-sm">Avg Duration</h5>
+                                </div>
+                                <p class="text-xs text-gray-600">Rata-rata durasi per incident</p>
+                                <p class="text-lg font-bold text-yellow-600 mt-2">avgDowntimeDuration</p>
+                            </div>
+
+                            <!-- Average Per Day -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-calendar-day text-blue-500 text-lg mr-2"></i>
+                                    <h5 class="font-bold text-gray-900 text-sm">Avg Per Day</h5>
+                                </div>
+                                <p class="text-xs text-gray-600">Rata-rata downtime per hari</p>
+                                <p class="text-lg font-bold text-blue-600 mt-2">avgDowntimePerDay</p>
+                            </div>
+                        </div>
+
+                        <!-- Most Problematic & Longest -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <h5 class="font-bold text-gray-900 mb-2">
+                                    <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>Most Problematic Machine
+                                </h5>
+                                <p class="text-xs text-gray-600 mb-2">Mesin dengan total downtime tertinggi bulan ini</p>
+                                <p class="text-sm text-gray-700">Menampilkan: ID Machine, Type, Total Duration, dan Count</p>
+                            </div>
+
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <h5 class="font-bold text-gray-900 mb-2">
+                                    <i class="fas fa-hourglass-end text-orange-500 mr-2"></i>Longest Downtime
+                                </h5>
+                                <p class="text-xs text-gray-600 mb-2">Downtime terpanjang bulan ini</p>
+                                <p class="text-sm text-gray-700">Menampilkan detail downtime dengan durasi terpanjang</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Lists & Analysis Section -->
+                    <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 border-l-4 border-indigo-500 mt-6">
+                        <h4 class="font-bold text-lg mb-4 text-gray-900">
+                            <i class="fas fa-trophy text-indigo-600 mr-2"></i>Top Lists & Analysis
+                        </h4>
+                        <p class="text-gray-700 mb-4">Dashboard menampilkan ranking dan analisis untuk identifikasi area improvement:</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                            <!-- Top Machines -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-server text-blue-500 text-lg mr-2"></i>
+                                    <h5 class="font-bold text-gray-900 text-sm">Top 10 Machines</h5>
+                                </div>
+                                <p class="text-xs text-gray-600 mb-2">Mesin dengan akumulasi downtime tertinggi</p>
+                                <ul class="text-xs text-gray-700 space-y-1">
+                                    <li>• ID Machine & Type</li>
+                                    <li>• Total Duration</li>
+                                    <li>• Downtime Count</li>
+                                </ul>
+                            </div>
+
+                            <!-- Top MTTR -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-tools text-green-500 text-lg mr-2"></i>
+                                    <h5 class="font-bold text-gray-900 text-sm">Top 5 MTTR</h5>
+                                </div>
+                                <p class="text-xs text-gray-600 mb-2">Mean Time To Repair tertinggi</p>
+                                <ul class="text-xs text-gray-700 space-y-1">
+                                    <li>• Rata-rata waktu perbaikan</li>
+                                    <li>• Identifikasi mesin yang sulit diperbaiki</li>
+                                    <li>• Total Duration / Count</li>
+                                </ul>
+                            </div>
+
+                            <!-- Top Plants -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-leaf text-green-500 text-lg mr-2"></i>
+                                    <h5 class="font-bold text-gray-900 text-sm">Top 5 Plants</h5>
+                                </div>
+                                <p class="text-xs text-gray-600 mb-2">Plant dengan downtime tertinggi</p>
+                                <ul class="text-xs text-gray-700 space-y-1">
+                                    <li>• Total Duration per Plant</li>
+                                    <li>• Downtime Count</li>
+                                    <li>• Untuk analisis per lokasi</li>
+                                </ul>
+                            </div>
+
+                            <!-- Top Problems -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-exclamation-circle text-red-500 text-lg mr-2"></i>
+                                    <h5 class="font-bold text-gray-900 text-sm">Top 5 Problems</h5>
+                                </div>
+                                <p class="text-xs text-gray-600 mb-2">Masalah paling sering terjadi</p>
+                                <ul class="text-xs text-gray-700 space-y-1">
+                                    <li>• Problem Count</li>
+                                    <li>• Total Duration</li>
+                                    <li>• Untuk root cause analysis</li>
+                                </ul>
+                            </div>
+
+                            <!-- Top Mekanik -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-user-cog text-purple-500 text-lg mr-2"></i>
+                                    <h5 class="font-bold text-gray-900 text-sm">Top 5 Mekanik</h5>
+                                </div>
+                                <p class="text-xs text-gray-600 mb-2">Mekanik paling aktif bulan ini</p>
+                                <ul class="text-xs text-gray-700 space-y-1">
+                                    <li>• Downtime Count</li>
+                                    <li>• Total Duration</li>
+                                    <li>• Performance tracking</li>
+                                </ul>
+                            </div>
+
+                            <!-- Top Lines -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-bars text-teal-500 text-lg mr-2"></i>
+                                    <h5 class="font-bold text-gray-900 text-sm">Top 5 Lines</h5>
+                                </div>
+                                <p class="text-xs text-gray-600 mb-2">Line dengan downtime tertinggi</p>
+                                <ul class="text-xs text-gray-700 space-y-1">
+                                    <li>• Total Duration per Line</li>
+                                    <li>• Downtime Count</li>
+                                    <li>• Analisis per line produksi</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trend & Recent Section -->
+                    <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border-l-4 border-blue-500 mt-6">
+                        <h4 class="font-bold text-lg mb-4 text-gray-900">
+                            <i class="fas fa-chart-area text-blue-600 mr-2"></i>Trend & Recent Activities
+                        </h4>
+                        <p class="text-gray-700 mb-4">Dashboard menampilkan trend dan aktivitas terbaru untuk monitoring real-time:</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Downtime Trend -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <h5 class="font-bold text-gray-900 mb-2">
+                                    <i class="fas fa-chart-line text-blue-500 mr-2"></i>Downtime Trend per Hari
+                                </h5>
+                                <p class="text-xs text-gray-600 mb-2">Chart trend downtime per hari bulan ini</p>
+                                <ul class="text-xs text-gray-700 space-y-1">
+                                    <li>• Line chart per tanggal</li>
+                                    <li>• Count per hari</li>
+                                    <li>• Total Duration per hari</li>
+                                    <li>• Untuk identifikasi pattern</li>
+                                </ul>
+                            </div>
+
+                            <!-- Recent Downtimes -->
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <h5 class="font-bold text-gray-900 mb-2">
+                                    <i class="fas fa-history text-purple-500 mr-2"></i>Recent Downtimes
+                                </h5>
+                                <p class="text-xs text-gray-600 mb-2">10 downtime terakhir bulan ini</p>
+                                <ul class="text-xs text-gray-700 space-y-1">
+                                    <li>• Machine & Location</li>
+                                    <li>• Problem & Duration</li>
+                                    <li>• Date & Time</li>
+                                    <li>• Quick access ke detail</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Data Source & Filtering Section -->
+                    <div class="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-6 border-l-4 border-gray-500 mt-6">
+                        <h4 class="font-bold text-lg mb-4 text-gray-900">
+                            <i class="fas fa-filter text-gray-600 mr-2"></i>Data Source & Filtering
+                        </h4>
+                        <p class="text-gray-700 mb-4">Dashboard mendukung multiple data source dan filtering yang fleksibel:</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <h5 class="font-bold text-gray-900 mb-2">
+                                    <i class="fas fa-database text-blue-500 mr-2"></i>Data Source
+                                </h5>
+                                <ul class="text-xs text-gray-700 space-y-1">
+                                    <li>• <strong>Downtime ERP2</strong> (Default)</li>
+                                    <li>• <strong>Downtime ERP</strong> (Legacy)</li>
+                                    <li>• <strong>Downtime</strong> (Standard)</li>
+                                </ul>
+                            </div>
+
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <h5 class="font-bold text-gray-900 mb-2">
+                                    <i class="fas fa-calendar-alt text-green-500 mr-2"></i>Filter Bulan/Tahun
+                                </h5>
+                                <ul class="text-xs text-gray-700 space-y-1">
+                                    <li>• Filter berdasarkan bulan</li>
+                                    <li>• Filter berdasarkan tahun</li>
+                                    <li>• Default: bulan & tahun saat ini</li>
+                                    <li>• Filter tersimpan di session</li>
+                                </ul>
+                            </div>
+
+                            <div class="bg-white rounded-lg p-4 shadow-md">
+                                <h5 class="font-bold text-gray-900 mb-2">
+                                    <i class="fas fa-sync text-purple-500 mr-2"></i>Caching
+                                </h5>
+                                <ul class="text-xs text-gray-700 space-y-1">
+                                    <li>• Cache 1-2 jam untuk performa</li>
+                                    <li>• Auto-refresh setelah perubahan</li>
+                                    <li>• Manual clear cache tersedia</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4 shadow-md">
+                            <h5 class="font-bold text-gray-900 mb-2">
+                                <i class="fas fa-info-circle text-blue-500 mr-2"></i>Catatan Penting
+                            </h5>
+                            <ul class="text-xs text-gray-700 space-y-2">
+                                <li>• <strong>Filter Persistence:</strong> Filter yang dipilih akan tersimpan di session, jadi tidak perlu set ulang setiap kali masuk.</li>
+                                <li>• <strong>Data Source:</strong> Pilih data source sesuai kebutuhan - ERP2 untuk data terbaru, ERP untuk data legacy.</li>
+                                <li>• <strong>Real-time Updates:</strong> Statistik akan otomatis update setelah ada perubahan data (dengan delay cache).</li>
+                                <li>• <strong>Performance:</strong> Semua query di-optimize dengan caching dan indexing untuk performa optimal.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location Module -->
+                <div class="module-panel bg-white rounded-2xl shadow-xl p-6 sm:p-8 animate-fade-in-up hidden" data-panel="location">
+                    <div class="flex items-center mb-6">
+                        <div class="bg-gradient-to-r from-green-500 to-teal-500 w-16 h-16 rounded-full flex items-center justify-center mr-4 animate-pulse-slow">
+                            <i class="fas fa-map-marked-alt text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl sm:text-3xl font-bold gradient-text">Location Management</h3>
+                            <p class="text-gray-600">Hierarki lokasi: Plant → Process → Line → Room</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-l-4 border-green-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-sitemap text-green-600 mr-2"></i>Struktur Hierarki</h4>
+                            <div class="space-y-3 text-gray-700">
+                                <div class="flex items-center">
+                                    <i class="fas fa-leaf text-green-600 mr-3 text-xl"></i>
+                                    <div>
+                                        <strong>Plant</strong> - Level tertinggi (contoh: Plant A, Plant B)
+                                    </div>
+                                </div>
+                                <div class="flex items-center ml-4">
+                                    <i class="fas fa-cog text-blue-600 mr-3"></i>
+                                    <div>
+                                        <strong>Process</strong> - Proses produksi di dalam plant
+                                    </div>
+                                </div>
+                                <div class="flex items-center ml-8">
+                                    <i class="fas fa-bars text-purple-600 mr-3"></i>
+                                    <div>
+                                        <strong>Line</strong> - Line produksi di dalam process
+                                    </div>
+                                </div>
+                                <div class="flex items-center ml-12">
+                                    <i class="fas fa-door-open text-orange-600 mr-3"></i>
+                                    <div>
+                                        <strong>Room</strong> - Ruangan di dalam line
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-6 border-l-4 border-teal-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-tasks text-teal-600 mr-2"></i>Prosedur Penggunaan</h4>
+                            <ol class="space-y-3 text-gray-700 list-decimal list-inside">
+                                <li><strong>Buat Plant</strong> terlebih dahulu (jika belum ada)</li>
+                                <li><strong>Buat Process</strong> di dalam plant</li>
+                                <li><strong>Buat Line</strong> di dalam process</li>
+                                <li><strong>Buat Room</strong> di dalam line (optional)</li>
+                                <li>Gunakan <strong>Import dari Room ERP</strong> untuk sync data</li>
+                                <li>Setelah setup, mesin bisa di-assign ke location</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border-l-4 border-blue-500">
+                        <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-key text-blue-600 mr-2"></i>Akses & Permission</h4>
+                        <p class="text-gray-700 mb-3"><strong>Role yang bisa akses:</strong> Coordinator, Assistant Manager, Manager, General Manager</p>
+                        <p class="text-gray-700"><strong>Fitur Import:</strong> Hanya untuk role Coordinator ke atas untuk sinkronisasi data dari ERP system.</p>
+                    </div>
+                </div>
+
+                <!-- Machinery Module -->
+                <div class="module-panel bg-white rounded-2xl shadow-xl p-6 sm:p-8 animate-fade-in-up hidden" data-panel="machinery">
+                    <div class="flex items-center mb-6">
+                        <div class="bg-gradient-to-r from-orange-500 to-red-500 w-16 h-16 rounded-full flex items-center justify-center mr-4 animate-pulse-slow">
+                            <i class="fas fa-server text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl sm:text-3xl font-bold gradient-text">Machinery Management</h3>
+                            <p class="text-gray-600">Master data mesin lengkap dengan sistem, grup, type, brand, dan model</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div class="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-6 border-l-4 border-orange-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-cogs text-orange-600 mr-2"></i>Systems</h4>
+                            <p class="text-gray-700 mb-3">Komponen sistem mesin (contoh: Motor, Hydraulic, Pneumatic)</p>
+                            <ul class="text-sm text-gray-600 space-y-1">
+                                <li>• Digunakan untuk grouping parts</li>
+                                <li>• Link ke problems & actions</li>
+                            </ul>
+                        </div>
+                        <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border-l-4 border-purple-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-users text-purple-600 mr-2"></i>Groups</h4>
+                            <p class="text-gray-700 mb-3">Grup maintenance yang bertanggung jawab</p>
+                            <ul class="text-sm text-gray-600 space-y-1">
+                                <li>• Auto-assign dari machine type</li>
+                                <li>• Untuk tracking responsibility</li>
+                            </ul>
+                        </div>
+                        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-l-4 border-blue-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-microchip text-blue-600 mr-2"></i>Machine Types</h4>
+                            <p class="text-gray-700 mb-3">Tipe mesin (contoh: Injection Molding, Packaging)</p>
+                            <ul class="text-sm text-gray-600 space-y-1">
+                                <li>• Maintenance points management</li>
+                                <li>• Standards untuk PdM</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl p-6 border-l-4 border-yellow-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-tag text-yellow-600 mr-2"></i>Brands & Models</h4>
+                            <p class="text-gray-700 mb-3">Brand dan model mesin untuk identifikasi</p>
+                            <ol class="text-sm text-gray-700 list-decimal list-inside space-y-1">
+                                <li>Buat Brand terlebih dahulu</li>
+                                <li>Buat Model dengan link ke Brand</li>
+                                <li>Upload foto model (otomatis convert ke WebP)</li>
+                                <li>Bisa import dari Machine ERP</li>
+                            </ol>
+                        </div>
+                        <div class="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-6 border-l-4 border-teal-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-exchange-alt text-teal-600 mr-2"></i>Mutasi</h4>
+                            <p class="text-gray-700 mb-3">Tracking perpindahan mesin antar location</p>
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li>• Record mutasi untuk audit trail</li>
+                                <li>• History lengkap perpindahan</li>
+                                <li>• Tanggal dan lokasi asal/tujuan</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border-l-4 border-green-500">
+                        <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-search text-green-600 mr-2"></i>Cara Mencari Mesin</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
+                            <div>
+                                <p><strong>🔍 Search by ID:</strong> Ketik ID mesin di search box</p>
+                                <p><strong>🔍 Filter by Type:</strong> Pilih machine type untuk filter</p>
+                            </div>
+                            <div>
+                                <p><strong>🔍 Filter by Location:</strong> Filter berdasarkan plant/process/line</p>
+                                <p><strong>🔍 Barcode Scanner:</strong> Scan barcode/QR code untuk quick search</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Downtime Module -->
+                <div class="module-panel bg-white rounded-2xl shadow-xl p-6 sm:p-8 animate-fade-in-up hidden" data-panel="downtime">
+                    <div class="flex items-center mb-6">
+                        <div class="bg-gradient-to-r from-red-500 to-pink-500 w-16 h-16 rounded-full flex items-center justify-center mr-4 animate-pulse-slow">
+                            <i class="fas fa-clock text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl sm:text-3xl font-bold gradient-text">Downtime Management</h3>
+                            <p class="text-gray-600">Tracking lengkap breakdown dengan Problem, Reason, Action, dan Work Order</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-gradient-to-br from-red-50 to-pink-50 rounded-xl p-6 border-l-4 border-red-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>Master Data</h4>
+                            <div class="space-y-3 text-gray-700">
+                                <div>
+                                    <strong>Problems:</strong> Masalah yang terjadi (contoh: Motor Failure, Sensor Error)
+                                </div>
+                                <div>
+                                    <strong>Reasons:</strong> Alasan terjadinya masalah (contoh: Overload, Wear & Tear)
+                                </div>
+                                <div>
+                                    <strong>Actions:</strong> Tindakan yang dilakukan (contoh: Replace Motor, Calibrate Sensor)
+                                </div>
+                                <div>
+                                    <strong>Parts:</strong> Spare part yang digunakan untuk repair
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-xl p-6 border-l-4 border-orange-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-clipboard-list text-orange-600 mr-2"></i>Work Orders</h4>
+                            <p class="text-gray-700 mb-3">Sistem work order untuk tracking repair progress</p>
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li>• Status: Pending, In Progress, Completed</li>
+                                <li>• Priority: Low, Medium, High, Critical</li>
+                                <li>• Assignment ke mekanik/team</li>
+                                <li>• Photo documentation</li>
+                                <li>• Time tracking</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-l-4 border-blue-500 mb-6">
+                        <h4 class="font-bold text-lg mb-4 text-gray-900"><i class="fas fa-list-ol text-blue-600 mr-2"></i>Prosedur Input Downtime</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h5 class="font-semibold text-gray-900 mb-2">1. Pilih Mesin</h5>
+                                <p class="text-sm text-gray-700 mb-3">Cari mesin dengan ID atau scan barcode. Sistem akan auto-fill location.</p>
+                                
+                                <h5 class="font-semibold text-gray-900 mb-2">2. Input Waktu</h5>
+                                <p class="text-sm text-gray-700 mb-3">Masukkan stop production, response mechanic, dan start production time.</p>
+                                
+                                <h5 class="font-semibold text-gray-900 mb-2">3. Pilih Problem</h5>
+                                <p class="text-sm text-gray-700 mb-3">Pilih problem dari dropdown (filter by system).</p>
+                            </div>
+                            <div>
+                                <h5 class="font-semibold text-gray-900 mb-2">4. Pilih Reason & Action</h5>
+                                <p class="text-sm text-gray-700 mb-3">Pilih reason dan action yang sesuai dengan problem.</p>
+                                
+                                <h5 class="font-semibold text-gray-900 mb-2">5. Assign Mekanik</h5>
+                                <p class="text-sm text-gray-700 mb-3">Pilih mekanik yang menangani. Leader & Coordinator auto-fill.</p>
+                                
+                                <h5 class="font-semibold text-gray-900 mb-2">6. Input Parts (Optional)</h5>
+                                <p class="text-sm text-gray-700 mb-3">Tambahkan spare parts yang digunakan beserta quantity.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border-l-4 border-purple-500 mb-6">
+                        <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-bell text-purple-600 mr-2 animate-pulse-slow"></i>Downtime Alert System</h4>
+                        <p class="text-gray-700 mb-3">Sistem akan otomatis mengirim notifikasi email ke managers jika:</p>
+                        <ul class="text-gray-700 space-y-2 mb-4">
+                            <li><i class="fas fa-check-circle text-green-500 mr-2"></i>Duration downtime > 60 menit (configurable)</li>
+                            <li><i class="fas fa-check-circle text-green-500 mr-2"></i>Problem critical (Motor Failure, Safety Issue, dll)</li>
+                            <li><i class="fas fa-check-circle text-green-500 mr-2"></i>Machine critical tertentu</li>
+                        </ul>
+                        <div class="bg-white rounded-lg p-4 mt-4">
+                            <h5 class="font-bold text-gray-900 mb-2">
+                                <i class="fas fa-cog text-blue-600 mr-2"></i>Setting Email Managers
+                            </h5>
+                            <p class="text-sm text-gray-700 mb-2">Edit file <strong>.env</strong> atau <strong>config/downtime_alert.php</strong>:</p>
+                            <div class="bg-gray-50 rounded p-3 text-xs font-mono text-gray-800 mb-2">
+                                <p>DOWNTIME_ALERT_ENABLED=true</p>
+                                <p>DOWNTIME_ALERT_ROLES=manager,general_manager,coordinator</p>
+                                <p>DOWNTIME_ALERT_DURATION_THRESHOLD=60</p>
+                            </div>
+                            <p class="text-xs text-gray-600"><i class="fas fa-info-circle mr-1"></i>Bisa juga set via email spesifik atau user IDs</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Production Module -->
+                <div class="module-panel bg-white rounded-2xl shadow-xl p-6 sm:p-8 animate-fade-in-up hidden" data-panel="production">
+                    <div class="flex items-center mb-6">
+                        <div class="bg-gradient-to-r from-green-500 to-emerald-500 w-16 h-16 rounded-full flex items-center justify-center mr-4 animate-pulse-slow">
+                            <i class="fas fa-chart-bar text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl sm:text-3xl font-bold gradient-text">Production Tracking</h3>
+                            <p class="text-gray-600">Tracking produksi per jam dan per hari untuk perhitungan OEE</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-l-4 border-green-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-clock text-green-600 mr-2"></i>Production Hourly</h4>
+                            <p class="text-gray-700 mb-3">Input produksi per jam (0-23) untuk setiap line dan process</p>
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li>• <strong>Total Production:</strong> Jumlah unit yang diproduksi</li>
+                                <li>• <strong>Target per Hour:</strong> Target produksi per jam</li>
+                                <li>• <strong>Grade B & C:</strong> Defect yang terjadi</li>
+                                <li>• <strong>Notes:</strong> Catatan khusus (contoh: "istirahat")</li>
+                            </ul>
+                        </div>
+                        <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border-l-4 border-blue-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-calendar text-blue-600 mr-2"></i>Production Daily</h4>
+                            <p class="text-gray-700 mb-3">Summary produksi per hari dengan grade breakdown</p>
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li>• <strong>Grade A:</strong> Produk baik (dari Production Hourly)</li>
+                                <li>• <strong>Grade B & C:</strong> Defect per hari</li>
+                                <li>• <strong>Production Hours:</strong> Jam operasi (start - end - break)</li>
+                                <li>• <strong>Production Downtime:</strong> Downtime non-machine (process, quality, material)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-6 border-l-4 border-yellow-500">
+                        <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-calculator text-yellow-600 mr-2"></i>Perhitungan OEE</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-gray-700">
+                            <div class="bg-white rounded-lg p-4">
+                                <strong class="text-blue-600">Availability</strong>
+                                <p class="text-sm mt-1">= (Operating Time / Planned Time) × 100%</p>
+                            </div>
+                            <div class="bg-white rounded-lg p-4">
+                                <strong class="text-green-600">Performance</strong>
+                                <p class="text-sm mt-1">= (Actual Output / Target Output) × 100%</p>
+                            </div>
+                            <div class="bg-white rounded-lg p-4">
+                                <strong class="text-purple-600">Quality</strong>
+                                <p class="text-sm mt-1">= (Good Units / Total Units) × 100%</p>
+                            </div>
+                        </div>
+                        <p class="text-center mt-4 text-gray-700"><strong>OEE = Availability × Performance × Quality / 10000</strong></p>
+                    </div>
+                </div>
+
+                <!-- Preventive Maintenance Module -->
+                <div class="module-panel bg-white rounded-2xl shadow-xl p-6 sm:p-8 animate-fade-in-up hidden" data-panel="preventive">
+                    <div class="flex items-center mb-6">
+                        <div class="bg-gradient-to-r from-purple-500 to-indigo-500 w-16 h-16 rounded-full flex items-center justify-center mr-4 animate-pulse-slow">
+                            <i class="fas fa-wrench text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl sm:text-3xl font-bold gradient-text">Preventive Maintenance</h3>
+                            <p class="text-gray-600">Sistem PM lengkap: Scheduling → Controlling → Monitoring → Updating → Reporting</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+                        <div class="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 border-l-4 border-purple-500 text-center">
+                            <i class="fas fa-calendar text-purple-600 text-3xl mb-2"></i>
+                            <h5 class="font-bold text-sm">Scheduling</h5>
+                            <p class="text-xs text-gray-600 mt-1">Jadwal PM</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border-l-4 border-blue-500 text-center">
+                            <i class="fas fa-cog text-blue-600 text-3xl mb-2"></i>
+                            <h5 class="font-bold text-sm">Controlling</h5>
+                            <p class="text-xs text-gray-600 mt-1">Kontrol eksekusi</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border-l-4 border-green-500 text-center">
+                            <i class="fas fa-chart-line text-green-600 text-3xl mb-2"></i>
+                            <h5 class="font-bold text-sm">Monitoring</h5>
+                            <p class="text-xs text-gray-600 mt-1">Monitor progress</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-4 border-l-4 border-yellow-500 text-center">
+                            <i class="fas fa-edit text-yellow-600 text-3xl mb-2"></i>
+                            <h5 class="font-bold text-sm">Updating</h5>
+                            <p class="text-xs text-gray-600 mt-1">Update schedule</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-red-50 to-pink-50 rounded-xl p-4 border-l-4 border-red-500 text-center">
+                            <i class="fas fa-file-alt text-red-600 text-3xl mb-2"></i>
+                            <h5 class="font-bold text-sm">Reporting</h5>
+                            <p class="text-xs text-gray-600 mt-1">Laporan PM</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 border-l-4 border-indigo-500 mb-6">
+                        <h4 class="font-bold text-lg mb-4 text-gray-900"><i class="fas fa-tasks text-indigo-600 mr-2"></i>Workflow PM</h4>
+                        <div class="space-y-4">
+                            <div class="flex items-start">
+                                <div class="bg-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-4 flex-shrink-0">1</div>
+                                <div>
+                                    <strong class="text-gray-900">Scheduling:</strong> Buat jadwal PM dengan interval (daily, weekly, monthly). Assign PIC (Person In Charge).
+                                </div>
+                            </div>
+                            <div class="flex items-start">
+                                <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-4 flex-shrink-0">2</div>
+                                <div>
+                                    <strong class="text-gray-900">Controlling:</strong> Eksekusi PM sesuai jadwal. Input hasil maintenance, foto, dan catatan.
+                                </div>
+                            </div>
+                            <div class="flex items-start">
+                                <div class="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-4 flex-shrink-0">3</div>
+                                <div>
+                                    <strong class="text-gray-900">Monitoring:</strong> Monitor completion rate, overdue schedules, dan performance PIC.
+                                </div>
+                            </div>
+                            <div class="flex items-start">
+                                <div class="bg-yellow-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-4 flex-shrink-0">4</div>
+                                <div>
+                                    <strong class="text-gray-900">Updating:</strong> Update jadwal jika perlu reschedule atau ubah interval.
+                                </div>
+                            </div>
+                            <div class="flex items-start">
+                                <div class="bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-4 flex-shrink-0">5</div>
+                                <div>
+                                    <strong class="text-gray-900">Reporting:</strong> Generate laporan PM completion, trend, dan analisis.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Predictive Maintenance Module -->
+                <div class="module-panel bg-white rounded-2xl shadow-xl p-6 sm:p-8 animate-fade-in-up hidden" data-panel="predictive">
+                    <div class="flex items-center mb-6">
+                        <div class="bg-gradient-to-r from-indigo-500 to-blue-500 w-16 h-16 rounded-full flex items-center justify-center mr-4 animate-pulse-slow">
+                            <i class="fas fa-chart-line text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl sm:text-3xl font-bold gradient-text">Predictive Maintenance</h3>
+                            <p class="text-gray-600">Maintenance berbasis standar dengan pengukuran nilai untuk prediksi breakdown</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-6 border-l-4 border-indigo-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-clipboard-check text-indigo-600 mr-2"></i>Standards Management</h4>
+                            <p class="text-gray-700 mb-3">Buat standar pengukuran untuk setiap maintenance point</p>
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li>• Link ke Machine Type & Maintenance Point</li>
+                                <li>• Set nilai min, max, dan target</li>
+                                <li>• Upload foto standar</li>
+                                <li>• Multiple variants untuk kondisi berbeda</li>
+                                <li>• Status: Active/Inactive</li>
+                            </ul>
+                        </div>
+                        <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border-l-4 border-blue-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-ruler text-blue-600 mr-2"></i>Measurement Process</h4>
+                            <ol class="text-sm text-gray-700 space-y-2 list-decimal list-inside">
+                                <li>Schedule PdM berdasarkan interval</li>
+                                <li>Eksekusi measurement di Controlling</li>
+                                <li>Input nilai measurement</li>
+                                <li>Sistem compare dengan standard</li>
+                                <li>Alert jika nilai di luar range</li>
+                                <li>Track trend untuk prediksi</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-red-50 to-pink-50 rounded-xl p-6 border-l-4 border-red-500 mb-6">
+                        <h4 class="font-bold text-lg mb-3 text-gray-900">
+                            <i class="fas fa-exclamation-triangle text-red-600 mr-2 animate-pulse-slow"></i>Predictive Red Status Alert
+                        </h4>
+                        <p class="text-gray-700 mb-3">Sistem akan otomatis mengirim email alert ke managers jika inputan Predictive Maintenance memiliki <strong>status merah (critical)</strong>.</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                            <div class="bg-white rounded-lg p-3 text-center">
+                                <div class="w-8 h-8 bg-green-500 rounded-full mx-auto mb-2"></div>
+                                <p class="text-xs font-bold text-gray-900">Normal</p>
+                                <p class="text-xs text-gray-600">No Alert</p>
+                            </div>
+                            <div class="bg-white rounded-lg p-3 text-center">
+                                <div class="w-8 h-8 bg-yellow-500 rounded-full mx-auto mb-2"></div>
+                                <p class="text-xs font-bold text-gray-900">Warning</p>
+                                <p class="text-xs text-gray-600">No Alert</p>
+                            </div>
+                            <div class="bg-white rounded-lg p-3 text-center">
+                                <div class="w-8 h-8 bg-orange-500 rounded-full mx-auto mb-2"></div>
+                                <p class="text-xs font-bold text-gray-900">Caution</p>
+                                <p class="text-xs text-gray-600">No Alert</p>
+                            </div>
+                            <div class="bg-white rounded-lg p-3 text-center border-2 border-red-500">
+                                <div class="w-8 h-8 bg-red-500 rounded-full mx-auto mb-2"></div>
+                                <p class="text-xs font-bold text-gray-900">Critical</p>
+                                <p class="text-xs text-red-600 font-bold">⚠️ ALERT</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-4">
+                            <h5 class="font-bold text-gray-900 mb-2">
+                                <i class="fas fa-cog text-blue-600 mr-2"></i>Setting Email Managers
+                            </h5>
+                            <p class="text-sm text-gray-700 mb-2">Menggunakan konfigurasi yang sama dengan Downtime Alert (lihat setting di atas).</p>
+                            <p class="text-xs text-gray-600"><i class="fas fa-info-circle mr-1"></i>Alert dikirim saat input/update measurement value dengan status critical</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border-l-4 border-purple-500">
+                        <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-lightbulb text-purple-600 mr-2"></i>Tips Predictive Maintenance</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
+                            <div>
+                                <p><strong>📊 Trend Analysis:</strong> Monitor trend nilai measurement untuk deteksi early warning.</p>
+                                <p><strong>⚠️ Alert System:</strong> Sistem akan alert jika nilai mendekati limit atau out of range.</p>
+                            </div>
+                            <div>
+                                <p><strong>🔄 Regular Update:</strong> Update standard secara berkala sesuai kondisi aktual mesin.</p>
+                                <p><strong>📸 Photo Documentation:</strong> Gunakan foto untuk visual comparison dengan standard.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reports Module -->
+                <div class="module-panel bg-white rounded-2xl shadow-xl p-6 sm:p-8 animate-fade-in-up hidden" data-panel="reports">
+                    <div class="flex items-center mb-6">
+                        <div class="bg-gradient-to-r from-pink-500 to-rose-500 w-16 h-16 rounded-full flex items-center justify-center mr-4 animate-pulse-slow">
+                            <i class="fas fa-chart-pie text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl sm:text-3xl font-bold gradient-text">Reports & Analytics</h3>
+                            <p class="text-gray-600">Laporan lengkap dan analisis untuk decision making</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-l-4 border-blue-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-chart-line text-blue-600 mr-2"></i>MTTR & MTBF</h4>
+                            <p class="text-gray-700 text-sm mb-2"><strong>MTTR:</strong> Mean Time To Repair - Rata-rata waktu perbaikan</p>
+                            <p class="text-gray-700 text-sm mb-2"><strong>MTBF:</strong> Mean Time Between Failures - Rata-rata waktu antar breakdown</p>
+                            <p class="text-gray-600 text-xs mt-2">Filter by machine, date range, dan plant</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-l-4 border-green-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-chart-bar text-green-600 mr-2"></i>Pareto Mesin</h4>
+                            <p class="text-gray-700 text-sm mb-2">Analisis mesin dengan downtime tertinggi (80/20 rule)</p>
+                            <p class="text-gray-600 text-xs mt-2">Identifikasi mesin critical untuk fokus improvement</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border-l-4 border-purple-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-chart-area text-purple-600 mr-2"></i>Summary Downtime</h4>
+                            <p class="text-gray-700 text-sm mb-2">Summary downtime per periode dengan breakdown detail</p>
+                            <p class="text-gray-600 text-xs mt-2">Group by problem, reason, machine, atau location</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-6 border-l-4 border-yellow-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-users text-yellow-600 mr-2"></i>Kinerja Mekanik</h4>
+                            <p class="text-gray-700 text-sm mb-2">Performance tracking mekanik dengan skill matrix</p>
+                            <p class="text-gray-600 text-xs mt-2">Lihat skill level per machine type dan repair count</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-red-50 to-pink-50 rounded-xl p-6 border-l-4 border-red-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-search text-red-600 mr-2"></i>Root Cause Analysis</h4>
+                            <p class="text-gray-700 text-sm mb-2">Analisis penyebab utama downtime</p>
+                            <p class="text-gray-600 text-xs mt-2">Frequency dan duration analysis per problem</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-6 border-l-4 border-teal-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-tachometer-alt text-teal-600 mr-2"></i>OEE Report</h4>
+                            <p class="text-gray-700 text-sm mb-2">Overall Equipment Effectiveness dengan breakdown Availability, Performance, Quality</p>
+                            <p class="text-gray-600 text-xs mt-2">Filter by line, process, dan date range</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 border-l-4 border-indigo-500">
+                        <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-filter text-indigo-600 mr-2"></i>Cara Menggunakan Reports</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
+                            <div>
+                                <p><strong>1. Pilih Report:</strong> Klik menu report yang diinginkan</p>
+                                <p><strong>2. Set Filter:</strong> Pilih periode, machine, location, atau filter lainnya</p>
+                            </div>
+                            <div>
+                                <p><strong>3. Analyze Data:</strong> Lihat chart dan tabel untuk insight</p>
+                                <p><strong>4. Export (Coming Soon):</strong> Export ke Excel/PDF untuk presentasi</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Module -->
+                <div class="module-panel bg-white rounded-2xl shadow-xl p-6 sm:p-8 animate-fade-in-up hidden" data-panel="users">
+                    <div class="flex items-center mb-6">
+                        <div class="bg-gradient-to-r from-cyan-500 to-blue-500 w-16 h-16 rounded-full flex items-center justify-center mr-4 animate-pulse-slow">
+                            <i class="fas fa-users text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl sm:text-3xl font-bold gradient-text">User Management</h3>
+                            <p class="text-gray-600">Manajemen user, role, permission, dan struktur organisasi</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-6 border-l-4 border-cyan-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-user-shield text-cyan-600 mr-2"></i>Role & Permission</h4>
+                            <div class="space-y-2 text-sm text-gray-700">
+                                <div><strong>Admin:</strong> Full access semua fitur</div>
+                                <div><strong>General Manager:</strong> View all + reports</div>
+                                <div><strong>Manager:</strong> View all + manage teams</div>
+                                <div><strong>Assistant Manager:</strong> View + limited edit</div>
+                                <div><strong>Coordinator:</strong> Manage location & machinery</div>
+                                <div><strong>Group Leader:</strong> Manage team + reports</div>
+                                <div><strong>Team Leader:</strong> Manage mekanik</div>
+                                <div><strong>Mekanik:</strong> Input downtime & activities</div>
+                            </div>
+                        </div>
+                        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-l-4 border-blue-500">
+                            <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-sitemap text-blue-600 mr-2"></i>Struktur Organisasi</h4>
+                            <p class="text-gray-700 mb-3">Hierarki organisasi dengan atasan-bawahan relationship</p>
+                            <ul class="text-sm text-gray-700 space-y-2">
+                                <li>• Set atasan_id untuk setiap user</li>
+                                <li>• View organizational chart</li>
+                                <li>• Auto-assign leader/coordinator di downtime</li>
+                                <li>• Filter data berdasarkan hierarki</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-l-4 border-green-500 mb-6">
+                        <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-clock text-green-600 mr-2"></i>Activity Tracking</h4>
+                        <p class="text-gray-700 mb-3">Tracking aktivitas user untuk audit dan monitoring</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+                            <div>
+                                <p><strong>📝 Log Activities:</strong> Semua aktivitas user tercatat</p>
+                                <p><strong>📍 Location Tracking:</strong> Track lokasi user saat input data</p>
+                            </div>
+                            <div>
+                                <p><strong>⏰ Time Tracking:</strong> Waktu setiap aktivitas</p>
+                                <p><strong>📊 Reports:</strong> Activity reports untuk analisis</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border-l-4 border-purple-500">
+                        <h4 class="font-bold text-lg mb-3 text-gray-900"><i class="fas fa-key text-purple-600 mr-2"></i>Permission Management</h4>
+                        <p class="text-gray-700 mb-2"><strong>Hanya Admin yang bisa manage permissions.</strong></p>
+                        <p class="text-gray-700">Set permission per role untuk setiap route/menu. Sistem akan otomatis filter data berdasarkan permission user.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- CTA Section -->
     <section class="py-12 sm:py-20 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -1343,6 +2415,7 @@
                     <ul class="space-y-2">
                         <li><a href="#features" class="text-gray-400 hover:text-white transition">Fitur</a></li>
                         <li><a href="#demo" class="text-gray-400 hover:text-white transition">Demo</a></li>
+                        <li><a href="#guide" class="text-gray-400 hover:text-white transition">Panduan</a></li>
                         <li><a href="#pricing" class="text-gray-400 hover:text-white transition">Harga</a></li>
                     </ul>
                 </div>
@@ -1372,6 +2445,204 @@
             </div>
         </div>
     </footer>
+
+    <!-- System Modal -->
+    <div id="systemModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4" onclick="closeSystemModal(event)">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-95" onclick="event.stopPropagation()">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-teal-500 to-cyan-500 text-white p-6 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="bg-white bg-opacity-20 rounded-full p-3">
+                        <i class="fas fa-cogs text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold">Daftar System Mesin</h3>
+                        <p class="text-teal-100 text-sm">15 Sistem yang tersedia untuk grouping parts dan problems</p>
+                    </div>
+                </div>
+                <button onclick="closeSystemModal()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- System 1 -->
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-l-4 border-blue-500 hover:shadow-lg transition">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-blue-500 text-white rounded-lg p-2 text-sm font-bold">1</div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-900 mb-1">Mechanical</h4>
+                                <p class="text-sm text-gray-700">Sistem mekanik mesin termasuk gear, bearing, belt, chain, pulley, shaft, dan komponen mekanis lainnya</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System 2 -->
+                    <div class="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-4 border-l-4 border-yellow-500 hover:shadow-lg transition">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-yellow-500 text-white rounded-lg p-2 text-sm font-bold">2</div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-900 mb-1">Electrical</h4>
+                                <p class="text-sm text-gray-700">Sistem kelistrikan mesin termasuk motor, kabel, panel kontrol, switch, relay, MCC, dan komponen elektrik</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System 3 -->
+                    <div class="bg-gradient-to-br from-red-50 to-pink-50 rounded-xl p-4 border-l-4 border-red-500 hover:shadow-lg transition">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-red-500 text-white rounded-lg p-2 text-sm font-bold">3</div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-900 mb-1">Thermal System</h4>
+                                <p class="text-sm text-gray-700">Sistem termal untuk pendinginan dan pemanasan termasuk chiller, radiator, heater, furnace, boiler, dan heat exchanger</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System 4 -->
+                    <div class="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 border-l-4 border-purple-500 hover:shadow-lg transition">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-purple-500 text-white rounded-lg p-2 text-sm font-bold">4</div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-900 mb-1">Fluid Power System</h4>
+                                <p class="text-sm text-gray-700">Sistem tenaga fluida termasuk pneumatik (udara bertekanan) dan hidrolik (fluida bertekanan) dengan pump, cylinder, valve, dan regulator</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System 5 -->
+                    <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border-l-4 border-green-500 hover:shadow-lg transition">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-green-500 text-white rounded-lg p-2 text-sm font-bold">5</div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-900 mb-1">Control & Automation System</h4>
+                                <p class="text-sm text-gray-700">Sistem kontrol dan otomasi mesin termasuk PLC, SCADA, HMI, control panel, dan control logic untuk operasi otomatis</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System 6 -->
+                    <div class="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-4 border-l-4 border-cyan-500 hover:shadow-lg transition">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-cyan-500 text-white rounded-lg p-2 text-sm font-bold">6</div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-900 mb-1">Sensor & Actuator System</h4>
+                                <p class="text-sm text-gray-700">Sistem sensor untuk deteksi kondisi (proximity, temperature, pressure) dan aktuator untuk penggerak (motor actuator, solenoid, servo)</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System 7 -->
+                    <div class="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-4 border-l-4 border-teal-500 hover:shadow-lg transition">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-teal-500 text-white rounded-lg p-2 text-sm font-bold">7</div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-900 mb-1">Drive & Transmission System</h4>
+                                <p class="text-sm text-gray-700">Sistem penggerak dan transmisi tenaga termasuk motor drive, gearbox, coupling, gear, belt, chain untuk transfer tenaga</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System 8 -->
+                    <div class="bg-gradient-to-br from-sky-50 to-blue-50 rounded-xl p-4 border-l-4 border-sky-500 hover:shadow-lg transition">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-sky-500 text-white rounded-lg p-2 text-sm font-bold">8</div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-900 mb-1">Air Handling System</h4>
+                                <p class="text-sm text-gray-700">Sistem penanganan udara termasuk exhaust fan, ventilation fan, ducting, filter, dan air handling unit untuk sirkulasi udara</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System 9 -->
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-l-4 border-blue-500 hover:shadow-lg transition">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-blue-500 text-white rounded-lg p-2 text-sm font-bold">9</div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-900 mb-1">Process Fluid System</h4>
+                                <p class="text-sm text-gray-700">Sistem fluida proses termasuk water system (water pump, treatment, piping) dan steam system (boiler, steam trap, distribution)</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System 10 -->
+                    <div class="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-4 border-l-4 border-red-500 hover:shadow-lg transition">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-red-500 text-white rounded-lg p-2 text-sm font-bold">10</div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-900 mb-1">Safety & Emergency System</h4>
+                                <p class="text-sm text-gray-700">Sistem keselamatan dan darurat termasuk safety interlock, guard, emergency stop, E-stop button, safety relay, dan interlock</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System 11 -->
+                    <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border-l-4 border-purple-500 hover:shadow-lg transition">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-purple-500 text-white rounded-lg p-2 text-sm font-bold">11</div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-900 mb-1">Monitoring & Instrumentation System</h4>
+                                <p class="text-sm text-gray-700">Sistem monitoring dan instrumentasi untuk pengukuran parameter mesin termasuk sensor, transmitter, gauge, SCADA, HMI, dan data logger</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System 12 -->
+                    <div class="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl p-4 border-l-4 border-amber-500 hover:shadow-lg transition">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-amber-500 text-white rounded-lg p-2 text-sm font-bold">12</div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-900 mb-1">Lubrication System</h4>
+                                <p class="text-sm text-gray-700">Sistem pelumasan untuk mengurangi gesekan dan keausan komponen mesin termasuk oil pump, grease pump, dan filter</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System 13 -->
+                    <div class="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-4 border-l-4 border-yellow-500 hover:shadow-lg transition">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-yellow-500 text-white rounded-lg p-2 text-sm font-bold">13</div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-900 mb-1">Power Distribution System</h4>
+                                <p class="text-sm text-gray-700">Sistem distribusi tenaga listrik untuk mesin termasuk MCC, distribution panel, transformer, dan circuit breaker</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System 14 -->
+                    <div class="bg-gradient-to-br from-cyan-50 to-teal-50 rounded-xl p-4 border-l-4 border-cyan-500 hover:shadow-lg transition">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-cyan-500 text-white rounded-lg p-2 text-sm font-bold">14</div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-900 mb-1">Compressed Air & Vacuum System</h4>
+                                <p class="text-sm text-gray-700">Sistem udara terkompresi (compressor, air receiver, dryer) dan sistem vakum (vacuum pump, vacuum chamber, valve)</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System 15 -->
+                    <div class="bg-gradient-to-br from-red-50 to-pink-50 rounded-xl p-4 border-l-4 border-red-500 hover:shadow-lg transition">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-red-500 text-white rounded-lg p-2 text-sm font-bold">15</div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-900 mb-1">Fire Suppression System</h4>
+                                <p class="text-sm text-gray-700">Sistem pemadam kebakaran untuk melindungi mesin dan area produksi termasuk sprinkler, fire alarm, dan extinguisher</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="bg-gray-50 px-6 py-4 flex justify-end border-t">
+                <button onclick="closeSystemModal()" class="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold py-2 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-md">
+                    <i class="fas fa-check mr-2"></i>Tutup
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // Wait for DOM to be fully loaded
@@ -1786,6 +3057,132 @@
             alert('Terima kasih! Pesan Anda telah dikirim. Tim kami akan menghubungi Anda segera.');
             e.target.reset();
         });
+
+        // Module Tab Navigation
+        const initModuleTabs = () => {
+            const moduleTabs = document.querySelectorAll('.module-tab');
+            const modulePanels = document.querySelectorAll('.module-panel');
+
+            moduleTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const targetModule = tab.getAttribute('data-module');
+                    
+                    // Remove active class from all tabs
+                    moduleTabs.forEach(t => {
+                        t.classList.remove('active', 'bg-gradient-to-r', 'from-blue-600', 'to-purple-600', 'text-white', 'shadow-lg');
+                        t.classList.add('bg-white', 'text-gray-700', 'shadow-md');
+                    });
+                    
+                    // Hide all panels
+                    modulePanels.forEach(p => {
+                        p.classList.add('hidden');
+                        p.classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked tab
+                    tab.classList.add('active', 'bg-gradient-to-r', 'from-blue-600', 'to-purple-600', 'text-white', 'shadow-lg');
+                    tab.classList.remove('bg-white', 'text-gray-700', 'shadow-md');
+                    
+                    // Show target panel
+                    const targetPanel = document.querySelector(`[data-panel="${targetModule}"]`);
+                    if (targetPanel) {
+                        targetPanel.classList.remove('hidden');
+                        targetPanel.classList.add('active');
+                        
+                        // Animate panel appearance
+                        setTimeout(() => {
+                            targetPanel.style.opacity = '0';
+                            targetPanel.style.transform = 'translateY(20px)';
+                            targetPanel.style.transition = 'all 0.5s ease-out';
+                            
+                            setTimeout(() => {
+                                targetPanel.style.opacity = '1';
+                                targetPanel.style.transform = 'translateY(0)';
+                            }, 50);
+                        }, 10);
+                    }
+                });
+            });
+        };
+
+        initModuleTabs();
+
+        // Intersection Observer for fade-in animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe all module panels
+        document.querySelectorAll('.module-panel').forEach(panel => {
+            panel.style.opacity = '0';
+            panel.style.transform = 'translateY(20px)';
+            panel.style.transition = 'all 0.6s ease-out';
+            observer.observe(panel);
+        });
+
+        // Observe feature cards in guide section
+        document.querySelectorAll('#guide .feature-card, #guide .bg-gradient-to-br').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'all 0.6s ease-out';
+            observer.observe(card);
+        });
+        });
+
+        // System Modal Functions
+        function openSystemModal() {
+            const modal = document.getElementById('systemModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                // Animate modal appearance
+                setTimeout(() => {
+                    const modalContent = modal.querySelector('.bg-white');
+                    if (modalContent) {
+                        modalContent.style.transform = 'scale(1)';
+                        modalContent.style.opacity = '1';
+                    }
+                }, 10);
+                // Prevent body scroll
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeSystemModal(event) {
+            // Don't close if clicking inside modal content
+            if (event && event.target !== event.currentTarget && !event.target.closest('.bg-white')) {
+                return;
+            }
+            const modal = document.getElementById('systemModal');
+            if (modal) {
+                const modalContent = modal.querySelector('.bg-white');
+                if (modalContent) {
+                    modalContent.style.transform = 'scale(0.95)';
+                    modalContent.style.opacity = '0';
+                }
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                    document.body.style.overflow = '';
+                }, 300);
+            }
+        }
+
+        // Close modal on ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeSystemModal();
+            }
         });
     </script>
     </body>

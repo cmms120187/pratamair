@@ -7,6 +7,7 @@ use App\Models\PredictiveMaintenanceExecution;
 use App\Models\PredictiveMaintenanceSchedule;
 use App\Models\User;
 use App\Helpers\DataFilterHelper;
+use App\Services\PredictiveRedStatusService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -739,6 +740,12 @@ class UpdatingController extends Controller
         }
         
         $execution->update($validated);
+        
+        // Check and send red status alert if measurement_status is critical
+        if ($execution->measurement_status === 'critical') {
+            $redStatusService = new PredictiveRedStatusService();
+            $redStatusService->checkAndSendAlerts($execution->fresh());
+        }
         
         // If request is AJAX, return JSON response
         if ($request->ajax() || $request->wantsJson()) {
