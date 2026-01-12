@@ -239,7 +239,7 @@ class DowntimeErp2Controller extends Controller
             'nameGL' => 'nullable|string|max:255',
             'idCoord' => 'required|string|max:255',
             'nameCoord' => 'required|string|max:255',
-            'groupProblem' => 'nullable|string|max:255',
+            'system_id' => 'nullable|exists:systems,id',
             'include_oee' => 'nullable|boolean',
         ]);
 
@@ -253,9 +253,9 @@ class DowntimeErp2Controller extends Controller
         unset($validated['action_select']);
         unset($validated['part_select']);
         
-        // Ensure groupProblem is null if empty or not set
-        if (!isset($validated['groupProblem']) || $validated['groupProblem'] === '' || trim($validated['groupProblem']) === '') {
-            $validated['groupProblem'] = null;
+        // Ensure system_id is null if empty or not set
+        if (!isset($validated['system_id']) || $validated['system_id'] === '' || $validated['system_id'] === '0') {
+            $validated['system_id'] = null;
         }
 
         // Combine date with time fields (stopProduction, responMechanic, startProduction)
@@ -311,7 +311,7 @@ class DowntimeErp2Controller extends Controller
      */
     public function show(string $id)
     {
-        $downtimeErp2 = DowntimeErp2::findOrFail($id);
+        $downtimeErp2 = DowntimeErp2::with('system')->findOrFail($id);
         return view('downtime_erp2.show', compact('downtimeErp2'));
     }
 
@@ -548,7 +548,7 @@ class DowntimeErp2Controller extends Controller
             'nameGL' => 'nullable|string|max:255',
             'idCoord' => 'required|string|max:255',
             'nameCoord' => 'required|string|max:255',
-            'groupProblem' => 'nullable|string|max:255',
+            'system_id' => 'nullable|exists:systems,id',
             'system_select' => 'nullable|exists:systems,id', // Only for filtering, not stored
             'problem_select' => 'nullable|exists:problems,id', // Only for filtering, not stored
             'reason_select' => 'nullable|exists:reasons,id', // Only for filtering, not stored
@@ -566,6 +566,11 @@ class DowntimeErp2Controller extends Controller
         unset($validated['reason_select']);
         unset($validated['action_select']);
         unset($validated['part_select']);
+        
+        // Ensure system_id is null if empty or not set
+        if (!isset($validated['system_id']) || $validated['system_id'] === '' || $validated['system_id'] === '0') {
+            $validated['system_id'] = null;
+        }
 
         // Combine date with time fields (stopProduction, responMechanic, startProduction)
         $date = $validated['date'];
@@ -693,6 +698,23 @@ class DowntimeErp2Controller extends Controller
                         $roomName = trim($data['roomName'] ?? $data['Room Name'] ?? $data['room_name'] ?? '') ?: '';
                     }
                     
+                    // Handle Include OEE (Yes/No)
+                    $includeOeeValue = trim($data['Include OEE'] ?? $data['include_oee'] ?? $data['IncludeOEE'] ?? '');
+                    $includeOee = false;
+                    if (strtolower($includeOeeValue) === 'yes' || strtolower($includeOeeValue) === '1' || $includeOeeValue === '1') {
+                        $includeOee = true;
+                    }
+                    
+                    // Handle System (nama_sistem) - find system_id from nama_sistem
+                    $systemName = trim($data['System'] ?? $data['system'] ?? $data['Group Problem'] ?? $data['groupProblem'] ?? '');
+                    $systemId = null;
+                    if (!empty($systemName)) {
+                        $system = \App\Models\System::where('nama_sistem', $systemName)->first();
+                        if ($system) {
+                            $systemId = $system->id;
+                        }
+                    }
+                    
                     // Map Excel columns to database columns (handle various column name formats)
                     $downtimeData = [
                         'date' => $this->parseDate($data['date'] ?? $data['Date'] ?? ''),
@@ -701,6 +723,7 @@ class DowntimeErp2Controller extends Controller
                         'process' => $process,
                         'line' => $line,
                         'roomName' => $roomName,
+                        'include_oee' => $includeOee,
                         'idMachine' => trim($data['idMachine'] ?? $data['ID Machine'] ?? $data['id_machine'] ?? '') ?: '',
                         'typeMachine' => trim($data['typeMachine'] ?? $data['Type Machine'] ?? $data['type_machine'] ?? '') ?: '',
                         'modelMachine' => trim($data['modelMachine'] ?? $data['Model Machine'] ?? $data['model_machine'] ?? '') ?: '',
@@ -723,7 +746,7 @@ class DowntimeErp2Controller extends Controller
                         'nameGL' => trim($data['nameGL'] ?? $data['Name GL'] ?? $data['name_gl'] ?? '') ?: null,
                         'idCoord' => trim($data['idCoord'] ?? $data['ID Coord'] ?? $data['id_coord'] ?? '') ?: '',
                         'nameCoord' => trim($data['nameCoord'] ?? $data['Name Coord'] ?? $data['name_coord'] ?? '') ?: '',
-                        'groupProblem' => trim($data['groupProblem'] ?? $data['Group Problem'] ?? $data['group_problem'] ?? '') ?: '',
+                        'system_id' => $systemId,
                     ];
                     
                     // Validate required fields
@@ -849,18 +872,18 @@ class DowntimeErp2Controller extends Controller
             if (auth()->user()->role !== 'admin') {
                 abort(403, 'Unauthorized. Only admin can download data.');
             }
-            $downtimeErp2s = DowntimeErp2::orderBy('date', 'desc')->get();
+            $downtimeErp2s = DowntimeErp2::with('system')->orderBy('date', 'desc')->get();
             
             $spreadsheet = new Spreadsheet();
             $sheet = $spreadsheet->getActiveSheet();
             
             // Set header
             $headers = [
-                'Date', 'Plant', 'Process', 'Line', 'Room Name', 'ID Machine', 'Type Machine', 
+                'Date', 'Plant', 'Process', 'Line', 'Room Name', 'Include OEE', 'ID Machine', 'Type Machine', 
                 'Model Machine', 'Brand Machine', 'Stop Production', 'Respon Mechanic', 
                 'Start Production', 'Duration', 'Standar Time', 'Problem Downtime', 'Problem MM',
                 'Reason Downtime', 'Action Downtime', 'Part', 'ID Mekanik', 'Name Mekanik',
-                'ID Leader', 'Name Leader', 'ID GL', 'Name GL', 'ID Coord', 'Name Coord', 'Group Problem'
+                'ID Leader', 'Name Leader', 'ID GL', 'Name GL', 'ID Coord', 'Name Coord', 'System'
             ];
             
             $col = 'A';
@@ -889,6 +912,7 @@ class DowntimeErp2Controller extends Controller
                     $downtimeErp2->process,
                     $downtimeErp2->line,
                     $downtimeErp2->roomName,
+                    $downtimeErp2->include_oee ? 'Yes' : 'No',
                     $downtimeErp2->idMachine,
                     $downtimeErp2->typeMachine,
                     $downtimeErp2->modelMachine,
@@ -911,7 +935,7 @@ class DowntimeErp2Controller extends Controller
                     $downtimeErp2->nameGL ?? '',
                     $downtimeErp2->idCoord,
                     $downtimeErp2->nameCoord,
-                    $downtimeErp2->groupProblem,
+                    $downtimeErp2->system ? $downtimeErp2->system->nama_sistem : '',
                 ];
                 
                 foreach ($values as $value) {

@@ -28,6 +28,7 @@ Route::middleware('auth')->group(function () {
     require __DIR__.'/reports.php';
     require __DIR__.'/standards.php';
     require __DIR__.'/admin.php';
+    require __DIR__.'/inspections.php';
 });
 
 // Contact Form Route

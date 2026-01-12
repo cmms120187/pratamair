@@ -171,9 +171,9 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1">Group Problem</label>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">System</label>
                     <div class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 text-gray-900">
-                        {{ $downtimeErp2->groupProblem ?? '-' }}
+                        {{ $downtimeErp2->system ? $downtimeErp2->system->nama_sistem : '-' }}
                     </div>
                 </div>
             </div>

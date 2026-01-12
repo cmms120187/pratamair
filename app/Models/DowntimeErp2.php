@@ -38,10 +38,18 @@ class DowntimeErp2 extends Model
         'nameGL',
         'idCoord',
         'nameCoord',
-        'groupProblem'
+        'system_id'
     ];
 
     protected $casts = [
         'include_oee' => 'boolean',
     ];
+
+    /**
+     * Get the system that owns the downtime.
+     */
+    public function system()
+    {
+        return $this->belongsTo(System::class);
+    }
 }

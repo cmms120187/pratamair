@@ -233,9 +233,17 @@
                         <input type="hidden" name="Part" id="Part" value="{{ old('Part') }}">
                     </div>
                     <div>
-                        <label for="groupProblem" class="block text-sm font-semibold text-gray-700 mb-2">Group Problem</label>
-                        <input type="text" name="groupProblem" id="groupProblem" value="{{ old('groupProblem') }}" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('groupProblem') border-red-500 @enderror">
-                        @error('groupProblem')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                        <label for="system_id" class="block text-sm font-semibold text-gray-700 mb-2">System</label>
+                        <select name="system_id" id="system_id" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('system_id') border-red-500 @enderror">
+                            <option value="">-- Pilih System --</option>
+                            @foreach($systems as $system)
+                                <option value="{{ $system['id'] }}" {{ old('system_id') == $system['id'] ? 'selected' : '' }}>
+                                    {{ $system['nama_sistem'] }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Pilih system dari menu Machinery/System</p>
+                        @error('system_id')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
                 </div>
             </div>
