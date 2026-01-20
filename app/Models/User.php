@@ -25,6 +25,7 @@ class User extends Authenticatable
         'role',
         'atasan_id',
         'photo',
+        'photo_id',
     ];
 
     /**
@@ -48,6 +49,24 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    // Photo relationship
+    public function photoModel()
+    {
+        return $this->belongsTo(Photo::class, 'photo_id');
+    }
+
+    // Get photo URL (prioritize photo_id, fallback to photo path)
+    public function getPhotoUrlAttribute()
+    {
+        if ($this->photo_id && $this->photoModel) {
+            return route('photos.show', $this->photo_id);
+        }
+        if ($this->photo) {
+            return asset('public-storage/' . $this->photo);
+        }
+        return null;
     }
 
     /**

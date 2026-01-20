@@ -8,8 +8,9 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Dashboard Route with Middleware
+// Dashboard Routes with Middleware
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard-large', [DashboardController::class, 'large'])->middleware(['auth', 'verified'])->name('dashboard.large');
 
 // Profile Routes with Middleware
 Route::middleware('auth')->group(function () {
@@ -33,6 +34,14 @@ Route::middleware('auth')->group(function () {
 
 // Contact Form Route
 Route::post('/contact', [\App\Http\Controllers\ContactController::class, 'send'])->name('contact.send');
+
+// Photo Routes (public access for viewing, auth required for upload/delete)
+Route::get('/photos/{id}', [\App\Http\Controllers\PhotoController::class, 'show'])->name('photos.show');
+Route::get('/photos/{id}/download', [\App\Http\Controllers\PhotoController::class, 'download'])->name('photos.download');
+Route::middleware('auth')->group(function () {
+    Route::post('/photos/upload', [\App\Http\Controllers\PhotoController::class, 'upload'])->name('photos.upload');
+    Route::delete('/photos/{id}', [\App\Http\Controllers\PhotoController::class, 'destroy'])->name('photos.destroy');
+});
 
 // Authentication Routes
 require __DIR__.'/auth.php';

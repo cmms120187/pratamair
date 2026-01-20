@@ -100,6 +100,19 @@
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
+                    <div>
+                        <label class="flex items-center mt-6">
+                            <input type="checkbox" 
+                                   name="include_oee" 
+                                   id="include_oee" 
+                                   value="1"
+                                   {{ old('include_oee', $row->include_oee ?? false) ? 'checked' : '' }}
+                                   class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2">
+                            <span class="ml-2 text-sm font-semibold text-gray-700">Include OEE</span>
+                        </label>
+                        <p class="text-xs text-gray-500 mt-1 ml-6">Centang untuk memasukkan data ini ke perhitungan OEE</p>
+                        @error('include_oee')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                    </div>
                 </div>
             </div>
 

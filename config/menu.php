@@ -4,10 +4,13 @@ return [
     'menu_groups' => [
         [
             'name' => 'Dashboard',
-            'route' => 'dashboard',
             'icon' => 'home',
-            'type' => 'single',
-            'menu_key' => 'dashboard'
+            'type' => 'group',
+            'menu_key' => 'dashboard',
+            'children' => [
+                ['name' => 'Dashboard Normal', 'route' => 'dashboard', 'icon' => 'home', 'menu_key' => 'dashboard'],
+                ['name' => 'Dashboard Large', 'route' => 'dashboard.large', 'icon' => 'tv', 'menu_key' => 'dashboard-large'],
+            ]
         ],
         [
             'name' => 'Part ERP',
@@ -105,6 +108,19 @@ return [
                 ['name' => 'Monitoring PdM', 'route' => 'predictive-maintenance.monitoring.index', 'icon' => 'chart', 'menu_key' => 'predictive-monitoring'],
                 ['name' => 'Updating PdM', 'route' => 'predictive-maintenance.updating.index', 'icon' => 'edit', 'menu_key' => 'predictive-updating'],
                 ['name' => 'Reporting PdM', 'route' => 'predictive-maintenance.reporting.index', 'icon' => 'document', 'menu_key' => 'predictive-reporting'],
+            ]
+        ],
+        [
+            'name' => 'Inspections',
+            'icon' => 'clipboard-check',
+            'type' => 'group',
+            'menu_key' => 'inspections',
+            'children' => [
+                ['name' => 'Templates', 'route' => 'inspection-templates.index', 'icon' => 'file-text', 'menu_key' => 'inspection-templates'],
+                ['name' => 'Scheduling', 'route' => 'inspections.scheduling.index', 'icon' => 'calendar', 'menu_key' => 'inspection-scheduling'],
+                ['name' => 'Updating', 'route' => 'inspections.updating.index', 'icon' => 'edit', 'menu_key' => 'inspection-updating'],
+                ['name' => 'Reporting', 'route' => 'inspections.reporting.index', 'icon' => 'document', 'menu_key' => 'inspection-reporting'],
+                ['name' => 'Inspeksi List', 'route' => 'inspections.index', 'icon' => 'list', 'menu_key' => 'inspections-list'],
             ]
         ],
         [

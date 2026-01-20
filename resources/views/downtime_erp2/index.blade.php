@@ -2,24 +2,26 @@
 @section('content')
 <div class="w-full p-4 sm:p-6 lg:p-8">
     <div class="w-full mx-auto">
-        <div class="flex items-center justify-between mb-6">
-            <h1 class="text-2xl font-bold text-gray-800">Downtime</h1>
-            <div class="flex items-center gap-3">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Downtime ERP2</h1>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                 @if(auth()->user()->role === 'admin')
-                <a href="{{ route('downtime-erp2.download') }}" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded shadow transition flex items-center">
+                <a href="{{ route('downtime-erp2.download') }}" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded shadow transition flex items-center justify-center text-sm sm:text-base">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
-                    Download Excel
+                    <span class="hidden sm:inline">Download Excel</span>
+                    <span class="sm:hidden">Download</span>
                 </a>
-                <button onclick="document.getElementById('uploadModal').classList.remove('hidden')" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded shadow transition flex items-center">
+                <button onclick="document.getElementById('uploadModal').classList.remove('hidden')" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded shadow transition flex items-center justify-center text-sm sm:text-base">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                     </svg>
-                    Upload Excel
+                    <span class="hidden sm:inline">Upload Excel</span>
+                    <span class="sm:hidden">Upload</span>
                 </button>
                 @endif
-                <a href="{{ route('downtime-erp2.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition flex items-center">
+                <a href="{{ route('downtime-erp2.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition flex items-center justify-center text-sm sm:text-base">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                     Create
                 </a>
@@ -50,6 +52,7 @@
                         <x-sortable-header column="process" :currentSort="($sortBy ?? 'date')" :currentDir="($sortDir ?? 'desc')" label="Process" />
                         <x-sortable-header column="line" :currentSort="($sortBy ?? 'date')" :currentDir="($sortDir ?? 'desc')" label="Line" />
                         <x-sortable-header column="roomName" :currentSort="($sortBy ?? 'date')" :currentDir="($sortDir ?? 'desc')" label="Room" />
+                        <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Include OEE</th>
                         <x-sortable-header column="idMachine" :currentSort="($sortBy ?? 'date')" :currentDir="($sortDir ?? 'desc')" label="ID Machine" />
                         <x-sortable-header column="problemDowntime" :currentSort="($sortBy ?? 'date')" :currentDir="($sortDir ?? 'desc')" label="Problem" />
                         <x-sortable-header column="duration" :currentSort="($sortBy ?? 'date')" :currentDir="($sortDir ?? 'desc')" label="Duration" />
@@ -66,6 +69,11 @@
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ $downtimeErp2->process }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ $downtimeErp2->line }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ $downtimeErp2->roomName }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $downtimeErp2->include_oee ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
+                                {{ $downtimeErp2->include_oee ? 'Yes' : 'No' }}
+                            </span>
+                        </td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ $downtimeErp2->idMachine }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">{{ $downtimeErp2->problemDowntime }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ $downtimeErp2->duration }}</td>
@@ -91,7 +99,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="11" class="px-4 py-8 text-center text-sm text-gray-500">No downtime ERP2 found.</td>
+                        <td colspan="12" class="px-4 py-8 text-center text-sm text-gray-500">No downtime ERP2 found.</td>
                     </tr>
                     @endforelse
                 </tbody>

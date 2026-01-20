@@ -198,7 +198,23 @@ class DowntimeErp2Controller extends Controller
             ];
         }
         
-        return view('downtime_erp2.create', compact('mekaniks', 'machines', 'systems', 'problems', 'reasons', 'actions', 'parts'));
+        // Get all Room ERP for mutasi modal suggestion
+        $roomErpsQuery = RoomErp::orderBy('name', 'asc')->get();
+        
+        // Map rooms data for JavaScript (for mutasi modal)
+        $rooms = [];
+        foreach ($roomErpsQuery as $room) {
+            $rooms[] = [
+                'id' => (string)$room->id,
+                'kode_room' => $room->kode_room ?? '',
+                'name' => $room->name ?? '',
+                'plant_name' => $room->plant_name ?? '',
+                'process_name' => $room->process_name ?? '',
+                'line_name' => $room->line_name ?? '',
+            ];
+        }
+        
+        return view('downtime_erp2.create', compact('mekaniks', 'machines', 'systems', 'problems', 'reasons', 'actions', 'parts', 'rooms'));
     }
 
     /**

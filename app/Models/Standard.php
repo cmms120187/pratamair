@@ -19,6 +19,7 @@ class Standard extends Model
         'description',
         'keterangan',
         'photo',
+        'photo_id',
         'machine_type_id',
         'status',
     ];
@@ -51,10 +52,58 @@ class Standard extends Model
         return $this->hasMany(StandardVariant::class);
     }
 
-    // Photos relationship - many-to-many
+    // Photos relationship - many-to-many (legacy StandardPhoto)
     public function photos()
     {
         return $this->belongsToMany(StandardPhoto::class, 'standard_standard_photo', 'standard_id', 'standard_photo_id');
+    }
+
+    // Photo relationship - belongs to Photo (new system)
+    public function photoModel()
+    {
+        return $this->belongsTo(Photo::class, 'photo_id');
+    }
+
+    // Get photo URL (prioritize photo_id, then photos relationship, fallback to photo path)
+    public function getPhotoUrlAttribute()
+    {
+        // Priority 1: photo_id (new system)
+        if ($this->photo_id && $this->photoModel) {
+            return route('photos.show', $this->photo_id);
+        }
+        
+        // Priority 2: photos relationship (many-to-many)
+        if ($this->relationLoaded('photos') && $this->photos && $this->photos->count() > 0) {
+            $firstPhoto = $this->photos->first();
+            // Try to find in photos table
+            $photo = Photo::where('file_path', $firstPhoto->photo_path)->first();
+            if ($photo) {
+                return route('photos.show', $photo->id);
+            }
+            // Fallback to old path
+            $photoPath = $firstPhoto->photo_path;
+            if (strpos($photoPath, 'images/') === 0) {
+                return asset($photoPath);
+            }
+            return asset('public-storage/' . $photoPath);
+        }
+        
+        // Priority 3: photo field (legacy)
+        if ($this->photo) {
+            // Try to find in photos table
+            $photo = Photo::where('file_path', $this->photo)
+                ->orWhere('file_path', 'like', '%' . basename($this->photo))
+                ->first();
+            if ($photo) {
+                return route('photos.show', $photo->id);
+            }
+            if (strpos($this->photo, 'images/') === 0) {
+                return asset($this->photo);
+            }
+            return asset('public-storage/' . $this->photo);
+        }
+        
+        return null;
     }
 
     // Scopes

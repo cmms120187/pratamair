@@ -237,6 +237,7 @@ class PartErpController extends Controller
                         'brand' => trim($data['brand'] ?? $data['Brand'] ?? '') ?: null,
                         'unit' => trim($data['unit'] ?? $data['Unit'] ?? '') ?: null,
                         'stock' => !empty(trim($data['stock'] ?? $data['Stock'] ?? '')) ? (int)trim($data['stock'] ?? $data['Stock'] ?? '') : 0,
+                        'minimum_stock' => !empty(trim($data['minimum_stock'] ?? $data['Minimum Stock'] ?? $data['minimumStock'] ?? '')) ? (int)trim($data['minimum_stock'] ?? $data['Minimum Stock'] ?? $data['minimumStock'] ?? '') : 0,
                         'price' => !empty(trim($data['price'] ?? $data['Price'] ?? '')) ? (float)trim($data['price'] ?? $data['Price'] ?? '') : null,
                     ];
                     
@@ -318,12 +319,13 @@ class PartErpController extends Controller
             $sheet->setCellValue('A1', 'Part Number');
             $sheet->setCellValue('B1', 'Name');
             $sheet->setCellValue('C1', 'Description');
-            $sheet->setCellValue('D1', 'Category');
+            $sheet->setCellValue('D1', 'Category (System)');
             $sheet->setCellValue('E1', 'Brand');
             $sheet->setCellValue('F1', 'Unit');
             $sheet->setCellValue('G1', 'Stock');
-            $sheet->setCellValue('H1', 'Price');
-            $sheet->setCellValue('I1', 'Location');
+            $sheet->setCellValue('H1', 'Minimum Stock');
+            $sheet->setCellValue('I1', 'Price');
+            $sheet->setCellValue('J1', 'Location');
             
             // Style header
             $headerStyle = [
@@ -333,7 +335,7 @@ class PartErpController extends Controller
                 ],
                 'font' => ['color' => ['rgb' => 'FFFFFF'], 'bold' => true],
             ];
-            $sheet->getStyle('A1:I1')->applyFromArray($headerStyle);
+            $sheet->getStyle('A1:J1')->applyFromArray($headerStyle);
             
             // Write data
             $row = 2;
@@ -356,15 +358,16 @@ class PartErpController extends Controller
                 $sheet->setCellValue('E' . $row, $partErp->brand ?? '');
                 $sheet->setCellValue('F' . $row, $partErp->unit ?? '');
                 $sheet->setCellValue('G' . $row, $partErp->stock ?? 0);
-                $sheet->setCellValue('H' . $row, $partErp->price ?? '');
+                $sheet->setCellValue('H' . $row, $partErp->minimum_stock ?? 0);
+                $sheet->setCellValue('I' . $row, $partErp->price ?? '');
                 // Location (Machine Types) - comma separated
                 $machineTypeNames = $partErp->machineTypes->pluck('name')->toArray();
-                $sheet->setCellValue('I' . $row, implode(', ', $machineTypeNames));
+                $sheet->setCellValue('J' . $row, implode(', ', $machineTypeNames));
                 $row++;
             }
             
             // Auto-size columns
-            foreach (range('A', 'I') as $col) {
+            foreach (range('A', 'J') as $col) {
                 $sheet->getColumnDimension($col)->setAutoSize(true);
             }
             

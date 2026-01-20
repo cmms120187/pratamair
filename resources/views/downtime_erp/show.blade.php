@@ -45,6 +45,16 @@
                         <label class="block mb-2 font-semibold text-gray-700">Line</label>
                         <input type="text" value="{{ $row->line }}" disabled class="w-full border rounded px-3 py-2 bg-gray-100 text-gray-700">
                     </div>
+                    <div>
+                        <label class="block mb-2 font-semibold text-gray-700">Include OEE</label>
+                        <div class="w-full border rounded px-3 py-2 bg-gray-100 text-gray-700">
+                            @if(isset($row->include_oee))
+                                {{ $row->include_oee ? 'Yes' : 'No' }}
+                            @else
+                                -
+                            @endif
+                        </div>
+                    </div>
                 </div>
             </div>
 

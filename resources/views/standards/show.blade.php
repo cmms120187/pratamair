@@ -147,55 +147,49 @@
             <!-- Additional Information -->
             <div>
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Additional Information</h3>
-                @if($standard->photos && $standard->photos->count() > 0)
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-500 mb-2">Photos</label>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        @foreach($standard->photos as $photo)
-                            @php
-                                // Cek apakah file dengan path asli ada
-                                $photoPath = $photo->photo_path;
-                                $actualPath = $photoPath;
-                                
-                                // Jika file tidak ada, coba cari dengan ekstensi .webp
-                                if (!Storage::disk('public')->exists($photoPath)) {
-                                    $pathInfo = pathinfo($photoPath);
-                                    $webpPath = ($pathInfo['dirname'] !== '.' ? $pathInfo['dirname'] . '/' : '') . $pathInfo['filename'] . '.webp';
-                                    if (Storage::disk('public')->exists($webpPath)) {
-                                        $actualPath = $webpPath;
-                                    }
-                                }
-                            @endphp
-                            <div>
-                                <img src="{{ asset('public-storage/' . $actualPath) }}" alt="{{ $photo->name ?? $standard->name }}" class="w-full h-48 object-cover rounded border" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                <div class="w-full h-48 bg-gray-200 rounded border flex items-center justify-center hidden">
-                                    <span class="text-xs text-gray-500">No Image</span>
-                                </div>
-                                @if($photo->name)
-                                    <p class="text-xs text-gray-600 mt-1 text-center">{{ $photo->name }}</p>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-                @elseif($standard->photo)
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-500 mb-1">Photo</label>
-                    @php
-                        // Cek apakah file dengan path asli ada
-                        $photoPath = $standard->photo;
-                        $actualPath = $photoPath;
-                        
-                        // Jika file tidak ada, coba cari dengan ekstensi .webp
-                        if (!Storage::disk('public')->exists($photoPath)) {
-                            $pathInfo = pathinfo($photoPath);
-                            $webpPath = ($pathInfo['dirname'] !== '.' ? $pathInfo['dirname'] . '/' : '') . $pathInfo['filename'] . '.webp';
-                            if (Storage::disk('public')->exists($webpPath)) {
-                                $actualPath = $webpPath;
+                @php
+                    // Prioritize photo_id (new system), then photos relationship, then photo field
+                    $photoUrl = null;
+                    
+                    if ($standard->photo_id && $standard->photoModel) {
+                        $photoUrl = route('photos.show', $standard->photo_id);
+                    } elseif ($standard->photos && $standard->photos->count() > 0) {
+                        // Try to find in photos table
+                        $firstPhoto = $standard->photos->first();
+                        $photo = \App\Models\Photo::where('file_path', $firstPhoto->photo_path)->first();
+                        if ($photo) {
+                            $photoUrl = route('photos.show', $photo->id);
+                        } else {
+                            // Fallback to old path
+                            $photoPath = $firstPhoto->photo_path;
+                            if (strpos($photoPath, 'images/') === 0) {
+                                $photoUrl = asset($photoPath);
+                            } else {
+                                $photoUrl = asset('public-storage/' . $photoPath);
                             }
                         }
-                    @endphp
-                    <img src="{{ asset('public-storage/' . $actualPath) }}" alt="{{ $standard->name }}" class="w-48 h-48 object-cover rounded border" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    } elseif ($standard->photo) {
+                        // Try to find in photos table
+                        $photo = \App\Models\Photo::where('file_path', $standard->photo)
+                            ->orWhere('file_path', 'like', '%' . basename($standard->photo))
+                            ->first();
+                        if ($photo) {
+                            $photoUrl = route('photos.show', $photo->id);
+                        } else {
+                            // Fallback to old path
+                            if (strpos($standard->photo, 'images/') === 0) {
+                                $photoUrl = asset($standard->photo);
+                            } else {
+                                $photoUrl = asset('public-storage/' . $standard->photo);
+                            }
+                        }
+                    }
+                @endphp
+                
+                @if($photoUrl)
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-500 mb-1">Photo</label>
+                    <img src="{{ $photoUrl }}" alt="{{ $standard->name }}" class="w-48 h-48 object-cover rounded border" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                     <div class="w-48 h-48 bg-gray-200 rounded border flex items-center justify-center hidden">
                         <span class="text-xs text-gray-500">No Image</span>
                     </div>

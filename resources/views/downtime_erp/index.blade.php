@@ -56,6 +56,7 @@
                         <th class="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 100px;">Stop</th>
                         <th class="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 100px;">Respon</th>
                         <th class="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 100px;">Start</th> -->
+                        <th class="px-3 py-3 text-center text-xs font-medium text-white uppercase tracking-wider" style="width: 100px;">Include OEE</th>
                         <th class="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 80px;">Duration</th>
                         <!-- <th class="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 80px;">Std Time</th> -->
                         <th class="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 200px;">Problem</th>
@@ -86,6 +87,17 @@
                         <td class="px-3 py-3 text-sm text-gray-500" style="word-wrap: break-word; overflow-wrap: break-word;">{{ $row->stopProduction ?? '-' }}</td>
                         <td class="px-3 py-3 text-sm text-gray-500" style="word-wrap: break-word; overflow-wrap: break-word;">{{ $row->responMechanic ?? '-' }}</td>
                         <td class="px-3 py-3 text-sm text-gray-500" style="word-wrap: break-word; overflow-wrap: break-word;">{{ $row->startProduction ?? '-' }}</td> -->
+                        <td class="px-3 py-3 text-sm text-center">
+                            @if(isset($row->include_oee))
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $row->include_oee ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
+                                    {{ $row->include_oee ? 'Yes' : 'No' }}
+                                </span>
+                            @else
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    -
+                                </span>
+                            @endif
+                        </td>
                         <td class="px-3 py-3 text-sm text-gray-500" style="word-wrap: break-word; overflow-wrap: break-word;">{{ $row->duration ?? '-' }}</td>
                         <!-- <td class="px-3 py-3 text-sm text-gray-500" style="word-wrap: break-word; overflow-wrap: break-word;">{{ $row->Standar_Time ?? '-' }}</td> -->
                         <td class="px-3 py-3 text-sm text-gray-500" style="word-wrap: break-word; overflow-wrap: break-word;">{{ $row->problemDowntime ?? '-' }}</td>

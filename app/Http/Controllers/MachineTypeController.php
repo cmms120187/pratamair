@@ -70,12 +70,32 @@ class MachineTypeController extends Controller
                 return back()->withErrors(['photo' => 'File harus berupa gambar (JPEG, PNG, JPG, GIF, atau WebP). MIME type yang diterima: ' . $fileMime]);
             }
             
-            // Convert to WebP
-            $photoPath = ImageHelper::convertToWebP($photo, 'machine-types', 85);
-            $validated['photo'] = $photoPath;
+            // Save to database using Photo model
+            $photoModel = ImageHelper::saveToDatabase(
+                $photo,
+                'machine-types',
+                'machine_type',
+                null, // Will be set after machineType is created
+                'Photo for Machine Type'
+            );
+            
+            if ($photoModel) {
+                // Store photo_id temporarily, will update after creation
+                $validated['photo_id'] = $photoModel->id;
+            }
         }
         
         $machineType = MachineType::create($validated);
+        
+        // Update photo related_id if photo was uploaded
+        if (isset($validated['photo_id'])) {
+            $photoModel = \App\Models\Photo::find($validated['photo_id']);
+            if ($photoModel) {
+                $photoModel->update([
+                    'related_id' => $machineType->id
+                ]);
+            }
+        }
         
         // Auto-sync systems from group if group_id is provided
         if ($request->filled('group_id')) {
@@ -191,12 +211,27 @@ class MachineTypeController extends Controller
                 return back()->withErrors(['photo' => 'File harus berupa gambar (JPEG, PNG, JPG, GIF, atau WebP). MIME type yang diterima: ' . $fileMime]);
             }
             
-            // Delete old photo if exists
-            ImageHelper::deleteOldImage($machineType->photo);
+            // Delete old photo from database if exists
+            if ($machineType->photo_id) {
+                ImageHelper::deletePhotoFromDatabase($machineType->photo_id);
+            }
+            // Also delete old photo file if exists (legacy)
+            if ($machineType->photo) {
+                ImageHelper::deleteOldImage($machineType->photo);
+            }
             
-            // Convert to WebP
-            $photoPath = ImageHelper::convertToWebP($photo, 'machine-types', 85);
-            $validated['photo'] = $photoPath;
+            // Save new photo to database using Photo model
+            $photoModel = ImageHelper::saveToDatabase(
+                $photo,
+                'machine-types',
+                'machine_type',
+                $machineType->id,
+                'Photo for Machine Type'
+            );
+            
+            if ($photoModel) {
+                $validated['photo_id'] = $photoModel->id;
+            }
         }
         
         $machineType->update($validated);

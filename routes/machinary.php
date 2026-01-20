@@ -13,8 +13,12 @@ Route::middleware(['auth', 'role:group_leader,coordinator,ast_manager,manager,ge
     Route::post('machine-erp/synchronize', [\App\Http\Controllers\MachineErpController::class, 'synchronize'])->name('machine-erp.synchronize');
     Route::resource('machine-erp', \App\Http\Controllers\MachineErpController::class);
     
-    // Mutasi Routes
+    // Mutasi Routes (full CRUD requires role)
     Route::resource('mutasi', \App\Http\Controllers\MutasiController::class);
+    Route::get('mutasi-bulk/scan', [\App\Http\Controllers\MutasiController::class, 'bulkScan'])->name('mutasi.bulk-scan');
+    Route::post('mutasi-bulk/scan-machine', [\App\Http\Controllers\MutasiController::class, 'scanMachine'])->name('mutasi.scan-machine');
+    Route::post('mutasi-bulk/store', [\App\Http\Controllers\MutasiController::class, 'bulkStore'])->name('mutasi.bulk-store');
+    Route::post('mutasi-bulk/store-simple', [\App\Http\Controllers\MutasiController::class, 'bulkStoreSimple'])->name('mutasi.bulk-store-simple');
 });
 
 // Part ERP Routes - Coordinator and above

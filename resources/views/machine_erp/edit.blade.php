@@ -247,6 +247,25 @@
                 </div>
 
                 <div>
+                    <label for="status" class="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                    <select name="status" 
+                            id="status" 
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('status') border-red-500 @enderror">
+                        <option value="">-- Pilih Status --</option>
+                        <option value="Running" {{ old('status', $machineErp->status) == 'Running' ? 'selected' : '' }}>Running</option>
+                        <option value="Standby" {{ old('status', $machineErp->status) == 'Standby' ? 'selected' : '' }}>Standby</option>
+                        <option value="Damage" {{ old('status', $machineErp->status) == 'Damage' ? 'selected' : '' }}>Damage</option>
+                        <option value="Destroy" {{ old('status', $machineErp->status) == 'Destroy' ? 'selected' : '' }}>Destroy</option>
+                        <option value="Other" {{ old('status', $machineErp->status) == 'Other' ? 'selected' : '' }}>Other</option>
+                    </select>
+                    @error('status')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-4">
+                <div>
                     <label for="photo" class="block text-sm font-semibold text-gray-700 mb-2">Photo (Khusus untuk Model ini)</label>
                     @if($machineErp->photo)
                         <div class="mb-2">

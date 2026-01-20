@@ -75,44 +75,41 @@
                             </td>
                             <td class="px-4 py-3 text-sm">
                                 @php
-                                    $displayPhoto = null;
+                                    // Prioritize photo_id (new system), then photos relationship, then photo field
                                     $photoUrl = null;
                                     
-                                    // Prioritaskan photo dari relasi photos
-                                    if ($standard->photos && $standard->photos->count() > 0) {
-                                        $displayPhoto = $standard->photos->first()->photo_path;
-                                    } elseif ($standard->photo) {
-                                        // Fallback ke photo legacy
-                                        $displayPhoto = $standard->photo;
-                                    }
-                                    
-                                    // Generate URL jika ada photo
-                                    if ($displayPhoto) {
-                                        // Cek apakah file dengan path asli ada
-                                        $actualPath = $displayPhoto;
-                                        
-                                        // Jika file tidak ada, coba cari dengan ekstensi .webp
-                                        if (strpos($displayPhoto, 'images/') !== 0) {
-                                            // Hanya cek untuk file di storage, bukan di public/images
-                                            if (!Storage::disk('public')->exists($displayPhoto)) {
-                                                $pathInfo = pathinfo($displayPhoto);
-                                                $webpPath = ($pathInfo['dirname'] !== '.' ? $pathInfo['dirname'] . '/' : '') . $pathInfo['filename'] . '.webp';
-                                                if (Storage::disk('public')->exists($webpPath)) {
-                                                    $actualPath = $webpPath;
-                                                }
+                                    if ($standard->photo_id && $standard->photoModel) {
+                                        // New system: use Photo model
+                                        $photoUrl = route('photos.show', $standard->photo_id);
+                                    } elseif ($standard->photos && $standard->photos->count() > 0) {
+                                        // Try to find in photos table
+                                        $firstPhoto = $standard->photos->first();
+                                        $photo = \App\Models\Photo::where('file_path', $firstPhoto->photo_path)->first();
+                                        if ($photo) {
+                                            $photoUrl = route('photos.show', $photo->id);
+                                        } else {
+                                            // Fallback to old path
+                                            $photoPath = $firstPhoto->photo_path;
+                                            if (strpos($photoPath, 'images/') === 0) {
+                                                $photoUrl = asset($photoPath);
+                                            } else {
+                                                $photoUrl = asset('public-storage/' . $photoPath);
                                             }
                                         }
-                                        
-                                        if (strpos($actualPath, 'images/') === 0) {
-                                            // Old format: images/ISO 10816.jpg -> use asset() for public folder
-                                            $photoUrl = asset($actualPath);
-                                        } elseif (strpos($actualPath, 'standards/') === 0 || strpos($actualPath, 'maintenance-points/') === 0) {
-                                            // New format: standards/xxx.jpg or maintenance-points/xxx.jpg
-                                            // File sudah di public/public-storage, jadi gunakan asset() dengan path public-storage
-                                            $photoUrl = asset('public-storage/' . $actualPath);
+                                    } elseif ($standard->photo) {
+                                        // Try to find in photos table
+                                        $photo = \App\Models\Photo::where('file_path', $standard->photo)
+                                            ->orWhere('file_path', 'like', '%' . basename($standard->photo))
+                                            ->first();
+                                        if ($photo) {
+                                            $photoUrl = route('photos.show', $photo->id);
                                         } else {
-                                            // Default: assume it's in public disk storage
-                                            $photoUrl = asset('public-storage/' . $actualPath);
+                                            // Fallback to old path
+                                            if (strpos($standard->photo, 'images/') === 0) {
+                                                $photoUrl = asset($standard->photo);
+                                            } else {
+                                                $photoUrl = asset('public-storage/' . $standard->photo);
+                                            }
                                         }
                                     }
                                 @endphp

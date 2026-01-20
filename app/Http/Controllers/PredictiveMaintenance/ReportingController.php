@@ -556,44 +556,49 @@ class ReportingController extends Controller
                     }
                 }
                 
-                // Get photo URL - prioritize photos relationship, then fallback to photo field
+                // Get photo URL - prioritize photo_id (new system), then photos relationship, then photo field
                 $standardPhotoUrl = null;
-                $photoPath = null;
                 
                 if ($standard) {
-                    // Prioritize photos relationship (many-to-many)
-                    if ($standard->relationLoaded('photos') && $standard->photos && $standard->photos->count() > 0) {
-                        $photoPath = $standard->photos->first()->photo_path;
-                    } elseif ($standard->photo) {
-                        // Fallback to legacy photo field
-                        $photoPath = $standard->photo;
+                    // Priority 1: photo_id (new Photo system)
+                    if ($standard->photo_id) {
+                        $photo = \App\Models\Photo::find($standard->photo_id);
+                        if ($photo) {
+                            $standardPhotoUrl = route('photos.show', $photo->id);
+                        }
                     }
                     
-                    // Generate URL if photo path exists
-                    if ($photoPath) {
-                        $actualPath = $photoPath;
-                        
-                        // Check if file exists, try webp extension if not
-                        if (Storage::disk('public')->exists($photoPath)) {
-                            $actualPath = $photoPath;
+                    // Priority 2: photos relationship (many-to-many)
+                    if (!$standardPhotoUrl && $standard->relationLoaded('photos') && $standard->photos && $standard->photos->count() > 0) {
+                        $firstPhoto = $standard->photos->first();
+                        $photo = \App\Models\Photo::where('file_path', $firstPhoto->photo_path)->first();
+                        if ($photo) {
+                            $standardPhotoUrl = route('photos.show', $photo->id);
                         } else {
-                            $pathInfo = pathinfo($photoPath);
-                            $webpPath = ($pathInfo['dirname'] !== '.' ? $pathInfo['dirname'] . '/' : '') . $pathInfo['filename'] . '.webp';
-                            if (Storage::disk('public')->exists($webpPath)) {
-                                $actualPath = $webpPath;
+                            // Fallback to old path
+                            $photoPath = $firstPhoto->photo_path;
+                            if (strpos($photoPath, 'images/') === 0) {
+                                $standardPhotoUrl = asset($photoPath);
+                            } else {
+                                $standardPhotoUrl = asset('public-storage/' . $photoPath);
                             }
                         }
-                        
-                        // Generate URL based on path format
-                        if (strpos($actualPath, 'images/') === 0) {
-                            // Old format: images/ISO 10816.jpg -> use asset() for public folder
-                            $standardPhotoUrl = asset($actualPath);
-                        } elseif (strpos($actualPath, 'standards/') === 0 || strpos($actualPath, 'maintenance-points/') === 0) {
-                            // New format: standards/... or maintenance-points/... -> use public-storage
-                            $standardPhotoUrl = asset('public-storage/' . $actualPath);
+                    }
+                    
+                    // Priority 3: photo field (legacy)
+                    if (!$standardPhotoUrl && $standard->photo) {
+                        $photo = \App\Models\Photo::where('file_path', $standard->photo)
+                            ->orWhere('file_path', 'like', '%' . basename($standard->photo))
+                            ->first();
+                        if ($photo) {
+                            $standardPhotoUrl = route('photos.show', $photo->id);
                         } else {
-                            // Default: try public-storage
-                            $standardPhotoUrl = asset('public-storage/' . $actualPath);
+                            // Fallback to old path
+                            if (strpos($standard->photo, 'images/') === 0) {
+                                $standardPhotoUrl = asset($standard->photo);
+                            } else {
+                                $standardPhotoUrl = asset('public-storage/' . $standard->photo);
+                            }
                         }
                     }
                 }

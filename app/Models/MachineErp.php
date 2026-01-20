@@ -22,7 +22,9 @@ class MachineErp extends Model
         'tahun_production',
         'no_document',
         'photo',
-        'machine_type_id'
+        'photo_id',
+        'machine_type_id',
+        'status'
     ];
 
     // Relationships
@@ -34,6 +36,16 @@ class MachineErp extends Model
     public function roomErp()
     {
         return $this->belongsTo(RoomErp::class, 'kode_room', 'kode_room');
+    }
+
+    public function preventiveMaintenanceSchedules()
+    {
+        return $this->hasMany(PreventiveMaintenanceSchedule::class, 'machine_erp_id');
+    }
+
+    public function predictiveMaintenanceSchedules()
+    {
+        return $this->hasMany(PredictiveMaintenanceSchedule::class, 'machine_erp_id');
     }
 
     /**
@@ -65,6 +77,34 @@ class MachineErp extends Model
             return $this->machineType->photo;
         }
 
+        return null;
+    }
+
+    // Photo relationship
+    public function photoModel()
+    {
+        return $this->belongsTo(Photo::class, 'photo_id');
+    }
+
+    // Get photo URL (prioritize photo_id, fallback to photo path, then display photo)
+    public function getPhotoUrlAttribute()
+    {
+        if ($this->photo_id && $this->photoModel) {
+            return route('photos.show', $this->photo_id);
+        }
+        if ($this->photo) {
+            return asset('public-storage/' . $this->photo);
+        }
+        // Fallback to display photo (from model or machine type)
+        $displayPhoto = $this->display_photo;
+        if ($displayPhoto) {
+            // Try to find in photos table
+            $photo = Photo::where('file_path', $displayPhoto)->first();
+            if ($photo) {
+                return route('photos.show', $photo->id);
+            }
+            return asset('public-storage/' . $displayPhoto);
+        }
         return null;
     }
 }

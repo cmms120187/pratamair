@@ -159,6 +159,15 @@
                             <option value="downtime" {{ $dataSource === 'downtime' ? 'selected' : '' }}>Downtime</option>
                         </select>
                     </form>
+                    <!-- Link to Dashboard Large -->
+                    <a href="{{ route('dashboard.large', ['month' => $filterMonth, 'year' => $filterYear, 'data_source' => $dataSource]) }}" 
+                       class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition text-sm whitespace-nowrap flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                        </svg>
+                        <span class="hidden sm:inline">Dashboard Large</span>
+                        <span class="sm:hidden">Large</span>
+                    </a>
                 </div>
             </div>
         </div>
@@ -254,10 +263,9 @@
         <!-- Chart Grid - Row 1 -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <!-- Top 10 Machine Downtime -->
-            <div class="chart-card rounded-xl shadow-lg p-6 aspect-square flex flex-col animate-fade-in-up delay-200">
+            <div class="chart-card rounded-xl shadow-lg p-6 aspect-square flex flex-col animate-fade-in-up delay-200 cursor-pointer" title="Klik untuk melihat detail downtime mesin" onclick="window.location.href='{{ $dataSource === 'downtime_erp2' ? route('downtime-erp2.index') : ($dataSource === 'downtime_erp' ? route('downtime_erp.index') : route('downtimes.index')) }}'">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Top 10 Machine (Downtime)</h2>
-                    <a href="{{ $dataSource === 'downtime_erp' ? route('downtime_erp.index') : route('downtimes.index') }}" class="text-xs text-blue-600 hover:text-blue-800 font-semibold">View →</a>
                 </div>
                 @if($topMachines->count() > 0)
                 <div class="flex-1 flex items-center justify-center min-h-0">
@@ -269,10 +277,9 @@
             </div>
 
             <!-- Top 5 MTTR -->
-            <div class="chart-card rounded-xl shadow-lg p-6 aspect-square flex flex-col animate-fade-in-up delay-300">
+            <div class="chart-card rounded-xl shadow-lg p-6 aspect-square flex flex-col animate-fade-in-up delay-300 cursor-pointer" title="Klik untuk melihat detail MTTR mesin" onclick="window.location.href='{{ $dataSource === 'downtime_erp2' ? route('downtime-erp2.index') : ($dataSource === 'downtime_erp' ? route('downtime_erp.index') : route('downtimes.index')) }}'">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">Top 5 MTTR (Highest)</h2>
-                    <a href="{{ $dataSource === 'downtime_erp' ? route('downtime_erp.index') : route('downtimes.index') }}" class="text-xs text-blue-600 hover:text-blue-800 font-semibold">View →</a>
                 </div>
                 @if($topMTTR->count() > 0)
                 <div class="flex-1 flex items-center justify-center min-h-0">
@@ -284,10 +291,9 @@
             </div>
 
             <!-- Top 5 Plant Downtime -->
-            <div class="chart-card rounded-xl shadow-lg p-6 aspect-square flex flex-col animate-fade-in-up delay-400">
+            <div class="chart-card rounded-xl shadow-lg p-6 aspect-square flex flex-col animate-fade-in-up delay-400 cursor-pointer" title="Klik untuk melihat detail downtime plant" onclick="window.location.href='{{ $dataSource === 'downtime_erp2' ? route('downtime-erp2.index') : ($dataSource === 'downtime_erp' ? route('downtime_erp.index') : route('downtimes.index')) }}'">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">Top 5 Plant (Downtime)</h2>
-                    <a href="{{ $dataSource === 'downtime_erp' ? route('downtime_erp.index') : route('downtimes.index') }}" class="text-xs text-blue-600 hover:text-blue-800 font-semibold">View →</a>
                 </div>
                 @if($topPlants->count() > 0)
                 <div class="flex-1 flex items-center justify-center min-h-0">
@@ -302,10 +308,9 @@
         <!-- Chart Grid - Row 2 -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <!-- Downtime Trend -->
-            <div class="chart-card rounded-xl shadow-lg p-6 lg:col-span-2 animate-fade-in-up delay-500">
+            <div class="chart-card rounded-xl shadow-lg p-6 lg:col-span-2 animate-fade-in-up delay-500 cursor-pointer" title="Klik untuk melihat detail trend downtime" onclick="window.location.href='{{ $dataSource === 'downtime_erp2' ? route('downtime-erp2.index') : ($dataSource === 'downtime_erp' ? route('downtime_erp.index') : route('downtimes.index')) }}'">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Downtime Trend ({{ \Carbon\Carbon::create($filterYear, $filterMonth, 1)->locale('id')->translatedFormat('F Y') }})</h2>
-                    <a href="{{ $dataSource === 'downtime_erp' ? route('downtime_erp.index') : route('downtimes.index') }}" class="text-xs text-blue-600 hover:text-blue-800 font-semibold">View →</a>
                 </div>
                 @if($downtimeTrend->count() > 0)
                 <div class="h-64">
@@ -317,10 +322,9 @@
             </div>
 
             <!-- Top 5 Problems -->
-            <div class="chart-card rounded-xl shadow-lg p-6 animate-fade-in-up delay-500">
+            <div class="chart-card rounded-xl shadow-lg p-6 animate-fade-in-up delay-500 cursor-pointer" title="Klik untuk melihat detail masalah downtime" onclick="window.location.href='{{ $dataSource === 'downtime_erp2' ? route('downtime-erp2.index') : ($dataSource === 'downtime_erp' ? route('downtime_erp.index') : route('downtimes.index')) }}'">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">Top 5 Problems</h2>
-                    <a href="{{ $dataSource === 'downtime_erp' ? route('downtime_erp.index') : route('downtimes.index') }}" class="text-xs text-blue-600 hover:text-blue-800 font-semibold">View →</a>
                 </div>
                 @if($topProblems->count() > 0)
                 <div class="h-64">

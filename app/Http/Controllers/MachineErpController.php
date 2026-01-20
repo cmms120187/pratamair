@@ -155,6 +155,7 @@ class MachineErpController extends Controller
             'tahun_production' => 'nullable|integer',
             'no_document' => 'nullable|string|max:255',
             'photo' => 'nullable|string|max:255',
+            'status' => 'nullable|string|in:Running,Standby,Damage,Destroy,Other',
             'group_id' => 'nullable|exists:groups,id',
         ]);
 
@@ -228,9 +229,15 @@ class MachineErpController extends Controller
      */
     public function show(string $id)
     {
-        $machineErp = MachineErp::with('machineType.groupRelation', 'machineType.systems', 'machineType.models')->findOrFail($id);
+        $machineErp = MachineErp::with([
+            'machineType.groupRelation', 
+            'machineType.systems', 
+            'machineType.models',
+            'machineType.photoModel',
+            'photoModel'
+        ])->findOrFail($id);
         
-        // Get model photo if available
+        // Get model photo if available (optional, for future use)
         $modelPhoto = null;
         if ($machineErp->type_name && $machineErp->model_name && $machineErp->machineType) {
             $model = \App\Models\Model::where('type_id', $machineErp->machineType->id)
@@ -242,7 +249,189 @@ class MachineErpController extends Controller
             }
         }
         
-        return view('machine_erp.show', compact('machineErp', 'modelPhoto'));
+        // Get Last Maintenance Information
+        $lastMaintenance = $this->getLastMaintenanceInfo($machineErp->idMachine, $machineErp->id);
+        
+        // Get Sparepart Usage (sparepart yang sudah digunakan dari downtime_erp2)
+        $sparepartUsage = [];
+        $usedPartIds = []; // Track PartErp IDs yang sudah ditambahkan
+        $usedParts = \App\Models\DowntimeErp2::where('idMachine', $machineErp->idMachine)
+            ->whereNotNull('Part')
+            ->where('Part', '!=', '')
+            ->distinct()
+            ->pluck('Part')
+            ->filter()
+            ->unique()
+            ->values()
+            ->toArray();
+        
+        if (!empty($usedParts)) {
+            // Cari sparepart berdasarkan nama dari field 'Part'
+            foreach ($usedParts as $partName) {
+                $partName = trim($partName);
+                if (empty($partName)) {
+                    continue;
+                }
+                
+                // Cari di PartErp berdasarkan nama atau part_number
+                $part = \App\Models\PartErp::where(function($query) use ($partName) {
+                    $query->where('name', 'like', '%' . $partName . '%')
+                          ->orWhere('part_number', 'like', '%' . $partName . '%');
+                })->first();
+                
+                if ($part && !in_array($part->id, $usedPartIds)) {
+                    $sparepartUsage[] = $part;
+                    $usedPartIds[] = $part->id;
+                } elseif (!$part) {
+                    // Jika tidak ditemukan di PartErp, simpan sebagai string untuk ditampilkan
+                    // Cek apakah sudah ada dengan nama yang sama (case-insensitive)
+                    $exists = false;
+                    foreach ($sparepartUsage as $existingPart) {
+                        if (is_array($existingPart) && isset($existingPart['is_string']) && 
+                            strtolower($existingPart['name']) === strtolower($partName)) {
+                            $exists = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!$exists) {
+                        $sparepartUsage[] = [
+                            'name' => $partName,
+                            'part_number' => null,
+                            'stock' => null,
+                            'unit' => null,
+                            'minimum_stock' => null,
+                            'is_string' => true, // Flag untuk menandai ini adalah string, bukan model
+                        ];
+                    }
+                }
+            }
+        }
+        
+        return view('machine_erp.show', compact('machineErp', 'modelPhoto', 'lastMaintenance', 'sparepartUsage'));
+    }
+
+    /**
+     * Get last maintenance information for a machine
+     */
+    private function getLastMaintenanceInfo(string $idMachine, int $machineErpId)
+    {
+        $lastMaintenance = [
+            'downtime' => null,
+            'preventive' => null,
+            'predictive' => null,
+            'checklist' => null,
+        ];
+
+        // Last Downtime (from downtime_erp2)
+        $lastDowntime = \App\Models\DowntimeErp2::where('idMachine', $idMachine)
+            ->whereNotNull('date')
+            ->orderBy('date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->first();
+        
+        if ($lastDowntime) {
+            // Convert date to Carbon instance if it's a string
+            $downtimeDate = $lastDowntime->date;
+            if (is_string($downtimeDate)) {
+                $downtimeDate = \Carbon\Carbon::parse($downtimeDate);
+            }
+            
+            $lastMaintenance['downtime'] = [
+                'date' => $downtimeDate,
+                'problem' => $lastDowntime->problemDowntime,
+                'action' => $lastDowntime->actionDowtime,
+                'type' => 'Downtime',
+            ];
+        }
+
+        // Last Preventive Maintenance (from preventive_maintenance_executions)
+        $lastPreventive = \App\Models\PreventiveMaintenanceExecution::with('schedule', 'performedBy')
+            ->whereHas('schedule', function($query) use ($machineErpId) {
+                $query->where('machine_erp_id', $machineErpId);
+            })
+            ->where('status', 'completed')
+            ->whereNotNull('actual_end_time')
+            ->orderBy('actual_end_time', 'desc')
+            ->first();
+        
+        if ($lastPreventive) {
+            $lastMaintenance['preventive'] = [
+                'date' => $lastPreventive->actual_end_time,
+                'title' => $lastPreventive->schedule->title ?? 'Preventive Maintenance',
+                'performed_by' => $lastPreventive->performedBy->name ?? null,
+                'type' => 'Preventive Maintenance',
+            ];
+        }
+
+        // Last Predictive Maintenance (from predictive_maintenance_executions)
+        $lastPredictive = \App\Models\PredictiveMaintenanceExecution::with('schedule', 'performedBy')
+            ->whereHas('schedule', function($query) use ($machineErpId) {
+                $query->where('machine_erp_id', $machineErpId);
+            })
+            ->where('status', 'completed')
+            ->whereNotNull('actual_end_time')
+            ->orderBy('actual_end_time', 'desc')
+            ->first();
+        
+        if ($lastPredictive) {
+            $lastMaintenance['predictive'] = [
+                'date' => $lastPredictive->actual_end_time,
+                'title' => $lastPredictive->schedule->title ?? 'Predictive Maintenance',
+                'performed_by' => $lastPredictive->performedBy->name ?? null,
+                'measurement_status' => $lastPredictive->measurement_status,
+                'type' => 'Predictive Maintenance',
+            ];
+        }
+
+        // Last Checklist/Inspection (from inspections) - Skip if table doesn't exist or model not available
+        try {
+            // Check if Inspection class exists and table exists
+            if (class_exists('App\\Models\\Inspection') && \Schema::hasTable('inspections')) {
+                $lastInspection = \App\Models\Inspection::with('performedBy')
+                    ->where('machine_erp_id', $machineErpId)
+                    ->whereNotNull('inspection_date')
+                    ->orderBy('inspection_date', 'desc')
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+                
+                if ($lastInspection) {
+                    // Try to get template name if available
+                    $templateName = 'Inspection';
+                    try {
+                        // Try to access template_id directly without loading relationship
+                        if ($lastInspection->template_id && class_exists('App\\Models\\InspectionTemplate')) {
+                            $template = \App\Models\InspectionTemplate::find($lastInspection->template_id);
+                            if ($template && $template->name) {
+                                $templateName = $template->name;
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        // Template class/model not available, use default name
+                    }
+                    
+                    // Convert inspection_date to Carbon instance if it's a string
+                    $inspectionDate = $lastInspection->inspection_date;
+                    if (is_string($inspectionDate)) {
+                        $inspectionDate = \Carbon\Carbon::parse($inspectionDate);
+                    } elseif (!$inspectionDate instanceof \Carbon\Carbon) {
+                        $inspectionDate = \Carbon\Carbon::parse($inspectionDate);
+                    }
+                    
+                    $lastMaintenance['checklist'] = [
+                        'date' => $inspectionDate,
+                        'template' => $templateName,
+                        'performed_by' => $lastInspection->performedBy->name ?? null,
+                        'type' => 'Checklist/Inspection',
+                    ];
+                }
+            }
+        } catch (\Exception $e) {
+            // Inspection table/model not available, skip silently
+            \Log::debug('Inspection model/table not available, skipping: ' . $e->getMessage());
+        }
+
+        return $lastMaintenance;
     }
 
     /**
@@ -327,6 +516,7 @@ class MachineErpController extends Controller
             'tahun_production' => 'nullable|integer',
             'no_document' => 'nullable|string|max:255',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120', // Max 5MB
+            'status' => 'nullable|string|in:Running,Standby,Damage,Destroy,Other',
             'group_id' => 'nullable|exists:groups,id',
         ]);
 
@@ -470,6 +660,7 @@ class MachineErpController extends Controller
             
             $rowCount = 0;
             $errorCount = 0;
+            $duplicateCount = 0;
             $highestRow = $worksheet->getHighestRow();
             
             // Start from row 2 (skip header)
@@ -545,6 +736,7 @@ class MachineErpController extends Controller
                         'serial_number' => trim($data['serial_number'] ?? $data['Serial Number'] ?? $data['serialNumber'] ?? '') ?: null,
                         'tahun_production' => !empty(trim($data['tahun_production'] ?? $data['Tahun Production'] ?? $data['tahunProduction'] ?? '')) ? (int)trim($data['tahun_production'] ?? $data['Tahun Production'] ?? $data['tahunProduction'] ?? '') : null,
                         'no_document' => trim($data['no_document'] ?? $data['No Document'] ?? $data['noDocument'] ?? '') ?: null,
+                        'status' => trim($data['status'] ?? $data['Status'] ?? '') ?: null,
                         'photo' => trim($data['photo'] ?? $data['Photo'] ?? '') ?: null,
                     ];
                     
@@ -608,6 +800,18 @@ class MachineErpController extends Controller
                     
                     $machineData['machine_type_id'] = $machineTypeId;
                     
+                    // Check for duplicate idMachine before creating
+                    $existingMachine = MachineErp::where('idMachine', $machineData['idMachine'])->first();
+                    if ($existingMachine) {
+                        $duplicateCount++;
+                        \Log::warning('Duplicate ID Machine skipped during upload', [
+                            'row' => $row,
+                            'idMachine' => $machineData['idMachine'],
+                            'existing_id' => $existingMachine->id,
+                        ]);
+                        continue;
+                    }
+                    
                     MachineErp::create($machineData);
                     $rowCount++;
                 } catch (\Exception $e) {
@@ -615,11 +819,15 @@ class MachineErpController extends Controller
                     \Log::error('Error importing machine ERP row: ' . $e->getMessage(), [
                         'row' => $row,
                         'header' => $header,
+                        'idMachine' => $machineData['idMachine'] ?? 'N/A',
                     ]);
                 }
             }
             
             $message = "Imported $rowCount rows.";
+            if ($duplicateCount > 0) {
+                $message .= " Skipped $duplicateCount rows with duplicate ID Machine.";
+            }
             if ($errorCount > 0) {
                 $message .= " Skipped $errorCount rows with errors.";
             }
@@ -642,19 +850,21 @@ class MachineErpController extends Controller
             $spreadsheet = new Spreadsheet();
             $sheet = $spreadsheet->getActiveSheet();
             
-            // Set header
+            // Set header (sesuai urutan di index)
             $sheet->setCellValue('A1', 'ID Machine');
-            $sheet->setCellValue('B1', 'Plant Name');
-            $sheet->setCellValue('C1', 'Process Name');
-            $sheet->setCellValue('D1', 'Line Name');
-            $sheet->setCellValue('E1', 'Room Name');
-            $sheet->setCellValue('F1', 'Type Name');
-            $sheet->setCellValue('G1', 'Brand Name');
-            $sheet->setCellValue('H1', 'Model Name');
-            $sheet->setCellValue('I1', 'Serial Number');
-            $sheet->setCellValue('J1', 'Tahun Production');
-            $sheet->setCellValue('K1', 'No Document');
-            $sheet->setCellValue('L1', 'Photo');
+            $sheet->setCellValue('B1', 'Kode Room');
+            $sheet->setCellValue('C1', 'Plant Name');
+            $sheet->setCellValue('D1', 'Process Name');
+            $sheet->setCellValue('E1', 'Line Name');
+            $sheet->setCellValue('F1', 'Room Name');
+            $sheet->setCellValue('G1', 'Type Name');
+            $sheet->setCellValue('H1', 'Brand Name');
+            $sheet->setCellValue('I1', 'Model Name');
+            $sheet->setCellValue('J1', 'Status');
+            $sheet->setCellValue('K1', 'Serial Number');
+            $sheet->setCellValue('L1', 'Tahun Production');
+            $sheet->setCellValue('M1', 'No Document');
+            $sheet->setCellValue('N1', 'Photo');
             
             // Style header
             $headerStyle = [
@@ -664,28 +874,30 @@ class MachineErpController extends Controller
                 ],
                 'font' => ['color' => ['rgb' => 'FFFFFF'], 'bold' => true],
             ];
-            $sheet->getStyle('A1:L1')->applyFromArray($headerStyle);
+            $sheet->getStyle('A1:N1')->applyFromArray($headerStyle);
             
-            // Write data
+            // Write data (sesuai urutan di index)
             $row = 2;
             foreach ($machineErps as $machineErp) {
                 $sheet->setCellValue('A' . $row, $machineErp->idMachine);
-                $sheet->setCellValue('B' . $row, $machineErp->plant_name ?? '');
-                $sheet->setCellValue('C' . $row, $machineErp->process_name ?? '');
-                $sheet->setCellValue('D' . $row, $machineErp->line_name ?? '');
-                $sheet->setCellValue('E' . $row, $machineErp->room_name ?? '');
-                $sheet->setCellValue('F' . $row, $machineErp->type_name ?? '');
-                $sheet->setCellValue('G' . $row, $machineErp->brand_name ?? '');
-                $sheet->setCellValue('H' . $row, $machineErp->model_name ?? '');
-                $sheet->setCellValue('I' . $row, $machineErp->serial_number ?? '');
-                $sheet->setCellValue('J' . $row, $machineErp->tahun_production ?? '');
-                $sheet->setCellValue('K' . $row, $machineErp->no_document ?? '');
-                $sheet->setCellValue('L' . $row, $machineErp->photo ?? '');
+                $sheet->setCellValue('B' . $row, $machineErp->kode_room ?? '');
+                $sheet->setCellValue('C' . $row, $machineErp->plant_name ?? '');
+                $sheet->setCellValue('D' . $row, $machineErp->process_name ?? '');
+                $sheet->setCellValue('E' . $row, $machineErp->line_name ?? '');
+                $sheet->setCellValue('F' . $row, $machineErp->room_name ?? '');
+                $sheet->setCellValue('G' . $row, $machineErp->type_name ?? '');
+                $sheet->setCellValue('H' . $row, $machineErp->brand_name ?? '');
+                $sheet->setCellValue('I' . $row, $machineErp->model_name ?? '');
+                $sheet->setCellValue('J' . $row, $machineErp->status ?? '');
+                $sheet->setCellValue('K' . $row, $machineErp->serial_number ?? '');
+                $sheet->setCellValue('L' . $row, $machineErp->tahun_production ?? '');
+                $sheet->setCellValue('M' . $row, $machineErp->no_document ?? '');
+                $sheet->setCellValue('N' . $row, $machineErp->photo ?? '');
                 $row++;
             }
             
             // Auto-size columns
-            foreach (range('A', 'L') as $col) {
+            foreach (range('A', 'N') as $col) {
                 $sheet->getColumnDimension($col)->setAutoSize(true);
             }
             

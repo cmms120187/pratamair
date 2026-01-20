@@ -29,6 +29,11 @@ Route::middleware('auth')->group(function () {
     // Downtime ERP2 Routes - Custom routes must be BEFORE resource route to avoid conflicts
     Route::get('downtime-erp2/download', [\App\Http\Controllers\DowntimeErp2Controller::class, 'download'])->name('downtime-erp2.download')->middleware('role:admin');
     Route::post('downtime-erp2/upload', [\App\Http\Controllers\DowntimeErp2Controller::class, 'upload'])->name('downtime-erp2.upload')->middleware('role:admin');
+    
+    // Mutasi routes for downtime-erp2 form (accessible by all authenticated users)
+    Route::get('mutasi/get-rooms', [\App\Http\Controllers\MutasiController::class, 'getRooms'])->name('mutasi.get-rooms');
+    Route::post('mutasi/store-from-downtime', [\App\Http\Controllers\MutasiController::class, 'storeFromDowntime'])->name('mutasi.store-from-downtime');
+    
     Route::resource('downtime-erp2', \App\Http\Controllers\DowntimeErp2Controller::class);
     
     // Work Orders - Team Leader and above

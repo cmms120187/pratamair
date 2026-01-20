@@ -135,6 +135,7 @@
                         <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Type Name</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Brand Name</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Model Name</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">Status</th>
                         <!-- <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Serial Number</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Tahun Production</th> -->
                         <th class="px-4 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">Actions</th>
@@ -153,6 +154,27 @@
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ $machineErp->type_name ?? '-' }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ $machineErp->brand_name ?? '-' }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ $machineErp->model_name ?? '-' }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-center">
+                            @if($machineErp->status)
+                                @php
+                                    $statusColors = [
+                                        'Running' => 'bg-green-100 text-green-800',
+                                        'Standby' => 'bg-yellow-100 text-yellow-800',
+                                        'Damage' => 'bg-red-100 text-red-800',
+                                        'Destroy' => 'bg-gray-100 text-gray-800',
+                                        'Other' => 'bg-blue-100 text-blue-800'
+                                    ];
+                                    $statusColor = $statusColors[$machineErp->status] ?? 'bg-gray-100 text-gray-800';
+                                @endphp
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusColor }}">
+                                    {{ $machineErp->status }}
+                                </span>
+                            @else
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    -
+                                </span>
+                            @endif
+                        </td>
                         <!-- <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ $machineErp->serial_number ?? '-' }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ $machineErp->tahun_production ?? '-' }}</td> -->
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-center">
@@ -177,7 +199,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="13" class="px-4 py-8 text-center text-sm text-gray-500">No machine ERP found.</td>
+                        <td colspan="12" class="px-4 py-8 text-center text-sm text-gray-500">No machine ERP found.</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -210,7 +232,7 @@
                 <div class="mb-4">
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Excel File (.xlsx, .xls)</label>
                     <input type="file" name="excel_file" accept=".xlsx,.xls" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <p class="mt-2 text-xs text-gray-500">Format Excel: Kolom pertama harus header (idMachine, kode_room [opsional], plant_name, process_name, line_name, room_name, type_name, brand_name, model_name, serial_number, tahun_production, no_document, photo). Jika kode_room diisi, akan auto-fill plant_name, process_name, line_name, dan room_name dari RoomERP.</p>
+                    <p class="mt-2 text-xs text-gray-500">Format Excel: Header harus sesuai urutan: ID Machine, Kode Room (opsional), Plant Name, Process Name, Line Name, Room Name, Type Name, Brand Name, Model Name, Status (Running/Standby/Damage/Destroy/Other), Serial Number, Tahun Production, No Document, Photo. Jika Kode Room diisi, akan auto-fill Plant Name, Process Name, Line Name, dan Room Name dari RoomERP.</p>
                 </div>
                 <div class="flex items-center gap-3">
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition">Upload</button>

@@ -76,13 +76,48 @@
                     </div>
                 </div>
                 <div class="mb-4">
-                    <label for="systems" class="block text-sm font-medium text-gray-700 mb-2">Systems <span class="text-xs text-gray-500">(Auto-selected from Group)</span></label>
-                    <select name="systems[]" id="systems" class="w-full border rounded px-3 py-2" multiple size="5" readonly style="background-color: #f3f4f6;">
-                        @foreach($systems as $system)
-                            <option value="{{ $system->id }}" {{ $machineType->systems->contains($system->id) ? 'selected' : '' }}>{{ $system->nama_sistem }}</option>
-                        @endforeach
-                    </select>
-                    <p class="text-xs text-gray-500 mt-1">Systems are automatically selected based on the selected Group</p>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            Systems <span class="text-xs text-gray-500">(Auto-selected from Group)</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <button 
+                                type="button" 
+                                onclick="selectAllMachineTypeSystems()" 
+                                class="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                                Select All
+                            </button>
+                            <span class="text-gray-300">|</span>
+                            <button 
+                                type="button" 
+                                onclick="deselectAllMachineTypeSystems()" 
+                                class="text-xs text-gray-600 hover:text-gray-800 font-medium"
+                            >
+                                Deselect All
+                            </button>
+                        </div>
+                    </div>
+                    <div class="border border-gray-300 rounded-lg p-4 max-h-64 overflow-y-auto bg-gray-50" id="systems-container">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            @foreach($systems as $system)
+                                <label class="flex items-center p-3 bg-white rounded-lg border border-gray-200 hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition">
+                                    <input 
+                                        type="checkbox" 
+                                        name="systems[]" 
+                                        value="{{ $system->id }}"
+                                        {{ $machineType->systems->contains($system->id) ? 'checked' : '' }}
+                                        class="machine-type-system-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                                    >
+                                    <span class="ml-3 text-sm font-medium text-gray-700">{{ $system->nama_sistem }}</span>
+                                    @if($system->deskripsi)
+                                        <span class="ml-2 text-xs text-gray-500">({{ Str::limit($system->deskripsi, 30) }})</span>
+                                    @endif
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Systems are automatically selected based on the selected Group. You can manually adjust the selection.</p>
                 </div>
                 <div class="mb-4">
                     <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
@@ -93,36 +128,43 @@
                 </div>
                 <div class="mb-4">
                     <label for="photo" class="block text-sm font-medium text-gray-700 mb-2">Photo (Default untuk Machine Type)</label>
-                    @if($machineType->photo)
+                    @php
+                        // Prioritize photo_id (new system), then photo field (legacy)
+                        $currentPhotoUrl = null;
+                        if ($machineType->photo_id && $machineType->photoModel) {
+                            $currentPhotoUrl = route('photos.show', $machineType->photo_id);
+                        } elseif ($machineType->photo) {
+                            // Try to find in photos table
+                            $photo = \App\Models\Photo::where('file_path', $machineType->photo)
+                                ->orWhere('file_path', 'like', '%' . basename($machineType->photo))
+                                ->first();
+                            if ($photo) {
+                                $currentPhotoUrl = route('photos.show', $photo->id);
+                            } else {
+                                // Fallback to old path
+                                $photoPath = $machineType->photo;
+                                $webpPath = preg_replace('/\.(jpg|jpeg|png|gif)$/i', '.webp', $photoPath);
+                                $photoExists = \Illuminate\Support\Facades\Storage::disk('public')->exists($photoPath);
+                                $webpExists = \Illuminate\Support\Facades\Storage::disk('public')->exists($webpPath);
+                                
+                                $actualPath = $webpExists ? $webpPath : $photoPath;
+                                if ($photoExists || $webpExists) {
+                                    $currentPhotoUrl = asset('public-storage/' . $actualPath);
+                                }
+                            }
+                        }
+                    @endphp
+                    @if($currentPhotoUrl)
                         <div class="mb-3">
                             <p class="text-sm font-semibold text-gray-700 mb-2">Current Photo:</p>
                             <div class="bg-gray-50 rounded-lg p-3 border border-gray-200 inline-block">
-                                @php
-                                    // Check for .webp version first
-                                    $photoPath = $machineType->photo;
-                                    $webpPath = preg_replace('/\.(jpg|jpeg|png|gif)$/i', '.webp', $photoPath);
-                                    $photoExists = \Illuminate\Support\Facades\Storage::disk('public')->exists($photoPath);
-                                    $webpExists = \Illuminate\Support\Facades\Storage::disk('public')->exists($webpPath);
-                                    
-                                    // Use webp if exists, otherwise use original
-                                    $actualPath = $webpExists ? $webpPath : $photoPath;
-                                    $photoUrl = asset('public-storage/' . $actualPath);
-                                @endphp
-                                @if($photoExists || $webpExists)
-                                    <img src="{{ $photoUrl }}" 
-                                         alt="Current Photo" 
-                                         class="max-w-xs max-h-64 object-contain rounded border shadow-sm"
-                                         onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                    <div style="display:none;" class="text-sm text-red-500 mt-2">
-                                        <p>Photo tidak dapat dimuat</p>
-                                        <p class="text-xs">Path: {{ $actualPath }}</p>
-                                    </div>
-                                @else
-                                    <div class="text-sm text-red-500">
-                                        <p>Photo tidak ditemukan di storage</p>
-                                        <p class="text-xs">Path: {{ $photoPath }}</p>
-                                    </div>
-                                @endif
+                                <img src="{{ $currentPhotoUrl }}" 
+                                     alt="Current Photo" 
+                                     class="max-w-xs max-h-64 object-contain rounded border shadow-sm"
+                                     onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                <div style="display:none;" class="text-sm text-red-500 mt-2">
+                                    <p>Photo tidak dapat dimuat</p>
+                                </div>
                             </div>
                         </div>
                     @endif
@@ -445,23 +487,23 @@
 // Auto-select systems when group is selected
 document.addEventListener('DOMContentLoaded', function() {
     const groupSelect = document.getElementById('group_id');
-    const systemsSelect = document.getElementById('systems');
+    const systemCheckboxes = document.querySelectorAll('.machine-type-system-checkbox');
     
-    if (groupSelect && systemsSelect) {
+    if (groupSelect) {
         groupSelect.addEventListener('change', function() {
             const selectedOption = this.options[this.selectedIndex];
             const systemIds = selectedOption ? JSON.parse(selectedOption.getAttribute('data-systems') || '[]') : [];
             
             // Clear all selections
-            Array.from(systemsSelect.options).forEach(option => {
-                option.selected = false;
+            systemCheckboxes.forEach(checkbox => {
+                checkbox.checked = false;
             });
             
             // Select systems from group
             systemIds.forEach(systemId => {
-                const option = systemsSelect.querySelector(`option[value="${systemId}"]`);
-                if (option) {
-                    option.selected = true;
+                const checkbox = document.querySelector(`.machine-type-system-checkbox[value="${systemId}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
                 }
             });
         });
@@ -472,6 +514,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+function selectAllMachineTypeSystems() {
+    const checkboxes = document.querySelectorAll('.machine-type-system-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+    });
+}
+
+function deselectAllMachineTypeSystems() {
+    const checkboxes = document.querySelectorAll('.machine-type-system-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+}
 
 function maintenancePointsData() {
     return {

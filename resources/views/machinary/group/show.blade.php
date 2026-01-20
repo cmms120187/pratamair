@@ -77,19 +77,33 @@
             </div>
             
             <!-- Photo Section -->
-            @if($machineType->photo)
-                @php
-                    // Check for .webp version first
-                    $photoPath = $machineType->photo;
-                    $webpPath = preg_replace('/\.(jpg|jpeg|png|gif)$/i', '.webp', $photoPath);
-                    $photoExists = \Illuminate\Support\Facades\Storage::disk('public')->exists($photoPath);
-                    $webpExists = \Illuminate\Support\Facades\Storage::disk('public')->exists($webpPath);
-                    
-                    // Use webp if exists, otherwise use original
-                    $actualPath = $webpExists ? $webpPath : $photoPath;
-                    $photoUrl = asset('public-storage/' . $actualPath);
-                @endphp
-                @if($photoExists || $webpExists)
+            @php
+                // Prioritize photo_id (new system), then photo field (legacy)
+                $photoUrl = null;
+                if ($machineType->photo_id && $machineType->photoModel) {
+                    $photoUrl = route('photos.show', $machineType->photo_id);
+                } elseif ($machineType->photo) {
+                    // Try to find in photos table
+                    $photo = \App\Models\Photo::where('file_path', $machineType->photo)
+                        ->orWhere('file_path', 'like', '%' . basename($machineType->photo))
+                        ->first();
+                    if ($photo) {
+                        $photoUrl = route('photos.show', $photo->id);
+                    } else {
+                        // Fallback to old path
+                        $photoPath = $machineType->photo;
+                        $webpPath = preg_replace('/\.(jpg|jpeg|png|gif)$/i', '.webp', $photoPath);
+                        $photoExists = \Illuminate\Support\Facades\Storage::disk('public')->exists($photoPath);
+                        $webpExists = \Illuminate\Support\Facades\Storage::disk('public')->exists($webpPath);
+                        
+                        $actualPath = $webpExists ? $webpPath : $photoPath;
+                        if ($photoExists || $webpExists) {
+                            $photoUrl = asset('public-storage/' . $actualPath);
+                        }
+                    }
+                }
+            @endphp
+            @if($photoUrl)
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <label class="block text-sm font-medium text-gray-500 mb-3">Photo</label>
                         <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 inline-block">
@@ -108,11 +122,10 @@
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <label class="block text-sm font-medium text-gray-500 mb-3">Photo</label>
                         <div class="text-sm text-red-500">
-                            Photo tidak ditemukan: {{ $machineType->photo }}
+                            Photo tidak ditemukan
                         </div>
                     </div>
                 @endif
-            @endif
         </div>
 
         <!-- Maintenance Points Section -->

@@ -225,7 +225,11 @@ class DowntimeErpController extends Controller
             'idCoord' => 'nullable|string|max:255',
             'nameCoord' => 'nullable|string|max:255',
             'groupProblem' => 'nullable|string|max:255',
+            'include_oee' => 'nullable|boolean',
         ]);
+
+        // Handle checkbox (include_oee)
+        $validated['include_oee'] = $request->has('include_oee') ? true : false;
 
         DowntimeErp::create($validated);
         return redirect()->route('downtime_erp.index')->with('success', 'Downtime ERP created successfully.');
@@ -262,7 +266,11 @@ class DowntimeErpController extends Controller
             'idCoord' => 'nullable|string|max:255',
             'nameCoord' => 'nullable|string|max:255',
             'groupProblem' => 'nullable|string|max:255',
+            'include_oee' => 'nullable|boolean',
         ]);
+
+        // Handle checkbox (include_oee)
+        $validated['include_oee'] = $request->has('include_oee') ? true : false;
 
         $row->update($validated);
         return redirect()->route('downtime_erp.index')->with('success', 'Downtime ERP updated successfully.');

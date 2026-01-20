@@ -43,6 +43,7 @@ class DowntimeErp2 extends Model
 
     protected $casts = [
         'include_oee' => 'boolean',
+        'date' => 'date',
     ];
 
     /**

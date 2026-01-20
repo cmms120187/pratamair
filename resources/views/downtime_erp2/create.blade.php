@@ -22,7 +22,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <label for="machine_search" class="block text-sm font-semibold text-gray-700 mb-2">ID Machine <span class="text-red-500">*</span></label>
-                        <div class="relative">
+                        <div class="relative" style="position: relative;">
                             <input type="text" 
                                    id="machine_search" 
                                    class="w-full border border-gray-300 rounded-lg px-4 py-2 pr-20 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('idMachine') border-red-500 @enderror" 
@@ -37,7 +37,7 @@
                                 </svg>
                                 Scan
                             </button>
-                            <div id="machine_dropdown" class="hidden absolute z-50 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg" style="top: 100%; left: 0; right: 0; width: 100%; max-width: 100%; max-height: 12rem; overflow-y: auto; box-sizing: border-box;"></div>
+                            <div id="machine_dropdown" class="hidden absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg" style="top: 100%; left: 0; width: 100%; max-height: 12rem; overflow-y: auto; display: none;"></div>
                         </div>
                         <input type="hidden" name="idMachine" id="idMachine" required>
                         <div id="selected_machine" class="hidden mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -70,6 +70,14 @@
                         @error('brandMachine')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
                 </div>
+                <!-- System List (displayed after machine is selected) -->
+                <div id="machine_systems_container" class="hidden mt-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">System Mesin</label>
+                    <div id="machine_systems_list" class="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50 min-h-[60px]">
+                        <p class="text-sm text-gray-500">Pilih ID Machine terlebih dahulu</p>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Daftar system yang tersedia untuk mesin ini</p>
+                </div>
             </div>
 
             <!-- Basic Information -->
@@ -101,14 +109,45 @@
                     </div>
                     <div>
                         <label for="roomName" class="block text-sm font-semibold text-gray-700 mb-2">Room Name <span class="text-red-500">*</span> (Auto-fill)</label>
-                        <input type="text" name="roomName" id="roomName" value="{{ old('roomName') }}" required readonly class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('roomName') border-red-500 @enderror">
-                        <p class="text-xs text-gray-500 mt-1">Otomatis terisi dari Machine ERP</p>
+                        <div class="flex gap-2">
+                            <input type="text" name="roomName" id="roomName" value="{{ old('roomName') }}" required readonly class="flex-1 border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('roomName') border-red-500 @enderror">
+                            <button type="button" 
+                                    id="btn_mutasi" 
+                                    class="px-4 py-2 bg-gray-400 text-white font-semibold rounded-lg shadow transition flex items-center gap-2 whitespace-nowrap"
+                                    style="cursor: not-allowed;"
+                                    title="Mutasi Lokasi Mesin (Pilih mesin terlebih dahulu)"
+                                    disabled>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                </svg>
+                                Mutasi
+                            </button>
+                            <style>
+                                #btn_mutasi:not(:disabled) {
+                                    background-color: #EA580C !important;
+                                    cursor: pointer !important;
+                                    pointer-events: auto !important;
+                                    opacity: 1 !important;
+                                }
+                                #btn_mutasi:not(:disabled):hover {
+                                    background-color: #C2410C !important;
+                                }
+                                #btn_mutasi:disabled {
+                                    background-color: #9CA3AF !important;
+                                    cursor: not-allowed !important;
+                                    opacity: 0.6 !important;
+                                    pointer-events: none !important;
+                                }
+                            </style>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Otomatis terisi dari Machine ERP. Klik tombol Mutasi jika lokasi mesin tidak sesuai aktual.</p>
                         @error('roomName')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
                 </div>
                 
                 <!-- Hidden field for kode_room -->
                 <input type="hidden" name="kode_room" id="kode_room" value="{{ old('kode_room') }}">
+                <input type="hidden" name="machine_erp_id" id="machine_erp_id" value="">
                 <div class="mt-4">
                     <label class="flex items-center">
                         <input type="checkbox" 
@@ -609,21 +648,31 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Machines data available:', machines ? machines.length : 0);
         console.log('Machines data sample:', machines && machines.length > 0 ? machines[0] : 'No machines');
         
-        machineSearch.addEventListener('input', function() {
+        // Input event listener
+        machineSearch.addEventListener('input', function(e) {
+            e.stopPropagation();
             const searchTerm = this.value.toLowerCase().trim();
             console.log('Search term:', searchTerm);
             console.log('Machine dropdown element:', machineDropdown);
+            console.log('Machine dropdown classes before:', machineDropdown ? machineDropdown.className : 'N/A');
             
             if (searchTerm.length === 0) {
-                machineDropdown.classList.add('hidden');
+                if (machineDropdown) {
+                    machineDropdown.classList.add('hidden');
+                    machineDropdown.style.display = 'none';
+                }
                 return;
             }
             
             // Check if machines data is available
             if (!machines || machines.length === 0) {
                 console.warn('Machines data is not available');
-                machineDropdown.innerHTML = '<div class="px-4 py-2 text-sm text-gray-500">Data mesin tidak tersedia</div>';
-                machineDropdown.classList.remove('hidden');
+                if (machineDropdown) {
+                    machineDropdown.innerHTML = '<div class="px-4 py-2 text-sm text-gray-500">Data mesin tidak tersedia</div>';
+                    machineDropdown.classList.remove('hidden');
+                    machineDropdown.style.display = 'block';
+                    console.log('Showing "no data" message');
+                }
                 return;
             }
             
@@ -634,61 +683,99 @@ document.addEventListener('DOMContentLoaded', function() {
                 (m.brandMachine && m.brandMachine.toLowerCase().includes(searchTerm))
             );
             
+            console.log('Filtered machines count:', filtered.length);
+            
             if (filtered.length === 0) {
-                machineDropdown.innerHTML = '<div class="px-4 py-2 text-sm text-gray-500">Tidak ada mesin ditemukan</div>';
-                machineDropdown.classList.remove('hidden');
-                console.log('No machines found for search term:', searchTerm);
+                if (machineDropdown) {
+                    machineDropdown.innerHTML = '<div class="px-4 py-2 text-sm text-gray-500">Tidak ada mesin ditemukan</div>';
+                    machineDropdown.classList.remove('hidden');
+                    machineDropdown.style.display = 'block';
+                    console.log('Showing "no results" message, dropdown visible:', !machineDropdown.classList.contains('hidden'));
+                }
                 return;
             }
             
-            console.log('Filtered machines:', filtered.length);
-            machineDropdown.innerHTML = filtered.slice(0, 8).map(m => {
-                return `
-                    <div class="px-4 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors active:bg-blue-100" 
-                         data-machine-id="${String(m.id)}"
-                         data-machine-idmachine="${(m.idMachine || '').replace(/"/g, '&quot;')}"
-                         data-machine-type="${(m.typeMachine || '').replace(/"/g, '&quot;')}"
-                         data-machine-model="${(m.modelMachine || '').replace(/"/g, '&quot;')}"
-                         data-machine-brand="${(m.brandMachine || '').replace(/"/g, '&quot;')}"
-                         data-machine-plant="${(m.plant || '').replace(/"/g, '&quot;')}"
-                         data-machine-process="${(m.process || '').replace(/"/g, '&quot;')}"
-                         data-machine-line="${(m.line || '').replace(/"/g, '&quot;')}"
-                         data-machine-room="${(m.roomName || '').replace(/"/g, '&quot;')}"
-                         data-machine-kode-room="${(m.kodeRoom || '').replace(/"/g, '&quot;')}"
-                         style="user-select: none; -webkit-user-select: none;">
-                        <div class="font-semibold text-gray-900">${m.idMachine || ''}</div>
-                        <div class="text-xs text-gray-600">${m.typeMachine || ''} - ${m.brandMachine || ''} ${m.modelMachine || ''}</div>
-                        <div class="text-xs text-gray-500">${m.plant || ''} / ${m.process || ''} / ${m.line || ''} / ${m.roomName || ''}</div>
-                    </div>
-                `;
-            }).join('');
-            
-            // Add click event listeners
-            machineDropdown.querySelectorAll('[data-machine-id]').forEach(item => {
-                item.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const machineId = this.getAttribute('data-machine-id');
-                    const machineIdMachine = this.getAttribute('data-machine-idmachine');
-                    const machineType = this.getAttribute('data-machine-type');
-                    const machineModel = this.getAttribute('data-machine-model');
-                    const machineBrand = this.getAttribute('data-machine-brand');
-                    const machinePlant = this.getAttribute('data-machine-plant');
-                    const machineProcess = this.getAttribute('data-machine-process');
-                    const machineLine = this.getAttribute('data-machine-line');
-                    const machineRoom = this.getAttribute('data-machine-room');
-                    const machineKodeRoom = this.getAttribute('data-machine-kode-room');
-                    // Get system_ids from the machine data
-                    const selectedMachineData = machines.find(m => String(m.id) === machineId || m.idMachine === machineIdMachine);
-                    const systemIds = selectedMachineData ? (selectedMachineData.system_ids || []) : [];
-                    selectMachine(machineId, machineIdMachine, machineType, machineModel, machineBrand, machinePlant, machineProcess, machineLine, machineRoom, machineKodeRoom, systemIds);
+            if (machineDropdown) {
+                machineDropdown.innerHTML = filtered.slice(0, 8).map(m => {
+                    // Format: Type - Brand Model (seperti di gambar: "Compressor - HANSHIN GRH2-100A")
+                    const typeBrandModel = [];
+                    if (m.typeMachine) typeBrandModel.push(m.typeMachine);
+                    if (m.brandMachine || m.modelMachine) {
+                        const brandModel = [m.brandMachine, m.modelMachine].filter(Boolean).join(' ');
+                        if (brandModel) typeBrandModel.push(brandModel);
+                    }
+                    const typeBrandModelStr = typeBrandModel.length > 0 ? typeBrandModel.join(' - ') : '-';
+                    
+                    // Format: Plant / Process / Line / Room Name (seperti di gambar: "Plant C / Utilities / Area Utility PC / Panel PJ112 (Utility Panel)")
+                    const location = [
+                        m.plant || '',
+                        m.process || '',
+                        m.line || '',
+                        m.roomName || ''
+                    ].filter(Boolean).join(' / ') || '-';
+                    
+                    return `
+                        <div class="px-4 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors active:bg-blue-100" 
+                             data-machine-id="${String(m.id)}"
+                             data-machine-idmachine="${(m.idMachine || '').replace(/"/g, '&quot;')}"
+                             data-machine-type="${(m.typeMachine || '').replace(/"/g, '&quot;')}"
+                             data-machine-model="${(m.modelMachine || '').replace(/"/g, '&quot;')}"
+                             data-machine-brand="${(m.brandMachine || '').replace(/"/g, '&quot;')}"
+                             data-machine-plant="${(m.plant || '').replace(/"/g, '&quot;')}"
+                             data-machine-process="${(m.process || '').replace(/"/g, '&quot;')}"
+                             data-machine-line="${(m.line || '').replace(/"/g, '&quot;')}"
+                             data-machine-room="${(m.roomName || '').replace(/"/g, '&quot;')}"
+                             data-machine-kode-room="${(m.kodeRoom || '').replace(/"/g, '&quot;')}"
+                             style="user-select: none; -webkit-user-select: none;">
+                            <div class="font-semibold text-gray-900 text-sm mb-1">${m.idMachine || ''}</div>
+                            <div class="text-xs text-gray-600 mb-1">${typeBrandModelStr}</div>
+                            <div class="text-xs text-gray-500">${location}</div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Add click event listeners
+                machineDropdown.querySelectorAll('[data-machine-id]').forEach(item => {
+                    item.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const machineId = this.getAttribute('data-machine-id');
+                        const machineIdMachine = this.getAttribute('data-machine-idmachine');
+                        const machineType = this.getAttribute('data-machine-type');
+                        const machineModel = this.getAttribute('data-machine-model');
+                        const machineBrand = this.getAttribute('data-machine-brand');
+                        const machinePlant = this.getAttribute('data-machine-plant');
+                        const machineProcess = this.getAttribute('data-machine-process');
+                        const machineLine = this.getAttribute('data-machine-line');
+                        const machineRoom = this.getAttribute('data-machine-room');
+                        const machineKodeRoom = this.getAttribute('data-machine-kode-room');
+                        // Get system_ids from the machine data
+                        const selectedMachineData = machines.find(m => String(m.id) === machineId || m.idMachine === machineIdMachine);
+                        const systemIds = selectedMachineData ? (selectedMachineData.system_ids || []) : [];
+                        selectMachine(machineId, machineIdMachine, machineType, machineModel, machineBrand, machinePlant, machineProcess, machineLine, machineRoom, machineKodeRoom, systemIds);
+                    });
                 });
-            });
-            
-            machineDropdown.classList.remove('hidden');
-            console.log('Dropdown shown with', filtered.slice(0, 8).length, 'items');
-            console.log('Dropdown classes:', machineDropdown.className);
-            console.log('Dropdown style:', machineDropdown.style.cssText);
+                
+                // Show dropdown - force remove hidden class and set display
+                machineDropdown.classList.remove('hidden');
+                machineDropdown.style.display = 'block';
+                machineDropdown.style.visibility = 'visible';
+                machineDropdown.style.opacity = '1';
+                console.log('Dropdown shown with', filtered.slice(0, 8).length, 'items');
+                console.log('Dropdown classes after:', machineDropdown.className);
+                console.log('Dropdown style display:', machineDropdown.style.display);
+                console.log('Dropdown offsetHeight:', machineDropdown.offsetHeight);
+                console.log('Dropdown computed style:', window.getComputedStyle(machineDropdown).display);
+            }
+        });
+        
+        // Prevent closing when focusing on input
+        machineSearch.addEventListener('focus', function(e) {
+            e.stopPropagation();
+            // If there's a value, show suggestions
+            if (this.value.trim().length > 0) {
+                machineSearch.dispatchEvent(new Event('input'));
+            }
         });
         console.log('Event listener attached successfully');
     } else {
@@ -703,6 +790,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // Select machine function
     window.selectMachine = function(id, idMachine, type, model, brand, plantVal, processVal, lineVal, roomVal, kodeRoomVal, systemIds = []) {
         if (!machineIdInput || !machineSearch || !selectedMachineInfo || !selectedMachine) return;
+        
+        // Set machine_erp_id for mutasi
+        const machineErpIdInput = document.getElementById('machine_erp_id');
+        if (machineErpIdInput) {
+            machineErpIdInput.value = id;
+        }
+        
+        // Enable mutasi button - MUST be done properly
+        const btnMutasi = document.getElementById('btn_mutasi');
+        if (btnMutasi) {
+            btnMutasi.disabled = false;
+            btnMutasi.removeAttribute('disabled');
+            btnMutasi.style.cursor = 'pointer';
+            btnMutasi.style.backgroundColor = '#EA580C';
+            btnMutasi.style.opacity = '1';
+            btnMutasi.style.pointerEvents = 'auto';
+            btnMutasi.title = 'Mutasi Lokasi Mesin';
+            btnMutasi.classList.remove('bg-gray-400');
+            btnMutasi.classList.add('bg-orange-600', 'hover:bg-orange-700');
+            console.log('Mutasi button enabled for machine:', idMachine);
+        }
         
         machineIdInput.value = idMachine || '';
         machineSearch.value = idMachine || '';
@@ -736,6 +844,36 @@ document.addEventListener('DOMContentLoaded', function() {
         const kodeRoomInput = document.getElementById('kode_room');
         if (kodeRoomInput) {
             kodeRoomInput.value = kodeRoomVal || '';
+        }
+        
+        // Store machine system IDs for filtering
+        machineSystemIds = systemIds || [];
+        
+        // Display systems list in Machine Information section
+        const machineSystemsContainer = document.getElementById('machine_systems_container');
+        const machineSystemsList = document.getElementById('machine_systems_list');
+        
+        if (machineSystemsContainer && machineSystemsList) {
+            if (systemIds && systemIds.length > 0) {
+                // Filter systems based on machine's system_ids
+                const filteredSystems = systems.filter(s => 
+                    systemIds.includes(String(s.id))
+                );
+                
+                if (filteredSystems.length > 0) {
+                    // Display systems as badges
+                    machineSystemsList.innerHTML = filteredSystems.map(system => 
+                        `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-2 mb-2">${system.nama_sistem || ''}</span>`
+                    ).join('');
+                    machineSystemsContainer.classList.remove('hidden');
+                } else {
+                    machineSystemsList.innerHTML = '<p class="text-sm text-gray-500">Tidak ada system yang tersedia untuk mesin ini</p>';
+                    machineSystemsContainer.classList.remove('hidden');
+                }
+            } else {
+                machineSystemsList.innerHTML = '<p class="text-sm text-gray-500">Machine ini tidak memiliki system</p>';
+                machineSystemsContainer.classList.remove('hidden');
+            }
         }
         
         // Filter and populate system dropdown based on selected machine's system_ids
@@ -800,9 +938,39 @@ document.addEventListener('DOMContentLoaded', function() {
     // Clear machine
     if (clearMachine) {
         clearMachine.addEventListener('click', function() {
+            // Clear machine system IDs
+            machineSystemIds = [];
+            
+            // Hide machine systems container
+            const machineSystemsContainerEl = document.getElementById('machine_systems_container');
+            if (machineSystemsContainerEl) {
+                machineSystemsContainerEl.classList.add('hidden');
+                const machineSystemsListEl = document.getElementById('machine_systems_list');
+                if (machineSystemsListEl) {
+                    machineSystemsListEl.innerHTML = '<p class="text-sm text-gray-500">Pilih ID Machine terlebih dahulu</p>';
+                }
+            }
             if (machineIdInput) machineIdInput.value = '';
             if (machineSearch) machineSearch.value = '';
             if (selectedMachine) selectedMachine.classList.add('hidden');
+            
+            // Clear machine_erp_id and disable mutasi button
+            const machineErpIdInput = document.getElementById('machine_erp_id');
+            if (machineErpIdInput) {
+                machineErpIdInput.value = '';
+            }
+            const btnMutasi = document.getElementById('btn_mutasi');
+            if (btnMutasi) {
+                btnMutasi.disabled = true;
+                btnMutasi.setAttribute('disabled', 'disabled');
+                btnMutasi.style.cursor = 'not-allowed';
+                btnMutasi.style.backgroundColor = '#9CA3AF';
+                btnMutasi.style.opacity = '0.6';
+                btnMutasi.style.pointerEvents = 'none';
+                btnMutasi.title = 'Mutasi Lokasi Mesin (Pilih mesin terlebih dahulu)';
+                btnMutasi.classList.remove('bg-orange-600', 'hover:bg-orange-700');
+                btnMutasi.classList.add('bg-gray-400');
+            }
             
             // Clear machine details
             const typeMachine = document.getElementById('typeMachine');
@@ -820,6 +988,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (process) process.value = '';
             if (line) line.value = '';
             if (roomName) roomName.value = '';
+            
+            // Reset system dropdown
+            const systemSelect = document.getElementById('system_select');
+            if (systemSelect) {
+                systemSelect.innerHTML = '<option value="">-- Pilih Machine terlebih dahulu --</option>';
+                systemSelect.disabled = true;
+                systemSelect.classList.add('bg-gray-100');
+            }
         });
     }
     
@@ -827,8 +1003,22 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(e) {
         if (machineSearch && machineDropdown) {
             const isClickInside = machineSearch.contains(e.target) || machineDropdown.contains(e.target);
-            if (!isClickInside) {
-                machineDropdown.classList.add('hidden');
+            const isScanButton = e.target.closest('#scan_barcode_btn');
+            const isMachineDropdownItem = e.target.closest('[data-machine-id]');
+            
+            // Don't close if clicking on dropdown items
+            if (isMachineDropdownItem) {
+                return;
+            }
+            
+            if (!isClickInside && !isScanButton) {
+                // Add small delay to ensure dropdown click events are processed first
+                setTimeout(() => {
+                    if (machineDropdown && !machineDropdown.contains(document.activeElement)) {
+                        machineDropdown.classList.add('hidden');
+                        machineDropdown.style.display = 'none';
+                    }
+                }, 300);
             }
         }
     });
@@ -1237,6 +1427,7 @@ if (partSelect) {
 const problemSearchInput = document.getElementById('problem_search');
 const actionSuggestionsDiv = document.getElementById('action_suggestions');
 let currentSystemId = null; // Store current selected system ID
+let machineSystemIds = []; // Store system IDs from selected machine
 let isFiltering = false; // Flag to prevent normal filtering when search is active
 let selectedActionIndex = -1; // For keyboard navigation
 
@@ -1278,22 +1469,37 @@ function filterProblemReasonAction(searchText) {
     
     isFiltering = true;
     
-    // Find matching problems (by name or problem_header)
-    const matchingProblems = problems.filter(p => {
+    // Find matching problems (by name or problem_header), filtered by machine system IDs
+    let matchingProblems = problems.filter(p => {
         const nameMatch = (p.name || '').toLowerCase().includes(searchLower);
         const headerMatch = (p.problem_header || '').toLowerCase().includes(searchLower);
         return nameMatch || headerMatch;
     });
+    
+    // Filter problems by machine system IDs if machine is selected
+    if (machineSystemIds && machineSystemIds.length > 0) {
+        matchingProblems = matchingProblems.filter(p => {
+            return p.system_ids && p.system_ids.some(sid => machineSystemIds.includes(sid));
+        });
+    }
     
     // Find matching reasons (by name)
     const matchingReasons = reasons.filter(r => {
         return (r.name || '').toLowerCase().includes(searchLower);
     });
     
-    // Find matching actions (by name)
-    const matchingActions = actions.filter(a => {
+    // Find matching actions (by name), filtered by machine system IDs
+    let matchingActions = actions.filter(a => {
         return (a.name || '').toLowerCase().includes(searchLower);
     });
+    
+    // Filter actions by machine system IDs if machine is selected
+    if (machineSystemIds && machineSystemIds.length > 0) {
+        matchingActions = matchingActions.filter(a => {
+            // Check if action's system_id is in machine's system_ids
+            return a.system_id && machineSystemIds.includes(String(a.system_id));
+        });
+    }
     
     // Determine what to show based on matches
     let problemsToShow = [];
@@ -1301,10 +1507,16 @@ function filterProblemReasonAction(searchText) {
     let actionsToShow = [];
     
     if (matchingActions.length > 0) {
-        // If actions match, show problems (filtered by system if system selected) and reasons that match the actions
-        problemsToShow = currentSystemId 
-            ? problems.filter(p => p.system_ids && p.system_ids.includes(currentSystemId))
-            : problems;
+        // If actions match, show problems (filtered by machine system IDs or selected system) and reasons that match the actions
+        if (machineSystemIds && machineSystemIds.length > 0) {
+            problemsToShow = problems.filter(p => {
+                return p.system_ids && p.system_ids.some(sid => machineSystemIds.includes(sid));
+            });
+        } else if (currentSystemId) {
+            problemsToShow = problems.filter(p => p.system_ids && p.system_ids.includes(currentSystemId));
+        } else {
+            problemsToShow = problems;
+        }
         
         // Filter reasons: show reasons that are related to matching actions' problem_id
         const actionProblemIds = matchingActions.map(a => a.problem_id).filter(id => id);
@@ -1316,25 +1528,27 @@ function filterProblemReasonAction(searchText) {
         });
         actionsToShow = matchingActions;
     } else if (matchingReasons.length > 0) {
-        // If reasons match, show problems (filtered by system if system selected) that match the reasons
-        problemsToShow = currentSystemId 
-            ? problems.filter(p => {
+        // If reasons match, show problems (filtered by machine system IDs or selected system) that match the reasons
+        if (machineSystemIds && machineSystemIds.length > 0) {
+            problemsToShow = problems.filter(p => {
+                const matchesSystem = p.system_ids && p.system_ids.some(sid => machineSystemIds.includes(sid));
+                const matchesReason = matchingReasons.some(r => r.problem_id === p.id);
+                return matchesSystem && matchesReason;
+            });
+        } else if (currentSystemId) {
+            problemsToShow = problems.filter(p => {
                 const matchesSystem = p.system_ids && p.system_ids.includes(currentSystemId);
                 const matchesReason = matchingReasons.some(r => r.problem_id === p.id);
                 return matchesSystem && matchesReason;
-            })
-            : problems.filter(p => matchingReasons.some(r => r.problem_id === p.id));
+            });
+        } else {
+            problemsToShow = problems.filter(p => matchingReasons.some(r => r.problem_id === p.id));
+        }
         reasonsToShow = matchingReasons;
         actionsToShow = []; // Clear actions
     } else if (matchingProblems.length > 0) {
-        // Only problems match
-        problemsToShow = matchingProblems.filter(p => {
-            // Still respect system filter if system is selected
-            if (currentSystemId) {
-                return p.system_ids && p.system_ids.includes(currentSystemId);
-            }
-            return true;
-        });
+        // Only problems match, already filtered by machine system IDs above
+        problemsToShow = matchingProblems;
         reasonsToShow = []; // Clear reasons
         actionsToShow = []; // Clear actions
     } else {
@@ -1424,7 +1638,7 @@ function showActionSuggestions(searchText) {
     }
     
     const searchLower = searchText.toLowerCase().trim();
-    const matchingActions = actions.filter(a => {
+    let matchingActions = actions.filter(a => {
         const nameMatch = (a.name || '').toLowerCase().includes(searchLower);
         const systemMatch = (a.system_name || '').toLowerCase().includes(searchLower);
         const problemMatch = (a.problem_name || '').toLowerCase().includes(searchLower) || 
@@ -1432,6 +1646,14 @@ function showActionSuggestions(searchText) {
         const reasonMatch = (a.reason_name || '').toLowerCase().includes(searchLower);
         return nameMatch || systemMatch || problemMatch || reasonMatch;
     });
+    
+    // Filter by machine system IDs if machine is selected
+    if (machineSystemIds && machineSystemIds.length > 0) {
+        matchingActions = matchingActions.filter(a => {
+            // Check if action's system_id is in machine's system_ids
+            return a.system_id && machineSystemIds.includes(String(a.system_id));
+        });
+    }
     
     if (matchingActions.length === 0) {
         actionSuggestionsDiv.classList.add('hidden');
@@ -1641,6 +1863,528 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }, 100);
         }
+    }
+});
+</script>
+
+<!-- Mutasi Modal -->
+<div id="mutasi_modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Mutasi Lokasi Mesin</h3>
+                <button type="button" id="close_mutasi_modal" class="text-gray-400 hover:text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <form id="mutasi_form">
+                @csrf
+                <input type="hidden" id="mutasi_machine_erp_id" name="machine_erp_id">
+                <input type="hidden" id="mutasi_date" name="date">
+                
+                <!-- Machine Info -->
+                <div class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-2">Informasi Mesin</h4>
+                    <div class="text-sm text-gray-600">
+                        <p><strong>ID Machine:</strong> <span id="mutasi_id_machine">-</span></p>
+                        <p><strong>Lokasi Saat Ini:</strong> <span id="mutasi_current_location">-</span></p>
+                    </div>
+                </div>
+                
+                <!-- New Location -->
+                <div class="mb-4">
+                    <label for="mutasi_new_room" class="block text-sm font-semibold text-gray-700 mb-2">
+                        Lokasi Baru <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative" style="position: relative;">
+                        <input type="text" 
+                               id="mutasi_kode_room_search" 
+                               class="w-full border border-gray-300 rounded-lg px-4 py-2 pr-32 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" 
+                               placeholder="Ketik Kode Room atau Nama Room..."
+                               autocomplete="off">
+                        <div class="absolute right-0 top-0 bottom-0 flex items-center pr-2">
+                            <button type="button" 
+                                    id="mutasi_scan_kode_room" 
+                                    class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow transition flex items-center gap-2 text-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                                </svg>
+                                Scan
+                            </button>
+                        </div>
+                        <div id="mutasi_room_dropdown" class="hidden absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg" style="top: 100%; left: 0; max-height: 12rem; overflow-y: auto;"></div>
+                    </div>
+                    <input type="hidden" id="mutasi_new_room_erp_id" name="new_room_erp_id">
+                    <div id="mutasi_selected_room" class="hidden mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="text-sm font-semibold text-gray-900">Room Terpilih:</div>
+                                <div id="mutasi_selected_room_info" class="text-sm text-gray-700"></div>
+                            </div>
+                            <button type="button" id="mutasi_clear_room" class="text-red-600 hover:text-red-800 text-sm">Hapus</button>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Ketik kode room atau nama room untuk melihat suggestion, atau scan barcode/QR code</p>
+                </div>
+                
+                <!-- Reason -->
+                <div class="mb-4">
+                    <label for="mutasi_reason" class="block text-sm font-semibold text-gray-700 mb-2">
+                        Alasan Mutasi
+                    </label>
+                    <input type="text" 
+                           id="mutasi_reason" 
+                           name="reason" 
+                           class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" 
+                           placeholder="Contoh: Mesin dipindahkan ke area produksi baru">
+                </div>
+                
+                <!-- Description -->
+                <div class="mb-4">
+                    <label for="mutasi_description" class="block text-sm font-semibold text-gray-700 mb-2">
+                        Deskripsi
+                    </label>
+                    <textarea id="mutasi_description" 
+                              name="description" 
+                              rows="3" 
+                              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" 
+                              placeholder="Tambahkan catatan tambahan jika diperlukan"></textarea>
+                </div>
+                
+                <!-- Error Message -->
+                <div id="mutasi_error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p class="text-sm text-red-700"></p>
+                </div>
+                
+                <!-- Success Message -->
+                <div id="mutasi_success" class="hidden mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p class="text-sm text-green-700"></p>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex items-center justify-end gap-3 mt-6">
+                    <button type="button" 
+                            id="mutasi_cancel" 
+                            class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg shadow transition">
+                        Batal
+                    </button>
+                    <button type="submit" 
+                            id="mutasi_submit" 
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow transition flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Simpan Mutasi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Mutasi Modal JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    const btnMutasi = document.getElementById('btn_mutasi');
+    const mutasiModal = document.getElementById('mutasi_modal');
+    const closeMutasiModal = document.getElementById('close_mutasi_modal');
+    const mutasiCancel = document.getElementById('mutasi_cancel');
+    const mutasiForm = document.getElementById('mutasi_form');
+    const mutasiKodeRoomSearch = document.getElementById('mutasi_kode_room_search');
+    const mutasiRoomDropdown = document.getElementById('mutasi_room_dropdown');
+    const mutasiSelectedRoom = document.getElementById('mutasi_selected_room');
+    const mutasiSelectedRoomInfo = document.getElementById('mutasi_selected_room_info');
+    const mutasiClearRoom = document.getElementById('mutasi_clear_room');
+    const mutasiNewRoomErpId = document.getElementById('mutasi_new_room_erp_id');
+    const mutasiError = document.getElementById('mutasi_error');
+    const mutasiSuccess = document.getElementById('mutasi_success');
+    
+    // Rooms data - load from view first, then via AJAX if needed
+    let roomsData = @json($rooms ?? []);
+    console.log('Rooms data initialized from view:', roomsData ? roomsData.length : 0, 'rooms');
+    
+    // Open mutasi modal - use event delegation to handle dynamically enabled/disabled buttons
+    document.addEventListener('click', function(e) {
+        const target = e.target;
+        const btnMutasi = target.closest('#btn_mutasi');
+        
+        if (btnMutasi) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Check if button is disabled
+            if (btnMutasi.disabled || btnMutasi.hasAttribute('disabled')) {
+                alert('Pilih mesin terlebih dahulu');
+                return false;
+            }
+            
+            const machineErpId = document.getElementById('machine_erp_id')?.value;
+            const idMachine = document.getElementById('idMachine')?.value;
+            const plant = document.getElementById('plant')?.value;
+            const process = document.getElementById('process')?.value;
+            const line = document.getElementById('line')?.value;
+            const roomName = document.getElementById('roomName')?.value;
+            const date = document.getElementById('date')?.value;
+            
+            if (!machineErpId || !idMachine) {
+                alert('Pilih mesin terlebih dahulu');
+                return false;
+            }
+            
+            console.log('Opening mutasi modal for machine:', idMachine);
+            
+            // Set form values
+            const mutasiMachineErpId = document.getElementById('mutasi_machine_erp_id');
+            const mutasiDate = document.getElementById('mutasi_date');
+            const mutasiIdMachine = document.getElementById('mutasi_id_machine');
+            const mutasiCurrentLocation = document.getElementById('mutasi_current_location');
+            
+            if (mutasiMachineErpId) mutasiMachineErpId.value = machineErpId;
+            if (mutasiDate) mutasiDate.value = date || new Date().toISOString().split('T')[0];
+            if (mutasiIdMachine) mutasiIdMachine.textContent = idMachine;
+            if (mutasiCurrentLocation) mutasiCurrentLocation.textContent = `${plant || ''} / ${process || ''} / ${line || ''} / ${roomName || ''}`;
+            
+            // Clear form
+            if (mutasiKodeRoomSearch) mutasiKodeRoomSearch.value = '';
+            if (mutasiNewRoomErpId) mutasiNewRoomErpId.value = '';
+            if (mutasiSelectedRoom) mutasiSelectedRoom.classList.add('hidden');
+            const mutasiReason = document.getElementById('mutasi_reason');
+            const mutasiDescription = document.getElementById('mutasi_description');
+            if (mutasiReason) mutasiReason.value = '';
+            if (mutasiDescription) mutasiDescription.value = '';
+            if (mutasiError) mutasiError.classList.add('hidden');
+            if (mutasiSuccess) mutasiSuccess.classList.add('hidden');
+            
+            // Load rooms data
+            loadRoomsData();
+            
+            // Show modal
+            if (mutasiModal) {
+                mutasiModal.classList.remove('hidden');
+                console.log('Mutasi modal opened');
+            }
+            
+            return false;
+        }
+    });
+    
+    // Close mutasi modal
+    function closeMutasiModalFunc() {
+        mutasiModal.classList.add('hidden');
+        mutasiKodeRoomSearch.value = '';
+        mutasiNewRoomErpId.value = '';
+        mutasiSelectedRoom.classList.add('hidden');
+        mutasiRoomDropdown.classList.add('hidden');
+        mutasiError.classList.add('hidden');
+        mutasiSuccess.classList.add('hidden');
+    }
+    
+    if (closeMutasiModal) {
+        closeMutasiModal.addEventListener('click', closeMutasiModalFunc);
+    }
+    
+    if (mutasiCancel) {
+        mutasiCancel.addEventListener('click', closeMutasiModalFunc);
+    }
+    
+    // Load rooms data via AJAX (fallback if not loaded from view)
+    function loadRoomsData() {
+        // Only load via AJAX if rooms data is empty
+        if (roomsData && roomsData.length > 0) {
+            console.log('Rooms data already available from view, skipping AJAX call');
+            return;
+        }
+        
+        console.log('Loading rooms data from route: mutasi.get-rooms');
+        const url = '{{ route("mutasi.get-rooms") }}';
+        console.log('Fetch URL:', url);
+        
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || document.querySelector('input[name="_token"]')?.value || ''
+            },
+            credentials: 'same-origin'
+        })
+            .then(response => {
+                console.log('Response status:', response.status, 'statusText:', response.statusText);
+                if (!response.ok) {
+                    // Try to get error message
+                    return response.text().then(text => {
+                        console.error('Error response text:', text.substring(0, 200));
+                        throw new Error('Network response was not ok: ' + response.status);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Rooms data loaded successfully:', data);
+                if (data && data.rooms && Array.isArray(data.rooms)) {
+                    roomsData = data.rooms;
+                    console.log('Total rooms loaded via AJAX:', roomsData.length);
+                } else if (data && Array.isArray(data)) {
+                    // Handle case where response is directly an array
+                    roomsData = data;
+                    console.log('Total rooms loaded (array format):', roomsData.length);
+                } else {
+                    console.warn('Unexpected data format:', data);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading rooms via AJAX:', error);
+                console.error('Error details:', error.message);
+                // Don't show alert, just log - data might already be available from view
+                if (!roomsData || roomsData.length === 0) {
+                    console.warn('Rooms data not available. User can still enter room manually.');
+                }
+            });
+    }
+    
+    // Try to load rooms data via AJAX if not already loaded from view
+    if (!roomsData || roomsData.length === 0) {
+        console.log('Rooms data empty, attempting to load via AJAX...');
+        loadRoomsData();
+    }
+    
+    // Room search functionality - similar to machine search
+    if (mutasiKodeRoomSearch) {
+        console.log('Room search input element found, attaching event listener');
+        
+        mutasiKodeRoomSearch.addEventListener('input', function(e) {
+            e.stopPropagation();
+            const searchTerm = this.value.toLowerCase().trim();
+            
+            console.log('Room search input triggered, searchTerm:', searchTerm);
+            console.log('Rooms data available:', roomsData ? roomsData.length : 0, 'rooms');
+            
+            if (searchTerm.length === 0) {
+                if (mutasiRoomDropdown) {
+                    mutasiRoomDropdown.style.display = 'none';
+                    mutasiRoomDropdown.classList.add('hidden');
+                }
+                return;
+            }
+            
+            // Check if rooms data is available
+            if (!roomsData || roomsData.length === 0) {
+                console.warn('Rooms data not loaded yet, attempting to load...');
+                if (mutasiRoomDropdown) {
+                    mutasiRoomDropdown.innerHTML = '<div class="px-4 py-2 text-sm text-gray-500">Data room sedang dimuat, silakan tunggu...</div>';
+                    mutasiRoomDropdown.style.display = 'block';
+                    mutasiRoomDropdown.style.visibility = 'visible';
+                    mutasiRoomDropdown.style.opacity = '1';
+                    mutasiRoomDropdown.classList.remove('hidden');
+                }
+                // Try to load rooms data via AJAX
+                loadRoomsData();
+                // Retry after a short delay
+                setTimeout(() => {
+                    if (mutasiKodeRoomSearch && mutasiKodeRoomSearch.value) {
+                        console.log('Retrying search after loading rooms data...');
+                        mutasiKodeRoomSearch.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                }, 800);
+                return;
+            }
+            
+            const filtered = roomsData.filter(r => 
+                (r.kode_room && r.kode_room.toLowerCase().includes(searchTerm)) ||
+                (r.name && r.name.toLowerCase().includes(searchTerm)) ||
+                (r.plant_name && r.plant_name.toLowerCase().includes(searchTerm)) ||
+                (r.process_name && r.process_name.toLowerCase().includes(searchTerm)) ||
+                (r.line_name && r.line_name.toLowerCase().includes(searchTerm))
+            );
+            
+            console.log('Filtered rooms count:', filtered.length);
+            
+            if (filtered.length === 0) {
+                if (mutasiRoomDropdown) {
+                    mutasiRoomDropdown.innerHTML = '<div class="px-4 py-2 text-sm text-gray-500">Tidak ada room ditemukan untuk: "' + searchTerm + '"</div>';
+                    mutasiRoomDropdown.style.display = 'block';
+                    mutasiRoomDropdown.classList.remove('hidden');
+                }
+                return;
+            }
+            
+            if (mutasiRoomDropdown) {
+                const roomsToShow = filtered.slice(0, 8);
+                console.log('Showing', roomsToShow.length, 'rooms in dropdown');
+                
+                mutasiRoomDropdown.innerHTML = roomsToShow.map(r => {
+                    // Format: Kode Room - Nama Room
+                    const roomHeader = [
+                        r.kode_room || '',
+                        r.name || ''
+                    ].filter(Boolean).join(' - ') || '-';
+                    
+                    // Format: Plant / Process / Line / Room Name
+                    const location = [
+                        r.plant_name || '',
+                        r.process_name || '',
+                        r.line_name || '',
+                        r.name || ''
+                    ].filter(Boolean).join(' / ') || '-';
+                    
+                    return `
+                        <div class="px-4 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors active:bg-blue-100" 
+                             data-room-id="${r.id}"
+                             data-room-kode="${(r.kode_room || '').replace(/"/g, '&quot;')}"
+                             data-room-name="${(r.name || '').replace(/"/g, '&quot;')}"
+                             data-room-plant="${(r.plant_name || '').replace(/"/g, '&quot;')}"
+                             data-room-process="${(r.process_name || '').replace(/"/g, '&quot;')}"
+                             data-room-line="${(r.line_name || '').replace(/"/g, '&quot;')}"
+                             style="user-select: none; -webkit-user-select: none;">
+                            <div class="font-semibold text-gray-900 text-sm mb-1">${roomHeader}</div>
+                            <div class="text-xs text-gray-500">${location}</div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Add click event listeners
+                mutasiRoomDropdown.querySelectorAll('[data-room-id]').forEach(item => {
+                    item.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const roomId = this.getAttribute('data-room-id');
+                        const roomKode = this.getAttribute('data-room-kode');
+                        const roomName = this.getAttribute('data-room-name');
+                        const roomPlant = this.getAttribute('data-room-plant');
+                        const roomProcess = this.getAttribute('data-room-process');
+                        const roomLine = this.getAttribute('data-room-line');
+                        
+                        console.log('Room selected:', roomKode, roomName);
+                        
+                        // Set selected room
+                        if (mutasiNewRoomErpId) mutasiNewRoomErpId.value = roomId;
+                        if (mutasiKodeRoomSearch) mutasiKodeRoomSearch.value = roomKode || roomName;
+                        if (mutasiSelectedRoomInfo) {
+                            mutasiSelectedRoomInfo.innerHTML = `
+                                <div class="font-semibold">${roomKode || ''} - ${roomName || ''}</div>
+                                <div class="text-xs text-gray-500">${roomPlant || ''} / ${roomProcess || ''} / ${roomLine || ''} / ${roomName || ''}</div>
+                            `;
+                        }
+                        if (mutasiSelectedRoom) mutasiSelectedRoom.classList.remove('hidden');
+                        if (mutasiRoomDropdown) {
+                            mutasiRoomDropdown.style.display = 'none';
+                            mutasiRoomDropdown.classList.add('hidden');
+                        }
+                        if (mutasiKodeRoomSearch) mutasiKodeRoomSearch.blur();
+                    });
+                });
+                
+                // Show dropdown - force set display and remove hidden class
+                mutasiRoomDropdown.classList.remove('hidden');
+                mutasiRoomDropdown.style.display = 'block';
+                mutasiRoomDropdown.style.visibility = 'visible';
+                mutasiRoomDropdown.style.opacity = '1';
+                mutasiRoomDropdown.style.zIndex = '9999';
+                mutasiRoomDropdown.style.position = 'absolute';
+                mutasiRoomDropdown.style.top = '100%';
+                mutasiRoomDropdown.style.left = '0';
+                mutasiRoomDropdown.style.width = '100%';
+                console.log('Room dropdown displayed, element:', mutasiRoomDropdown, 'offsetHeight:', mutasiRoomDropdown.offsetHeight, 'offsetWidth:', mutasiRoomDropdown.offsetWidth);
+            } else {
+                console.error('mutasiRoomDropdown element not found!');
+            }
+        });
+        
+        // Hide dropdown when clicking outside (but only if modal is open)
+        document.addEventListener('click', function(e) {
+            if (mutasiModal && !mutasiModal.classList.contains('hidden')) {
+                if (mutasiKodeRoomSearch && mutasiRoomDropdown) {
+                    const searchContainer = mutasiKodeRoomSearch.closest('.relative');
+                    const isClickInside = (searchContainer && searchContainer.contains(e.target)) || 
+                                         (mutasiRoomDropdown && mutasiRoomDropdown.contains(e.target));
+                    if (!isClickInside) {
+                        mutasiRoomDropdown.classList.add('hidden');
+                        mutasiRoomDropdown.style.display = 'none';
+                    }
+                }
+            }
+        });
+        
+        // Hide dropdown on blur (but delay to allow click events)
+        if (mutasiKodeRoomSearch) {
+            mutasiKodeRoomSearch.addEventListener('blur', function() {
+                setTimeout(() => {
+                    if (mutasiRoomDropdown && !mutasiRoomDropdown.contains(document.activeElement)) {
+                        mutasiRoomDropdown.classList.add('hidden');
+                        mutasiRoomDropdown.style.display = 'none';
+                    }
+                }, 200);
+            });
+        }
+    }
+    
+    // Clear selected room
+    if (mutasiClearRoom) {
+        mutasiClearRoom.addEventListener('click', function() {
+            mutasiNewRoomErpId.value = '';
+            mutasiKodeRoomSearch.value = '';
+            mutasiSelectedRoom.classList.add('hidden');
+        });
+    }
+    
+    // Submit mutasi form
+    if (mutasiForm) {
+        mutasiForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            mutasiError.classList.add('hidden');
+            mutasiSuccess.classList.add('hidden');
+            
+            const formData = new FormData(mutasiForm);
+            
+            fetch('{{ route("mutasi.store-from-downtime") }}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || formData.get('_token')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    mutasiSuccess.querySelector('p').textContent = data.message || 'Mutasi berhasil disimpan dan lokasi mesin telah diupdate.';
+                    mutasiSuccess.classList.remove('hidden');
+                    
+                    // Update form fields with new location
+                    if (data.machine) {
+                        const plantInput = document.getElementById('plant');
+                        const processInput = document.getElementById('process');
+                        const lineInput = document.getElementById('line');
+                        const roomNameInput = document.getElementById('roomName');
+                        const kodeRoomInput = document.getElementById('kode_room');
+                        
+                        if (plantInput) plantInput.value = data.machine.plant_name || '';
+                        if (processInput) processInput.value = data.machine.process_name || '';
+                        if (lineInput) lineInput.value = data.machine.line_name || '';
+                        if (roomNameInput) roomNameInput.value = data.machine.room_name || '';
+                        if (kodeRoomInput) kodeRoomInput.value = data.machine.kode_room || '';
+                    }
+                    
+                    // Close modal after 2 seconds
+                    setTimeout(() => {
+                        closeMutasiModalFunc();
+                    }, 2000);
+                } else {
+                    mutasiError.querySelector('p').textContent = data.message || 'Terjadi kesalahan saat menyimpan mutasi.';
+                    mutasiError.classList.remove('hidden');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mutasiError.querySelector('p').textContent = 'Terjadi kesalahan saat menyimpan mutasi.';
+                mutasiError.classList.remove('hidden');
+            });
+        });
     }
 });
 </script>
