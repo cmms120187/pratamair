@@ -10,6 +10,7 @@ return [
             'children' => [
                 ['name' => 'Dashboard Normal', 'route' => 'dashboard', 'icon' => 'home', 'menu_key' => 'dashboard'],
                 ['name' => 'Dashboard Large', 'route' => 'dashboard.large', 'icon' => 'tv', 'menu_key' => 'dashboard-large'],
+                ['name' => 'Dashboard Settings', 'route' => 'dashboard-settings.index', 'icon' => 'cog', 'menu_key' => 'dashboard-settings', 'admin_only' => true],
             ]
         ],
         [

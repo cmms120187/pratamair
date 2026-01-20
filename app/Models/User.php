@@ -26,6 +26,7 @@ class User extends Authenticatable
         'atasan_id',
         'photo',
         'photo_id',
+        'dashboard_settings',
     ];
 
     /**
@@ -48,7 +49,35 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'dashboard_settings' => 'array',
         ];
+    }
+    
+    /**
+     * Get dashboard settings with defaults
+     */
+    public function getDashboardSettings()
+    {
+        $defaults = [
+            'data_source' => 'downtime_erp2',
+            'month' => now()->month,
+            'year' => now()->year,
+        ];
+        
+        if ($this->dashboard_settings) {
+            return array_merge($defaults, $this->dashboard_settings);
+        }
+        
+        return $defaults;
+    }
+    
+    /**
+     * Set dashboard settings
+     */
+    public function setDashboardSettings(array $settings)
+    {
+        $this->dashboard_settings = $settings;
+        $this->save();
     }
 
     // Photo relationship

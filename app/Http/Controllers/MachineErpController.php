@@ -159,11 +159,19 @@ class MachineErpController extends Controller
             'group_id' => 'nullable|exists:groups,id',
         ]);
 
-        // Handle photo upload
+        // Handle photo upload - Save to database using Photo model
         if ($request->hasFile('photo')) {
             $photo = $request->file('photo');
-            $photoPath = ImageHelper::convertToWebP($photo, 'machine-erp', 85);
-            $validated['photo'] = $photoPath;
+            $photoModel = ImageHelper::saveToDatabase(
+                $photo,
+                'machine-erp',
+                'machine_erp',
+                null, // Will be set after machineErp is created
+                'Photo for Machine ERP'
+            );
+            if ($photoModel) {
+                $validated['photo_id'] = $photoModel->id;
+            }
         } else {
             unset($validated['photo']); // Remove photo from validated if not uploaded
         }
@@ -220,7 +228,18 @@ class MachineErpController extends Controller
         $validated['machine_type_id'] = $machineTypeId;
         unset($validated['group_id']); // Remove group_id from validated as it's not a column in machine_erp
         
-        MachineErp::create($validated);
+        $machineErp = MachineErp::create($validated);
+        
+        // Update photo related_id after machineErp is created
+        if (isset($validated['photo_id'])) {
+            $photoModel = \App\Models\Photo::find($validated['photo_id']);
+            if ($photoModel) {
+                $photoModel->update([
+                    'related_id' => $machineErp->id
+                ]);
+            }
+        }
+        
         return redirect()->route('machine-erp.index')->with('success', 'Machine ERP created successfully.');
     }
 
@@ -522,15 +541,28 @@ class MachineErpController extends Controller
 
         $machineErp = MachineErp::findOrFail($id);
         
-        // Handle photo upload
+        // Handle photo upload - Save to database using Photo model
         if ($request->hasFile('photo')) {
-            // Delete old photo if exists
-            ImageHelper::deleteOldImage($machineErp->photo);
+            // Delete old photo from database if exists
+            if ($machineErp->photo_id) {
+                ImageHelper::deletePhotoFromDatabase($machineErp->photo_id);
+            } else if ($machineErp->photo) {
+                // Fallback: delete old path-based photo
+                ImageHelper::deleteOldImage($machineErp->photo);
+            }
             
             $photo = $request->file('photo');
-            // Convert to WebP
-            $photoPath = ImageHelper::convertToWebP($photo, 'machine-erp', 85);
-            $validated['photo'] = $photoPath;
+            $photoModel = ImageHelper::saveToDatabase(
+                $photo,
+                'machine-erp',
+                'machine_erp',
+                $machineErp->id,
+                'Photo for Machine ERP'
+            );
+            if ($photoModel) {
+                $validated['photo_id'] = $photoModel->id;
+                $validated['photo'] = null; // Clear legacy path
+            }
         } else {
             unset($validated['photo']); // Keep existing photo if not uploaded
         }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Standard extends Model
 {
@@ -80,12 +81,12 @@ class Standard extends Model
             if ($photo) {
                 return route('photos.show', $photo->id);
             }
-            // Fallback to old path
+            // Fallback to old path - use Storage::url() for proper path
             $photoPath = $firstPhoto->photo_path;
             if (strpos($photoPath, 'images/') === 0) {
                 return asset($photoPath);
             }
-            return asset('public-storage/' . $photoPath);
+            return Storage::disk('public')->url($photoPath);
         }
         
         // Priority 3: photo field (legacy)
@@ -100,7 +101,7 @@ class Standard extends Model
             if (strpos($this->photo, 'images/') === 0) {
                 return asset($this->photo);
             }
-            return asset('public-storage/' . $this->photo);
+            return Storage::disk('public')->url($this->photo);
         }
         
         return null;

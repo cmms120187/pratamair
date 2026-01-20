@@ -1,12 +1,18 @@
-<div class="h-screen flex flex-col" style="height: 100vh; overflow: visible;">
-    <nav class="bg-white border-r p-3 sm:p-4 h-full w-full flex flex-col" style="height: 100%; overflow: visible;">
+<div class="h-screen flex flex-col" style="height: 100vh; overflow: visible;" x-data="{ sidebarCollapsed: $store.sidebarCollapsed || false }">
+    <nav class="bg-white border-r p-3 sm:p-4 h-full w-full flex flex-col transition-all duration-300" 
+         style="height: 100%; overflow: visible;"
+         :class="$store.sidebarCollapsed && window.innerWidth >= 1024 ? 'items-center px-2' : ''">
         <!-- Header Section - Fixed -->
         <div class="flex-shrink-0" style="position: relative; z-index: 10;">
-            <div class="mb-6 sm:mb-8 flex flex-col items-center">
+            <div class="mb-6 sm:mb-8 flex flex-col items-center transition-all duration-300"
+                 :class="$store.sidebarCollapsed && window.innerWidth >= 1024 ? 'mb-4' : ''">
                 <a href="{{ route('dashboard') }}" @click="sidebarOpen = false" class="flex items-center justify-center mb-4">
-                    <img src="{{ asset('images/logo_tpm.png') }}" alt="Logo TPM" class="h-10 sm:h-12 w-auto object-contain">
+                    <img src="{{ asset('images/logo_tpm.png') }}" alt="Logo TPM" 
+                         class="transition-all duration-300"
+                         :class="$store.sidebarCollapsed && window.innerWidth >= 1024 ? 'h-8 w-8' : 'h-10 sm:h-12 w-auto object-contain'">
                 </a>
-                <div class="font-bold text-base sm:text-lg text-gray-700">TPM CMMS</div>
+                <div class="font-bold text-base sm:text-lg text-gray-700 transition-all duration-300 overflow-hidden"
+                     :class="$store.sidebarCollapsed && window.innerWidth >= 1024 ? 'hidden' : ''">TPM CMMS</div>
             </div>
         </div>
         
@@ -34,6 +40,11 @@
                     function filterMenuChildren($children, $userRole) {
                         $filtered = [];
                         foreach ($children as $child) {
+                            // Check if menu is admin only
+                            if (isset($child['admin_only']) && $child['admin_only'] === true && $userRole !== 'admin') {
+                                continue;
+                            }
+                            
                             $menuKey = $child['menu_key'] ?? strtolower(str_replace([' ', '-'], '_', $child['name']));
                             if (canAccessMenu($menuKey, $userRole)) {
                                 $filtered[] = $child;
@@ -172,11 +183,12 @@
                             <a href="{{ $displayMenu['route'] }}"
                                 @click="sidebarOpen = false"
                                 class="flex items-center px-2 sm:px-3 py-2 rounded-lg transition-colors duration-150 hover:bg-blue-100 hover:text-blue-700 text-sm sm:text-base {{ isMenuActive($displayMenu['route'], $displayMenu['name'], $currentUrl) ? 'bg-blue-600 text-white' : 'text-gray-700' }}"
-                                class="flex items-center">
-                                <span class="flex-shrink-0 mr-3">
+                                :class="$store.sidebar.collapsed && window.innerWidth >= 1024 ? 'justify-center px-2' : ''"
+                                :title="$store.sidebar.collapsed && window.innerWidth >= 1024 ? '{{ $displayMenu['name'] }}' : ''">
+                                <span class="flex-shrink-0" :class="$store.sidebar.collapsed && window.innerWidth >= 1024 ? '' : 'mr-3'">
                                     @include('layouts.partials.menu-icon', ['icon' => $displayMenu['icon']])
                                 </span>
-                                <span>{{ $displayMenu['name'] }}</span>
+                                <span :class="$store.sidebar.collapsed && window.innerWidth >= 1024 ? 'hidden' : ''">{{ $displayMenu['name'] }}</span>
                             </a>
                         </li>
                     @else
@@ -189,20 +201,31 @@
                                 }
                             ">
                             <div class="w-full flex items-center justify-between px-2 sm:px-3 py-2 rounded-lg transition-colors duration-150 hover:bg-blue-100 hover:text-blue-700 cursor-pointer text-sm sm:text-base {{ isGroupActive($displayMenu, $currentUrl) ? 'bg-blue-50 text-blue-700' : 'text-gray-700' }} menu-group-toggle"
+                                 :class="$store.sidebar.collapsed && window.innerWidth >= 1024 ? 'justify-center px-2' : ''"
+                                 :title="$store.sidebar.collapsed && window.innerWidth >= 1024 ? '{{ $displayMenu['name'] }}' : ''"
                                  @click.stop="
-                                    // Close other submenus
-                                    $dispatch('close-other-submenus', '{{ $displayMenu['name'] }}');
-                                    // Toggle this submenu
-                                    open = !open;
+                                    if ($store.sidebar.collapsed && window.innerWidth >= 1024) {
+                                        // If collapsed, expand sidebar temporarily to show submenu
+                                        $store.sidebar.collapsed = false;
+                                        setTimeout(() => {
+                                            // Close other submenus
+                                            $dispatch('close-other-submenus', '{{ $displayMenu['name'] }}');
+                                            open = !open;
+                                        }, 100);
+                                    } else {
+                                        // Close other submenus
+                                        $dispatch('close-other-submenus', '{{ $displayMenu['name'] }}');
+                                        open = !open;
+                                    }
                                  ">
-                                <div class="flex items-center flex-1 min-w-0">
-                                    <span class="flex-shrink-0 mr-3">
+                                <div class="flex items-center flex-1 min-w-0" :class="$store.sidebar.collapsed && window.innerWidth >= 1024 ? 'justify-center flex-1' : ''">
+                                    <span class="flex-shrink-0" :class="$store.sidebar.collapsed && window.innerWidth >= 1024 ? '' : 'mr-3'">
                                         @include('layouts.partials.menu-icon', ['icon' => $displayMenu['icon']])
                                     </span>
-                                    <span class="truncate">{{ $displayMenu['name'] }}</span>
+                                    <span class="truncate" :class="$store.sidebar.collapsed && window.innerWidth >= 1024 ? 'hidden' : ''">{{ $displayMenu['name'] }}</span>
                                 </div>
                                 <svg class="w-4 h-4 transition-transform duration-200 flex-shrink-0 menu-arrow" 
-                                     :class="{ 'rotate-180': open }"
+                                     :class="($store.sidebar.collapsed && window.innerWidth >= 1024 ? 'hidden' : '') + ' ' + (open ? 'rotate-180' : '')"
                                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                 </svg>
@@ -223,11 +246,13 @@
                                     <li>
                                         <a href="{{ $child['route'] }}"
                                             @click="sidebarOpen = false; open = false"
-                                            class="flex items-center px-2 sm:px-3 py-2 rounded-lg transition-colors duration-150 hover:bg-blue-100 hover:text-blue-700 text-sm {{ isMenuActive($child['route'], $child['name'], $currentUrl) ? 'bg-blue-600 text-white' : 'text-gray-700' }}">
-                                            <span class="flex-shrink-0 mr-3">
+                                            class="flex items-center px-2 sm:px-3 py-2 rounded-lg transition-colors duration-150 hover:bg-blue-100 hover:text-blue-700 text-sm {{ isMenuActive($child['route'], $child['name'], $currentUrl) ? 'bg-blue-600 text-white' : 'text-gray-700' }}"
+                                            :class="$store.sidebar.collapsed && window.innerWidth >= 1024 ? 'justify-center px-2' : ''"
+                                            :title="$store.sidebar.collapsed && window.innerWidth >= 1024 ? '{{ $child['name'] }}' : ''">
+                                            <span class="flex-shrink-0" :class="$store.sidebar.collapsed && window.innerWidth >= 1024 ? '' : 'mr-3'">
                                                 @include('layouts.partials.menu-icon', ['icon' => $child['icon']])
                                             </span>
-                                            <span>{{ $child['name'] }}</span>
+                                            <span :class="$store.sidebar.collapsed && window.innerWidth >= 1024 ? 'hidden' : ''">{{ $child['name'] }}</span>
                                         </a>
                                     </li>
                                 @endforeach
@@ -241,11 +266,13 @@
         <!-- Profile Button Section - Fixed at Bottom -->
         <div class="flex-shrink-0 pt-4 border-t border-gray-200 mt-auto" style="position: relative; z-index: 10; background: white;">
             <button @click="$dispatch('open-profile-modal'); sidebarOpen = false" 
-                class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-2.5 px-3 sm:px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02] text-sm sm:text-base flex items-center">
-                <svg class="w-5 h-5 flex-shrink-0 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-2.5 px-3 sm:px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02] text-sm sm:text-base flex items-center"
+                :class="$store.sidebar.collapsed && window.innerWidth >= 1024 ? 'justify-center px-2' : ''"
+                :title="$store.sidebar.collapsed && window.innerWidth >= 1024 ? 'Profile' : ''">
+                <svg class="w-5 h-5 flex-shrink-0" :class="$store.sidebar.collapsed && window.innerWidth >= 1024 ? '' : 'mr-2'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                <div class="flex-1 text-left">
+                <div class="flex-1 text-left" :class="$store.sidebar.collapsed && window.innerWidth >= 1024 ? 'hidden' : ''">
                     <div>Profile</div>
                     @if(Auth::user()->nik)
                         <div class="text-xs opacity-90">{{ Auth::user()->nik }}</div>

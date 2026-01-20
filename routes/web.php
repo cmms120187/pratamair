@@ -12,6 +12,12 @@ Route::get('/', function () {
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 Route::get('/dashboard-large', [DashboardController::class, 'large'])->middleware(['auth', 'verified'])->name('dashboard.large');
 
+// Dashboard Settings Routes (Admin only)
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard-settings', [\App\Http\Controllers\DashboardSettingsController::class, 'index'])->name('dashboard-settings.index');
+    Route::post('/dashboard-settings', [\App\Http\Controllers\DashboardSettingsController::class, 'update'])->name('dashboard-settings.update');
+});
+
 // Profile Routes with Middleware
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

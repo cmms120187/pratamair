@@ -29,12 +29,23 @@
                     script.onload = function() {
                         console.log('Alpine.js loaded from CDN');
                         if (typeof Alpine !== 'undefined') {
+                            // Initialize Alpine store for sidebar state
+                            Alpine.store('sidebar', {
+                                collapsed: false
+                            });
                             Alpine.start();
                         }
                     };
                     document.head.appendChild(script);
+                } else {
+                    // Initialize Alpine store if Alpine is already loaded
+                    if (typeof Alpine !== 'undefined' && Alpine.store) {
+                        Alpine.store('sidebar', {
+                            collapsed: false
+                        });
+                    }
                 }
-            }, 1000);
+            }, 100);
         </script>
         <!-- ZXing Library for Barcode Scanning -->
         <script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest"></script>
@@ -81,7 +92,9 @@
             }
         </style>
     </head>
-    <body class="font-sans antialiased" x-data="{ profileModalOpen: false, sidebarOpen: false }" @open-profile-modal.window="profileModalOpen = true">
+    <body class="font-sans antialiased" x-data="{ profileModalOpen: false, sidebarOpen: false }" 
+          x-init="$store.sidebar = { collapsed: false }"
+          @open-profile-modal.window="profileModalOpen = true">
     <div class="min-h-screen bg-gray-100 flex">
         <!-- Mobile Sidebar Overlay -->
         <div x-show="sidebarOpen" 
@@ -97,14 +110,26 @@
         <!-- Sidebar -->
         <aside class="fixed inset-y-0 left-0 z-50 transform transition-all duration-300 ease-in-out lg:translate-x-0"
                :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-               style="width: 230px; min-width: 200px; overflow: visible;">
+               :style="$store.sidebar.collapsed && window.innerWidth >= 1024 ? 'width: 70px; min-width: 70px;' : 'width: 230px; min-width: 200px;'"
+               style="overflow: visible;">
             <div class="h-screen bg-white border-r transition-all duration-300" style="overflow: visible;">
                 @include('layouts.navigation')
             </div>
         </aside>
         
+        <!-- Sidebar Toggle Button (Desktop) -->
+        <button @click="$store.sidebar.collapsed = !$store.sidebar.collapsed" 
+                class="hidden lg:flex fixed top-4 z-50 bg-white hover:bg-gray-100 text-gray-600 hover:text-gray-900 p-2 rounded-lg shadow-lg transition-all duration-300 items-center justify-center"
+                :style="$store.sidebar.collapsed ? 'left: 4px;' : 'left: 230px;'"
+                title="Toggle Sidebar">
+            <svg class="w-5 h-5 transition-transform duration-300" :class="$store.sidebar.collapsed ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
+            </svg>
+        </button>
+        
         <!-- Main Content -->
-        <div class="flex-1 w-full overflow-x-hidden main-content-wrapper transition-all duration-300 lg:ml-[230px]">
+        <div class="flex-1 w-full overflow-x-hidden main-content-wrapper transition-all duration-300"
+             :class="$store.sidebar.collapsed && window.innerWidth >= 1024 ? 'lg:ml-[70px]' : 'lg:ml-[230px]'">
             <!-- Mobile Header -->
             <header class="lg:hidden bg-white shadow sticky top-0 z-30">
                 <div class="flex items-center justify-between px-4 py-3">

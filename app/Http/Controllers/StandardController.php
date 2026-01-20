@@ -63,9 +63,20 @@ class StandardController extends Controller
             'variants.*.order' => 'required|integer|min:1',
         ]);
 
-        // Handle photo upload (legacy single photo)
+        // Handle photo upload - Save to database using Photo model
+        $photoId = null;
         if ($request->hasFile('photo')) {
-            $validated['photo'] = $request->file('photo')->store('standards', 'public');
+            $photo = $request->file('photo');
+            $photoModel = \App\Helpers\ImageHelper::saveToDatabase(
+                $photo,
+                'standards',
+                'standard',
+                null, // Will be set after standard is created
+                'Photo for Standard'
+            );
+            if ($photoModel) {
+                $photoId = $photoModel->id;
+            }
         }
 
         $machineTypeIds = $validated['machine_type_ids'] ?? [];
@@ -73,41 +84,33 @@ class StandardController extends Controller
 
         $standardPhotoIds = $validated['standard_photo_ids'] ?? [];
         unset($validated['standard_photo_ids']);
-
+        
+        // Set photo_id if photo was uploaded
+        if ($photoId) {
+            $validated['photo_id'] = $photoId;
+        }
+        
         $standard = Standard::create($validated);
+        
+        // Update photo related_id after standard is created
+        if ($photoId) {
+            $photoModel = \App\Models\Photo::find($photoId);
+            if ($photoModel) {
+                $photoModel->update([
+                    'related_id' => $standard->id
+                ]);
+            }
+        }
         
         // Attach machine types
         if (!empty($machineTypeIds)) {
             $standard->machineTypes()->attach($machineTypeIds);
         }
 
-        // Handle new photo upload (multiple photos)
-        $newPhotoId = null;
-        if ($request->hasFile('photo') && $request->filled('photo_name')) {
-            $newPhoto = StandardPhoto::create([
-                'standard_id' => null, // Photo tidak langsung terikat ke standard, akan di-attach via pivot
-                'photo_path' => $validated['photo'],
-                'name' => $request->photo_name,
-            ]);
-            $newPhotoId = $newPhoto->id;
-        } elseif ($request->hasFile('photo')) {
-            // If no name provided, use the file name
-            $newPhoto = StandardPhoto::create([
-                'standard_id' => null,
-                'photo_path' => $validated['photo'],
-                'name' => $request->file('photo')->getClientOriginalName(),
-            ]);
-            $newPhotoId = $newPhoto->id;
-        }
-
-        // Attach selected existing photos (many-to-many, tidak akan menghapus dari standard lain)
+        // Handle selected existing photos from standard_photos (legacy many-to-many)
+        // Note: This is for backward compatibility with StandardPhoto system
         if (!empty($standardPhotoIds)) {
             $standard->photos()->syncWithoutDetaching($standardPhotoIds);
-        }
-        
-        // Attach new photo if uploaded
-        if ($newPhotoId) {
-            $standard->photos()->syncWithoutDetaching([$newPhotoId]);
         }
 
         // Handle variants (for new standard, all variants are new)
@@ -182,13 +185,29 @@ class StandardController extends Controller
 
         $standard = Standard::with('photos')->findOrFail($id);
         
-        // Handle photo upload (legacy single photo)
+        // Handle photo upload - Save to database using Photo model
         if ($request->hasFile('photo')) {
-            // Delete old photo if exists
+            // Delete old photo from database if exists
+            if ($standard->photo_id) {
+                \App\Helpers\ImageHelper::deletePhotoFromDatabase($standard->photo_id);
+            }
+            // Also delete old photo file if exists (legacy)
             if ($standard->photo && Storage::disk('public')->exists($standard->photo)) {
                 Storage::disk('public')->delete($standard->photo);
             }
-            $validated['photo'] = $request->file('photo')->store('standards', 'public');
+            
+            $photo = $request->file('photo');
+            $photoModel = \App\Helpers\ImageHelper::saveToDatabase(
+                $photo,
+                'standards',
+                'standard',
+                $standard->id,
+                'Photo for Standard'
+            );
+            if ($photoModel) {
+                $validated['photo_id'] = $photoModel->id;
+                $validated['photo'] = null; // Clear legacy path
+            }
         }
         
         $machineTypeIds = $validated['machine_type_ids'] ?? [];

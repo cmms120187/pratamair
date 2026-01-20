@@ -30,6 +30,7 @@ use App\Models\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
@@ -412,12 +413,29 @@ class DashboardController extends Controller
      */
     public function large(Request $request)
     {
-        // Reuse the same logic as index method
-        $dataSource = $request->input('data_source', session('dashboard_data_source', 'downtime_erp2'));
+        // Get user's dashboard settings (default to current month/year if not set)
+        $user = Auth::user();
+        $userSettings = $user ? $user->getDashboardSettings() : [
+            'data_source' => 'downtime_erp2',
+            'month' => now()->month,
+            'year' => now()->year,
+        ];
+        
+        // Priority: request > user settings > session > defaults
+        $dataSource = $request->input('data_source', 
+            $userSettings['data_source'] ?? 
+            session('dashboard_data_source', 'downtime_erp2')
+        );
         session(['dashboard_data_source' => $dataSource]);
         
-        $filterMonth = $request->get('month', session('dashboard_filter_month', now()->month));
-        $filterYear = $request->get('year', session('dashboard_filter_year', now()->year));
+        $filterMonth = $request->get('month', 
+            $userSettings['month'] ?? 
+            session('dashboard_filter_month', now()->month)
+        );
+        $filterYear = $request->get('year', 
+            $userSettings['year'] ?? 
+            session('dashboard_filter_year', now()->year)
+        );
         
         $filterMonth = max(1, min(12, (int)$filterMonth));
         $filterYear = max(2000, min(2100, (int)$filterYear));
@@ -563,6 +581,27 @@ class DashboardController extends Controller
         $recentWorkOrders = WorkOrder::orderBy('order_date', 'desc')->orderBy('created_at', 'desc')->limit(5)->get();
         $daysInMonth = \Carbon\Carbon::create($currentYear, $currentMonth, 1)->daysInMonth;
         
+        // Get upcoming maintenance schedules for this month
+        $startDate = \Carbon\Carbon::create($currentYear, $currentMonth, 1)->startOfMonth();
+        $endDate = $startDate->copy()->endOfMonth();
+        $today = now()->toDateString();
+        
+        $upcomingPMSchedules = PMScheduling::where('status', 'active')
+            ->whereBetween('start_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->where('start_date', '>=', $today)
+            ->with(['machineErp', 'assignedUser'])
+            ->orderBy('start_date', 'asc')
+            ->limit(10)
+            ->get();
+        
+        $upcomingPDMSchedules = PDMScheduling::where('status', 'active')
+            ->whereBetween('start_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->where('start_date', '>=', $today)
+            ->with(['machineErp', 'standard', 'assignedUser'])
+            ->orderBy('start_date', 'asc')
+            ->limit(10)
+            ->get();
+        
         return view('dashboard-large', array_merge($stats, [
             'dataSource' => $dataSource, 'currentMonth' => $currentMonth, 'currentYear' => $currentYear,
             'filterMonth' => $filterMonth, 'filterYear' => $filterYear, 'daysInMonth' => $daysInMonth,
@@ -587,7 +626,9 @@ class DashboardController extends Controller
             'totalSystems' => $machineryStats['totalSystems'], 'totalGroups' => $machineryStats['totalGroups'],
             'totalMachineTypes' => $machineryStats['totalMachineTypes'], 'totalBrands' => $machineryStats['totalBrands'],
             'totalModels' => $machineryStats['totalModels'], 'machinesWithBrand' => $machineryStats['machinesWithBrand'],
-            'machinesWithModel' => $machineryStats['machinesWithModel'], 'machinesWithType' => $machineryStats['machinesWithType']
+            'machinesWithModel' => $machineryStats['machinesWithModel'], 'machinesWithType' => $machineryStats['machinesWithType'],
+            'upcomingPMSchedules' => $upcomingPMSchedules,
+            'upcomingPDMSchedules' => $upcomingPDMSchedules
         ]));
     }
     

@@ -112,14 +112,23 @@ class MachineTypeController extends Controller
         if ($request->has('maintenance_points')) {
             foreach ($request->maintenance_points as $index => $point) {
                 if (!empty($point['name'])) {
-                    $photoPath = null;
-                    // Handle photo upload if exists
+                    $photoId = null;
+                    // Handle photo upload if exists - Save to database using Photo model
                     if ($request->hasFile("maintenance_points.{$index}.photo")) {
                         $photo = $request->file("maintenance_points.{$index}.photo");
-                        $photoPath = ImageHelper::convertToWebP($photo, 'maintenance-points', 85);
+                        $photoModel = ImageHelper::saveToDatabase(
+                            $photo,
+                            'maintenance-points',
+                            'maintenance_point',
+                            null, // Will be set after maintenancePoint is created
+                            'Photo for Maintenance Point'
+                        );
+                        if ($photoModel) {
+                            $photoId = $photoModel->id;
+                        }
                     }
                     
-                    MaintenancePoint::create([
+                    $maintenancePoint = MaintenancePoint::create([
                         'machine_type_id' => $machineType->id,
                         'category' => $point['category'] ?? 'preventive',
                         'standard_id' => ($point['category'] === 'predictive' && isset($point['standard_id'])) ? $point['standard_id'] : null,
@@ -128,8 +137,18 @@ class MachineTypeController extends Controller
                         'name' => $point['name'],
                         'instruction' => $point['instruction'] ?? null,
                         'sequence' => $point['sequence'] ?? 0,
-                        'photo' => $photoPath,
+                        'photo_id' => $photoId,
                     ]);
+                    
+                    // Update photo related_id after maintenancePoint is created
+                    if ($photoId) {
+                        $photoModel = \App\Models\Photo::find($photoId);
+                        if ($photoModel) {
+                            $photoModel->update([
+                                'related_id' => $maintenancePoint->id
+                            ]);
+                        }
+                    }
                 }
             }
         }
@@ -312,14 +331,23 @@ class MachineTypeController extends Controller
 
         $machineType = MachineType::findOrFail($machineTypeId);
 
-        $photoPath = null;
-        // Handle photo upload
+        $photoId = null;
+        // Handle photo upload - Save to database using Photo model
         if ($request->hasFile('photo')) {
             $photo = $request->file('photo');
-            $photoPath = ImageHelper::convertToWebP($photo, 'maintenance-points', 85);
+            $photoModel = ImageHelper::saveToDatabase(
+                $photo,
+                'maintenance-points',
+                'maintenance_point',
+                null, // Will be set after maintenancePoint is created
+                'Photo for Maintenance Point'
+            );
+            if ($photoModel) {
+                $photoId = $photoModel->id;
+            }
         }
 
-        MaintenancePoint::create([
+        $maintenancePoint = MaintenancePoint::create([
             'machine_type_id' => $machineType->id,
             'category' => $validated['category'],
             'standard_id' => ($validated['category'] === 'predictive' && isset($validated['standard_id'])) ? $validated['standard_id'] : null,
@@ -328,9 +356,19 @@ class MachineTypeController extends Controller
             'name' => $validated['name'],
             'instruction' => $validated['instruction'] ?? null,
             'sequence' => $validated['sequence'] ?? 0,
+            'photo_id' => $photoId,
             'duration' => $validated['duration'] ?? null,
-            'photo' => $photoPath,
         ]);
+        
+        // Update photo related_id after maintenancePoint is created
+        if ($photoId) {
+            $photoModel = \App\Models\Photo::find($photoId);
+            if ($photoModel) {
+                $photoModel->update([
+                    'related_id' => $maintenancePoint->id
+                ]);
+            }
+        }
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
@@ -362,15 +400,28 @@ class MachineTypeController extends Controller
 
         $point = MaintenancePoint::findOrFail($id);
         
-        // Handle photo upload
+        // Handle photo upload - Save to database using Photo model
         if ($request->hasFile('photo')) {
-            // Delete old photo if exists
-            ImageHelper::deleteOldImage($point->photo);
+            // Delete old photo from database if exists
+            if ($point->photo_id) {
+                ImageHelper::deletePhotoFromDatabase($point->photo_id);
+            } else if ($point->photo) {
+                // Fallback: delete old path-based photo
+                ImageHelper::deleteOldImage($point->photo);
+            }
             
             $photo = $request->file('photo');
-            // Convert to WebP
-            $photoPath = ImageHelper::convertToWebP($photo, 'maintenance-points', 85);
-            $validated['photo'] = $photoPath;
+            $photoModel = ImageHelper::saveToDatabase(
+                $photo,
+                'maintenance-points',
+                'maintenance_point',
+                $point->id,
+                'Photo for Maintenance Point'
+            );
+            if ($photoModel) {
+                $validated['photo_id'] = $photoModel->id;
+                $validated['photo'] = null; // Clear legacy path
+            }
         }
         
         // Only set standard_id if category is predictive

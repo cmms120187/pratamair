@@ -88,12 +88,13 @@
                                         if ($photo) {
                                             $photoUrl = route('photos.show', $photo->id);
                                         } else {
-                                            // Fallback to old path
+                                            // Fallback to old path - use Storage::url() for proper path
                                             $photoPath = $firstPhoto->photo_path;
                                             if (strpos($photoPath, 'images/') === 0) {
                                                 $photoUrl = asset($photoPath);
                                             } else {
-                                                $photoUrl = asset('public-storage/' . $photoPath);
+                                                // Use Storage::url() which handles both local and production
+                                                $photoUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($photoPath);
                                             }
                                         }
                                     } elseif ($standard->photo) {
@@ -104,11 +105,12 @@
                                         if ($photo) {
                                             $photoUrl = route('photos.show', $photo->id);
                                         } else {
-                                            // Fallback to old path
+                                            // Fallback to old path - use Storage::url() for proper path
                                             if (strpos($standard->photo, 'images/') === 0) {
                                                 $photoUrl = asset($standard->photo);
                                             } else {
-                                                $photoUrl = asset('public-storage/' . $standard->photo);
+                                                // Use Storage::url() which handles both local and production
+                                                $photoUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($standard->photo);
                                             }
                                         }
                                     }
