@@ -363,6 +363,7 @@
         width: 100%;
         max-width: 100%;
         box-sizing: border-box;
+        align-items: stretch;
     }
     
     @media (max-width: 1400px) {
@@ -377,11 +378,24 @@
         padding: 2rem;
         border-radius: 20px;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 0 2px rgba(255, 255, 255, 0.8);
-        min-height: 400px;
+        min-height: 450px;
+        height: 100%;
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
-        overflow: hidden;
+        overflow: visible;
         border: 2px solid rgba(255, 255, 255, 0.8);
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .chart-card canvas {
+        width: 100% !important;
+        max-height: 400px !important;
+    }
+    
+    .chart-card {
+        max-height: 500px;
+        overflow: hidden;
     }
     
     .chart-card::before {
@@ -1040,6 +1054,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    // Chart instances storage - MUST be declared before any functions that use them
+    const chartInstances = {};
+    const chartInitialized = {};
+    
     // Auto-rotate pages
     const PAGE_ROTATE_INTERVAL = 30000; // 30 seconds
     let currentPage = 0;
@@ -1078,7 +1096,13 @@
                     destroyChart(chartId);
                 }
             });
+            // Reset all downtime chart flags
             chartInitialized['downtimeCharts'] = false;
+            chartInitialized['machineDowntimeChart'] = false;
+            chartInitialized['mttrChart'] = false;
+            chartInitialized['plantDowntimeChart'] = false;
+            chartInitialized['downtimeTrendChart'] = false;
+            chartInitialized['problemsChart'] = false;
             setTimeout(() => {
                 initializeDowntimeCharts();
             }, 300);
@@ -1140,10 +1164,6 @@
     updateDateTime();
     setInterval(updateDateTime, 1000);
     
-    // Chart instances storage
-    const chartInstances = {};
-    const chartInitialized = {};
-    
     // Destroy existing chart if exists
     function destroyChart(chartId) {
         if (chartInstances[chartId]) {
@@ -1168,19 +1188,19 @@
     
     // Initialize charts for downtime page
     function initializeDowntimeCharts() {
-        // Prevent multiple initialization
-        if (chartInitialized['downtimeCharts']) {
-            return;
-        }
+        console.log('Initializing downtime charts...');
         
         // Wait for page to be fully visible
         setTimeout(() => {
+            console.log('Checking downtime charts visibility...');
             // Top 10 Machine Downtime Chart
             const machineCtx = document.getElementById('machineDowntimeChart');
-            if (machineCtx && isElementVisible(machineCtx)) {
+            console.log('Machine chart context:', machineCtx, 'Visible:', machineCtx ? isElementVisible(machineCtx) : false);
+            if (machineCtx) {
                 destroyChart('machineDowntimeChart');
                 const machineData = @json($topMachines ?? []);
-                if (machineData.length > 0) {
+                console.log('Machine data:', machineData);
+                if (machineData && machineData.length > 0) {
                 const labels = machineData.map(m => m.idMachine || 'N/A');
                 const durations = machineData.map(m => parseFloat(m.total_duration) || 0);
                 
@@ -1199,7 +1219,8 @@
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false,
+                        maintainAspectRatio: true,
+                        aspectRatio: 1.5,
                         plugins: {
                             legend: { display: false },
                             tooltip: {
@@ -1237,15 +1258,20 @@
                         }
                     }
                 });
+                chartInitialized['machineDowntimeChart'] = true;
+                } else {
+                    // Show message if no data
+                    machineCtx.parentElement.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666; font-size: 1.2rem;">Tidak ada data downtime mesin</div>';
                 }
             }
             
             // MTTR Chart
             const mttrCtx = document.getElementById('mttrChart');
-            if (mttrCtx && isElementVisible(mttrCtx)) {
+            if (mttrCtx) {
                 destroyChart('mttrChart');
                 const mttrData = @json($topMTTR ?? []);
-                if (mttrData.length > 0) {
+                console.log('MTTR data:', mttrData);
+                if (mttrData && mttrData.length > 0) {
                 const labels = mttrData.map(m => m.idMachine || 'N/A');
                 const mttrValues = mttrData.map(m => parseFloat(m.mttr) || 0);
                 
@@ -1264,7 +1290,8 @@
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false,
+                        maintainAspectRatio: true,
+                        aspectRatio: 1.8,
                         indexAxis: 'y',
                         plugins: {
                             legend: { display: false },
@@ -1296,15 +1323,20 @@
                         }
                     }
                 });
+                chartInitialized['mttrChart'] = true;
+                } else {
+                    // Show message if no data
+                    mttrCtx.parentElement.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666; font-size: 1.2rem;">Tidak ada data MTTR</div>';
                 }
             }
             
             // Plant Downtime Chart
             const plantCtx = document.getElementById('plantDowntimeChart');
-            if (plantCtx && isElementVisible(plantCtx)) {
+            if (plantCtx) {
                 destroyChart('plantDowntimeChart');
                 const plantData = @json($topPlants ?? []);
-                if (plantData.length > 0) {
+                console.log('Plant data:', plantData);
+                if (plantData && plantData.length > 0) {
                 const labels = plantData.map(p => p.plant || 'N/A');
                 const durations = plantData.map(p => parseFloat(p.total_duration) || 0);
                 
@@ -1323,7 +1355,8 @@
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false,
+                        maintainAspectRatio: true,
+                        aspectRatio: 1.8,
                         indexAxis: 'y',
                         plugins: {
                             legend: { display: false },
@@ -1355,15 +1388,20 @@
                         }
                     }
                 });
+                chartInitialized['plantDowntimeChart'] = true;
+                } else {
+                    // Show message if no data
+                    plantCtx.parentElement.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666; font-size: 1.2rem;">Tidak ada data downtime plant</div>';
                 }
             }
             
             // Downtime Trend Chart
             const trendCtx = document.getElementById('downtimeTrendChart');
-            if (trendCtx && isElementVisible(trendCtx)) {
+            if (trendCtx) {
                 destroyChart('downtimeTrendChart');
                 const trendData = @json($downtimeTrend ?? []);
-                if (trendData.length > 0) {
+                console.log('Trend data:', trendData);
+                if (trendData && trendData.length > 0) {
                 const labels = trendData.map(t => {
                     const date = new Date(t.date);
                     return date.getDate().toString().padStart(2, '0') + '/' + (date.getMonth() + 1).toString().padStart(2, '0');
@@ -1404,7 +1442,8 @@
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false,
+                        maintainAspectRatio: true,
+                        aspectRatio: 1.2,
                         plugins: {
                             legend: { 
                                 display: true,
@@ -1454,15 +1493,20 @@
                         }
                     }
                 });
+                chartInitialized['downtimeTrendChart'] = true;
+                } else {
+                    // Show message if no data
+                    trendCtx.parentElement.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666; font-size: 1.2rem;">Tidak ada data trend downtime</div>';
                 }
             }
             
             // Problems Chart
             const problemsCtx = document.getElementById('problemsChart');
-            if (problemsCtx && isElementVisible(problemsCtx)) {
+            if (problemsCtx) {
                 destroyChart('problemsChart');
                 const problemsData = @json($topProblems ?? []);
-                if (problemsData.length > 0) {
+                console.log('Problems data:', problemsData);
+                if (problemsData && problemsData.length > 0) {
                 const labels = problemsData.map(p => p.problemDowntime || 'N/A');
                 const counts = problemsData.map(p => p.problem_count || 0);
                 
@@ -1485,7 +1529,8 @@
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false,
+                        maintainAspectRatio: true,
+                        aspectRatio: 1.2,
                         plugins: {
                             legend: {
                                 position: 'bottom',
@@ -1521,11 +1566,16 @@
                         }
                     }
                 });
+                chartInitialized['problemsChart'] = true;
+                } else {
+                    // Show message if no data
+                    problemsCtx.parentElement.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666; font-size: 1.2rem;">Tidak ada data problem</div>';
                 }
             }
             
             chartInitialized['downtimeCharts'] = true;
-        }, 300); // Wait 300ms for page transition to complete
+            console.log('Downtime charts initialization completed');
+        }, 500); // Wait 500ms for page transition to complete
     }
     
     // Initialize machine distribution chart for page 1
@@ -1540,26 +1590,56 @@
             const ctx = document.getElementById('machineDistributionChart');
             if (ctx && isElementVisible(ctx)) {
                 destroyChart('machineDistributionChart');
-                chartInstances['machineDistributionChart'] = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['With Brand', 'With Model', 'With Type'],
-                    datasets: [{
-                        data: [
-                            {{ $machinesWithBrand }},
-                            {{ $machinesWithModel }},
-                            {{ $machinesWithType }}
-                        ],
-                        backgroundColor: [
-                            'rgba(102, 126, 234, 0.8)',
-                            'rgba(118, 75, 162, 0.8)',
-                            'rgba(245, 87, 108, 0.8)'
-                        ]
-                    }]
-                },
+                
+                // Get data from PHP
+                const machinesWithBrand = {{ $machinesWithBrand ?? 0 }};
+                const machinesWithModel = {{ $machinesWithModel ?? 0 }};
+                const machinesWithType = {{ $machinesWithType ?? 0 }};
+                const totalMachines = {{ $totalMachines ?? 0 }};
+                
+                // Calculate machines without these attributes
+                const machinesWithoutBrand = totalMachines - machinesWithBrand;
+                const machinesWithoutModel = totalMachines - machinesWithModel;
+                const machinesWithoutType = totalMachines - machinesWithType;
+                
+                // Only create chart if there's data
+                if (totalMachines > 0) {
+                    chartInstances['machineDistributionChart'] = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Dengan Brand', 'Tanpa Brand', 'Dengan Model', 'Tanpa Model', 'Dengan Type', 'Tanpa Type'],
+                        datasets: [{
+                            data: [
+                                machinesWithBrand,
+                                machinesWithoutBrand,
+                                machinesWithModel,
+                                machinesWithoutModel,
+                                machinesWithType,
+                                machinesWithoutType
+                            ],
+                            backgroundColor: [
+                                'rgba(102, 126, 234, 0.8)',  // With Brand - Blue
+                                'rgba(200, 200, 200, 0.5)',  // Without Brand - Gray
+                                'rgba(118, 75, 162, 0.8)',   // With Model - Purple
+                                'rgba(200, 200, 200, 0.5)',  // Without Model - Gray
+                                'rgba(245, 87, 108, 0.8)',   // With Type - Red
+                                'rgba(200, 200, 200, 0.5)'   // Without Type - Gray
+                            ],
+                            borderColor: [
+                                'rgba(102, 126, 234, 1)',
+                                'rgba(200, 200, 200, 1)',
+                                'rgba(118, 75, 162, 1)',
+                                'rgba(200, 200, 200, 1)',
+                                'rgba(245, 87, 108, 1)',
+                                'rgba(200, 200, 200, 1)'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false,
+                        maintainAspectRatio: true,
+                        aspectRatio: 1.2,
                         plugins: {
                             legend: {
                                 position: 'bottom',
@@ -1586,6 +1666,10 @@
                     }
                 });
                 chartInitialized['machineDistributionChart'] = true;
+                } else {
+                    // Show message if no data
+                    ctx.parentElement.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666; font-size: 1.2rem;">Tidak ada data mesin</div>';
+                }
             }
         }, 300); // Wait 300ms for page transition to complete
     }
@@ -1609,21 +1693,24 @@
     });
     
     // Initialize charts on page load
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                if (document.getElementById('page-0') && document.getElementById('page-0').classList.contains('active')) {
-                    initializeMachineDistributionChart();
-                }
-            }, 500);
-        });
-    } else {
-        // DOM already loaded
+    function initializeChartsOnLoad() {
         setTimeout(() => {
-            if (document.getElementById('page-0') && document.getElementById('page-0').classList.contains('active')) {
+            const page0 = document.getElementById('page-0');
+            const page2 = document.getElementById('page-2');
+            console.log('Initializing charts on load. Page 0 active:', page0 && page0.classList.contains('active'), 'Page 2 active:', page2 && page2.classList.contains('active'));
+            if (page0 && page0.classList.contains('active')) {
                 initializeMachineDistributionChart();
             }
-        }, 500);
+            if (page2 && page2.classList.contains('active')) {
+                initializeDowntimeCharts();
+            }
+        }, 800);
+    }
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeChartsOnLoad);
+    } else {
+        initializeChartsOnLoad();
     }
 </script>
 @endsection

@@ -172,7 +172,17 @@ class DashboardController extends Controller
                     ->whereMonth('date', $currentMonth)
                     ->distinct('idMachine')
                     ->count('idMachine');
+                // Count machines with PM schedules (any status)
                 $machinesWithPM = MachineErp::whereHas('preventiveMaintenanceSchedules')->count();
+                
+                // Alternative: Count distinct machines from PM schedules table (more accurate)
+                $machinesWithPMAlt = DB::table('preventive_maintenance_schedules')
+                    ->whereNotNull('machine_erp_id')
+                    ->distinct('machine_erp_id')
+                    ->count('machine_erp_id');
+                
+                // Use the higher count (more accurate)
+                $machinesWithPM = max($machinesWithPM, $machinesWithPMAlt);
             } else {
                 $totalMachines = Machine::count();
                 $machinesWithDowntime = Downtime::whereYear('date', $currentYear)
@@ -319,9 +329,9 @@ class DashboardController extends Controller
                 'totalMachineTypes' => MachineType::count(),
                 'totalBrands' => Brand::count(),
                 'totalModels' => Model::count(),
-                'machinesWithBrand' => MachineErp::whereNotNull('brand_name')->distinct('brand_name')->count('brand_name'),
-                'machinesWithModel' => MachineErp::whereNotNull('model_name')->distinct('model_name')->count('model_name'),
-                'machinesWithType' => MachineErp::whereNotNull('type_name')->distinct('type_name')->count('type_name'),
+                'machinesWithBrand' => MachineErp::whereNotNull('brand_name')->where('brand_name', '!=', '')->count(),
+                'machinesWithModel' => MachineErp::whereNotNull('model_name')->where('model_name', '!=', '')->count(),
+                'machinesWithType' => MachineErp::whereNotNull('type_name')->where('type_name', '!=', '')->count(),
             ];
         });
         
@@ -504,16 +514,33 @@ class DashboardController extends Controller
         $machinesCacheKey = 'machines_stats_' . $currentYear . '_' . $currentMonth;
         $machinesStats = Cache::remember($machinesCacheKey, 3600, function() use ($dataSource, $currentYear, $currentMonth) {
             if ($dataSource === 'downtime_erp2' || $dataSource === 'downtime_erp') {
+                // Count machines with PM schedules (any status, not just active)
+                $machinesWithPM = MachineErp::whereHas('preventiveMaintenanceSchedules', function($query) {
+                    // Count machines that have at least one PM schedule (any status)
+                })->count();
+                
+                // Alternative: Count distinct machines from PM schedules table
+                $machinesWithPMAlt = DB::table('preventive_maintenance_schedules')
+                    ->whereNotNull('machine_erp_id')
+                    ->distinct('machine_erp_id')
+                    ->count('machine_erp_id');
+                
+                // Use the higher count (more accurate)
+                $machinesWithPM = max($machinesWithPM, $machinesWithPMAlt);
+                
                 return [
                     'totalMachines' => MachineErp::count(),
                     'machinesWithDowntime' => DB::table('downtime_erp2')->whereYear('date', $currentYear)->whereMonth('date', $currentMonth)->distinct('idMachine')->count('idMachine'),
-                    'machinesWithPM' => MachineErp::whereHas('preventiveMaintenanceSchedules')->count(),
+                    'machinesWithPM' => $machinesWithPM,
                 ];
             } else {
+                // Count machines with PM schedules (any status)
+                $machinesWithPM = Machine::whereHas('preventiveMaintenanceSchedules')->count();
+                
                 return [
                     'totalMachines' => Machine::count(),
                     'machinesWithDowntime' => Downtime::whereYear('date', $currentYear)->whereMonth('date', $currentMonth)->distinct('machine_id')->count('machine_id'),
-                    'machinesWithPM' => Machine::whereHas('preventiveMaintenanceSchedules')->count(),
+                    'machinesWithPM' => $machinesWithPM,
                 ];
             }
         });
@@ -572,9 +599,9 @@ class DashboardController extends Controller
             return [
                 'totalSystems' => System::count(), 'totalGroups' => Group::count(), 'totalMachineTypes' => MachineType::count(),
                 'totalBrands' => Brand::count(), 'totalModels' => Model::count(),
-                'machinesWithBrand' => MachineErp::whereNotNull('brand_name')->distinct('brand_name')->count('brand_name'),
-                'machinesWithModel' => MachineErp::whereNotNull('model_name')->distinct('model_name')->count('model_name'),
-                'machinesWithType' => MachineErp::whereNotNull('type_name')->distinct('type_name')->count('type_name'),
+                'machinesWithBrand' => MachineErp::whereNotNull('brand_name')->where('brand_name', '!=', '')->count(),
+                'machinesWithModel' => MachineErp::whereNotNull('model_name')->where('model_name', '!=', '')->count(),
+                'machinesWithType' => MachineErp::whereNotNull('type_name')->where('type_name', '!=', '')->count(),
             ];
         });
         
