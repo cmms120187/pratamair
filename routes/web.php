@@ -11,6 +11,7 @@ Route::get('/', function () {
 // Dashboard Routes with Middleware
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 Route::get('/dashboard-large', [DashboardController::class, 'large'])->middleware(['auth', 'verified'])->name('dashboard.large');
+Route::get('/dashboard-portrait', [DashboardController::class, 'portrait'])->middleware(['auth', 'verified'])->name('dashboard.portrait');
 
 // Dashboard Settings Routes (Admin only)
 Route::middleware(['auth', 'verified'])->group(function () {

@@ -65,9 +65,10 @@
                     <select name="system_id" 
                             id="system_id" 
                             class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('system_id') border-red-500 @enderror">
-                        <option value="">Pilih Category (System)</option>
+<option value="">Pilih Category (System)</option>
+                        @php $currentSystemId = old('system_id', $partErp->system ? $partErp->system->id : null); @endphp
                         @foreach($systems as $system)
-                            <option value="{{ $system->id }}" {{ old('system_id', $partErp->system && $partErp->system->id == $system->id ? $system->id : '') == $system->id ? 'selected' : '' }}>
+                            <option value="{{ $system->id }}" {{ (string)$currentSystemId === (string)$system->id ? 'selected' : '' }}>
                                 {{ $system->nama_sistem }}
                             </option>
                         @endforeach
@@ -104,7 +105,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
                     <label for="stock" class="block text-sm font-semibold text-gray-700 mb-2">Stock</label>
                     <input type="number" 
@@ -114,6 +115,20 @@
                            value="{{ old('stock', $partErp->stock) }}" 
                            placeholder="Enter stock">
                     @error('stock')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="minimum_stock" class="block text-sm font-semibold text-gray-700 mb-2">Minimum Stock</label>
+                    <input type="number" 
+                           name="minimum_stock" 
+                           id="minimum_stock" 
+                           min="0"
+                           class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('minimum_stock') border-red-500 @enderror" 
+                           value="{{ old('minimum_stock', $partErp->minimum_stock ?? 0) }}" 
+                           placeholder="0">
+                    <p class="text-xs text-gray-500 mt-1">Low stock alert when stock &lt; this value</p>
+                    @error('minimum_stock')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>

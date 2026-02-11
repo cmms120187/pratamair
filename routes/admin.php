@@ -10,9 +10,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('machine-erp/upload', [\App\Http\Controllers\MachineErpController::class, 'upload'])->name('machine-erp.upload');
     Route::get('machine-erp/download', [\App\Http\Controllers\MachineErpController::class, 'download'])->name('machine-erp.download');
     
-    // Part ERP Upload/Download
-    Route::post('part-erp/upload', [\App\Http\Controllers\PartErpController::class, 'upload'])->name('part-erp.upload');
-    Route::get('part-erp/download', [\App\Http\Controllers\PartErpController::class, 'download'])->name('part-erp.download');
+    // Part ERP Upload/Download - Moved to routes/machinary.php to avoid route conflicts with resource
     
     // Downtime ERP2 Upload/Download - Moved to routes/downtime.php to avoid route conflicts
 });

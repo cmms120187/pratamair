@@ -5,6 +5,9 @@ use App\Models\Action;
 use App\Models\System;
 use App\Models\Problem;
 use App\Models\Reason;
+use App\Models\DowntimeErp;
+use App\Models\DowntimeErp2;
+use Illuminate\Support\Facades\DB;
 
 class ActionController extends Controller
 {
@@ -183,5 +186,281 @@ class ActionController extends Controller
         $action = Action::findOrFail($id);
         $action->delete();
         return redirect()->route('actions.index')->with('success', 'Action deleted successfully.');
+    }
+
+    /**
+     * Preview unique actions from downtime erp or downtime erp2
+     */
+    public function previewFromDowntime(Request $request)
+    {
+        // Only allow admin (wahid@tpmcmms.id) to access this feature
+        if (auth()->user()->email !== 'wahid@tpmcmms.id') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only admin can access this feature.',
+            ], 403);
+        }
+
+        $request->validate([
+            'data_source' => 'required|in:downtime_erp,downtime_erp2',
+        ]);
+
+        $dataSource = $request->data_source;
+
+        try {
+            if ($dataSource === 'downtime_erp') {
+                $uniqueCombinations = DowntimeErp::whereNotNull('problemDowntime')
+                    ->whereNotNull('reasonDowntime')
+                    ->whereNotNull('actionDowtime')
+                    ->where('problemDowntime', '!=', '')
+                    ->where('reasonDowntime', '!=', '')
+                    ->where('actionDowtime', '!=', '')
+                    ->select('problemDowntime', 'reasonDowntime', 'actionDowtime')
+                    ->distinct()
+                    ->get()
+                    ->map(function($item) {
+                        return [
+                            'problem' => trim($item->problemDowntime),
+                            'reason' => trim($item->reasonDowntime),
+                            'action' => trim($item->actionDowtime),
+                        ];
+                    })
+                    ->filter(function($item) {
+                        return !empty($item['problem']) && !empty($item['reason']) && !empty($item['action']);
+                    })
+                    ->unique(function($item) {
+                        return $item['problem'] . '|' . $item['reason'] . '|' . $item['action'];
+                    })
+                    ->values();
+            } else {
+                $uniqueCombinations = DowntimeErp2::whereNotNull('problemDowntime')
+                    ->whereNotNull('reasonDowntime')
+                    ->whereNotNull('actionDowtime')
+                    ->where('problemDowntime', '!=', '')
+                    ->where('reasonDowntime', '!=', '')
+                    ->where('actionDowtime', '!=', '')
+                    ->select('problemDowntime', 'reasonDowntime', 'actionDowtime', 'system_id')
+                    ->distinct()
+                    ->get()
+                    ->map(function($item) {
+                        return [
+                            'problem' => trim($item->problemDowntime),
+                            'reason' => trim($item->reasonDowntime),
+                            'action' => trim($item->actionDowtime),
+                            'system_id' => $item->system_id,
+                        ];
+                    })
+                    ->filter(function($item) {
+                        return !empty($item['problem']) && !empty($item['reason']) && !empty($item['action']);
+                    })
+                    ->unique(function($item) {
+                        return $item['problem'] . '|' . $item['reason'] . '|' . $item['action'];
+                    })
+                    ->values();
+            }
+
+            // Check existing
+            $existingCount = 0;
+            $newCount = 0;
+            foreach ($uniqueCombinations as $combo) {
+                $problem = Problem::where('name', $combo['problem'])->first();
+                if ($problem) {
+                    $reason = Reason::where('name', $combo['reason'])
+                        ->where('problem_id', $problem->id)
+                        ->first();
+                    if ($reason) {
+                        $existing = Action::where('name', $combo['action'])
+                            ->where('problem_id', $problem->id)
+                            ->where('reason_id', $reason->id)
+                            ->first();
+                        if ($existing) {
+                            $existingCount++;
+                        } else {
+                            $newCount++;
+                        }
+                    } else {
+                        $newCount++;
+                    }
+                } else {
+                    $newCount++;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data_source' => $dataSource,
+                'total_unique' => $uniqueCombinations->count(),
+                'existing_count' => $existingCount,
+                'new_count' => $newCount,
+                'sample_data' => $uniqueCombinations->take(20)->toArray(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Preview failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Extract unique actions from downtime erp or downtime erp2 with problem and reason relations
+     */
+    public function extractFromDowntime(Request $request)
+    {
+        // Only allow admin (wahid@tpmcmms.id) to access this feature
+        if (auth()->user()->email !== 'wahid@tpmcmms.id') {
+            return redirect()->route('actions.index')
+                ->with('error', 'Unauthorized. Only admin can access this feature.');
+        }
+
+        $request->validate([
+            'data_source' => 'required|in:downtime_erp,downtime_erp2',
+        ]);
+
+        $dataSource = $request->data_source;
+        $created = 0;
+        $skipped = 0;
+        $errors = [];
+
+        try {
+            if ($dataSource === 'downtime_erp') {
+                // Get unique combinations of problem, reason, and action from downtime_erp
+                $uniqueCombinations = DowntimeErp::whereNotNull('problemDowntime')
+                    ->whereNotNull('reasonDowntime')
+                    ->whereNotNull('actionDowtime')
+                    ->where('problemDowntime', '!=', '')
+                    ->where('reasonDowntime', '!=', '')
+                    ->where('actionDowtime', '!=', '')
+                    ->select('problemDowntime', 'reasonDowntime', 'actionDowtime')
+                    ->distinct()
+                    ->get()
+                    ->map(function($item) {
+                        return [
+                            'problem' => trim($item->problemDowntime),
+                            'reason' => trim($item->reasonDowntime),
+                            'action' => trim($item->actionDowtime),
+                        ];
+                    })
+                    ->filter(function($item) {
+                        return !empty($item['problem']) && !empty($item['reason']) && !empty($item['action']);
+                    })
+                    ->unique(function($item) {
+                        return $item['problem'] . '|' . $item['reason'] . '|' . $item['action'];
+                    })
+                    ->values();
+            } else {
+                // Get unique combinations of problem, reason, and action from downtime_erp2
+                $uniqueCombinations = DowntimeErp2::whereNotNull('problemDowntime')
+                    ->whereNotNull('reasonDowntime')
+                    ->whereNotNull('actionDowtime')
+                    ->where('problemDowntime', '!=', '')
+                    ->where('reasonDowntime', '!=', '')
+                    ->where('actionDowtime', '!=', '')
+                    ->select('problemDowntime', 'reasonDowntime', 'actionDowtime', 'system_id')
+                    ->distinct()
+                    ->get()
+                    ->map(function($item) {
+                        return [
+                            'problem' => trim($item->problemDowntime),
+                            'reason' => trim($item->reasonDowntime),
+                            'action' => trim($item->actionDowtime),
+                            'system_id' => $item->system_id,
+                        ];
+                    })
+                    ->filter(function($item) {
+                        return !empty($item['problem']) && !empty($item['reason']) && !empty($item['action']);
+                    })
+                    ->unique(function($item) {
+                        return $item['problem'] . '|' . $item['reason'] . '|' . $item['action'];
+                    })
+                    ->values();
+            }
+
+            DB::beginTransaction();
+
+            foreach ($uniqueCombinations as $combination) {
+                $problemName = $combination['problem'];
+                $reasonName = $combination['reason'];
+                $actionName = $combination['action'];
+                $systemId = $combination['system_id'] ?? null;
+
+                // Find or create problem
+                $problem = Problem::where('name', $problemName)->first();
+                if (!$problem) {
+                    try {
+                        $problem = Problem::create(['name' => $problemName]);
+                    } catch (\Exception $e) {
+                        $errors[] = "Failed to create problem '{$problemName}': " . $e->getMessage();
+                        continue;
+                    }
+                }
+
+                // Find or create reason
+                $reason = Reason::where('name', $reasonName)
+                    ->where('problem_id', $problem->id)
+                    ->first();
+                if (!$reason) {
+                    try {
+                        $reason = Reason::create([
+                            'name' => $reasonName,
+                            'problem_id' => $problem->id,
+                            'system_id' => $systemId,
+                        ]);
+                    } catch (\Exception $e) {
+                        $errors[] = "Failed to create reason '{$reasonName}' for problem '{$problemName}': " . $e->getMessage();
+                        continue;
+                    }
+                }
+
+                // Check if action already exists with this problem and reason
+                $existingAction = Action::where('name', $actionName)
+                    ->where('problem_id', $problem->id)
+                    ->where('reason_id', $reason->id)
+                    ->first();
+
+                if ($existingAction) {
+                    // Update system_id if provided and different
+                    if ($systemId && $existingAction->system_id != $systemId) {
+                        $existingAction->system_id = $systemId;
+                        $existingAction->save();
+                    }
+                    $skipped++;
+                    continue;
+                }
+
+                // Create new action
+                try {
+                    Action::create([
+                        'name' => $actionName,
+                        'problem_id' => $problem->id,
+                        'reason_id' => $reason->id,
+                        'system_id' => $systemId,
+                    ]);
+                    $created++;
+                } catch (\Exception $e) {
+                    $errors[] = "Failed to create action '{$actionName}' for problem '{$problemName}' and reason '{$reasonName}': " . $e->getMessage();
+                }
+            }
+
+            DB::commit();
+
+            $message = "Extraction completed! Created: {$created}, Skipped: {$skipped}";
+            if (!empty($errors)) {
+                $message .= ". Errors: " . count($errors);
+            }
+
+            return redirect()->route('actions.index')
+                ->with('success', $message)
+                ->with('extraction_details', [
+                    'created' => $created,
+                    'skipped' => $skipped,
+                    'errors' => $errors,
+                ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route('actions.index')
+                ->with('error', 'Extraction failed: ' . $e->getMessage());
+        }
     }
 }

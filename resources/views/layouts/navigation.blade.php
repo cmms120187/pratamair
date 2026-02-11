@@ -1,18 +1,18 @@
-<div class="h-screen flex flex-col" style="height: 100vh; overflow: visible;" x-data="{ sidebarCollapsed: $store.sidebarCollapsed || false }">
+<div class="h-screen flex flex-col" style="height: 100vh; overflow: visible;" x-data="{}">
     <nav class="bg-white border-r p-3 sm:p-4 h-full w-full flex flex-col transition-all duration-300" 
          style="height: 100%; overflow: visible;"
-         :class="$store.sidebarCollapsed && window.innerWidth >= 1024 ? 'items-center px-2' : ''">
+         :class="$store.sidebar.collapsed && window.innerWidth >= 1024 ? 'items-center px-2' : ''">
         <!-- Header Section - Fixed -->
         <div class="flex-shrink-0" style="position: relative; z-index: 10;">
             <div class="mb-6 sm:mb-8 flex flex-col items-center transition-all duration-300"
-                 :class="$store.sidebarCollapsed && window.innerWidth >= 1024 ? 'mb-4' : ''">
+                 :class="$store.sidebar.collapsed && window.innerWidth >= 1024 ? 'mb-4' : ''">
                 <a href="{{ route('dashboard') }}" @click="sidebarOpen = false" class="flex items-center justify-center mb-4">
                     <img src="{{ asset('images/logo_tpm.png') }}" alt="Logo TPM" 
                          class="transition-all duration-300"
-                         :class="$store.sidebarCollapsed && window.innerWidth >= 1024 ? 'h-8 w-8' : 'h-10 sm:h-12 w-auto object-contain'">
+                         :class="$store.sidebar.collapsed && window.innerWidth >= 1024 ? 'h-8 w-8' : 'h-10 sm:h-12 w-auto object-contain'">
                 </a>
                 <div class="font-bold text-base sm:text-lg text-gray-700 transition-all duration-300 overflow-hidden"
-                     :class="$store.sidebarCollapsed && window.innerWidth >= 1024 ? 'hidden' : ''">TPM CMMS</div>
+                     :class="$store.sidebar.collapsed && window.innerWidth >= 1024 ? 'hidden' : ''">TPM CMMS</div>
             </div>
         </div>
         

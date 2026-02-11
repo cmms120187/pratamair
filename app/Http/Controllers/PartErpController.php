@@ -4,9 +4,15 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\PartErp;
+use App\Models\PartErpStockMovement;
 use App\Models\System;
 use App\Models\MachineType;
+use App\Models\DowntimeErp;
+use App\Models\DowntimeErp2;
+use App\Models\PreventiveMaintenanceExecution;
+use App\Models\WorkOrder;
 use App\Services\SparepartLowStockService;
+use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -16,10 +22,47 @@ class PartErpController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $partErps = PartErp::with(['system', 'machineTypes'])->orderBy('part_number', 'asc')->paginate(10);
-        return view('part_erp.index', compact('partErps'));
+        $query = PartErp::with(['system', 'machineTypes']);
+
+        // Search by part_number or name
+        if ($request->filled('search')) {
+            $term = $request->search;
+            $query->where(function ($q) use ($term) {
+                $q->where('part_number', 'like', '%' . $term . '%')
+                  ->orWhere('name', 'like', '%' . $term . '%');
+            });
+        }
+
+        // Filter by system (category)
+        if ($request->filled('system_id')) {
+            $system = System::find($request->system_id);
+            if ($system) {
+                $query->where('category', $system->nama_sistem);
+            }
+        }
+
+        // Filter low stock only
+        if ($request->boolean('low_stock')) {
+            $query->whereColumn('stock', '<', 'minimum_stock')
+                  ->where('minimum_stock', '>', 0);
+        }
+
+        $sortBy = $request->get('sort_by', 'part_number');
+        $sortDir = $request->get('sort_dir', 'asc');
+        if (!in_array($sortBy, ['part_number', 'name', 'stock', 'price', 'category'])) {
+            $sortBy = 'part_number';
+        }
+        if (!in_array($sortDir, ['asc', 'desc'])) {
+            $sortDir = 'asc';
+        }
+        $query->orderBy($sortBy, $sortDir);
+
+        $partErps = $query->paginate(15)->withQueryString();
+        $systems = System::orderBy('nama_sistem', 'asc')->get();
+
+        return view('part_erp.index', compact('partErps', 'systems'));
     }
 
     /**
@@ -89,7 +132,240 @@ class PartErpController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $partErp = PartErp::with(['system', 'machineTypes', 'stockMovements' => fn ($q) => $q->with('user')->limit(50)])->findOrFail($id);
+        $recentDowntimeErp2 = DowntimeErp2::orderBy('date', 'desc')->orderBy('id', 'desc')->limit(100)->get(['id', 'date', 'idMachine', 'Part']);
+        $recentDowntimeErp = DowntimeErp::orderBy('date', 'desc')->orderBy('id', 'desc')->limit(100)->get(['id', 'date', 'idMachine', 'Part']);
+        $recentPmExecutions = PreventiveMaintenanceExecution::with('schedule')->orderBy('scheduled_date', 'desc')->orderBy('id', 'desc')->limit(100)->get();
+        $recentWorkOrders = WorkOrder::orderBy('created_at', 'desc')->limit(100)->get(['id', 'wo_number', 'description', 'status', 'created_at']);
+        return view('part_erp.show', compact('partErp', 'recentDowntimeErp2', 'recentDowntimeErp', 'recentPmExecutions', 'recentWorkOrders'));
+    }
+
+    /**
+     * Add or reduce stock with document (MR/PO/MO) or reference (downtime/PM/work order).
+     */
+    public function storeStockMovement(Request $request, string $id)
+    {
+        $rules = [
+            'type' => 'required|in:in,out',
+            'quantity' => 'required|integer|min:1',
+            'notes' => 'nullable|string|max:500',
+            'reference_type' => 'nullable|string|in:manual,downtime_erp2,downtime_erp,preventive_maintenance_execution,work_order,other',
+            'reference_id' => 'nullable|integer|min:1',
+        ];
+        $referenceType = $request->input('reference_type', 'manual');
+        if ($referenceType === 'manual' || !$referenceType) {
+            $rules['document_type'] = 'required|in:MR,PO,MO';
+            $rules['document_number'] = 'required|string|max:255';
+        } elseif ($referenceType !== 'other') {
+            $rules['reference_id'] = 'required|integer|min:1';
+        }
+        $validated = $request->validate($rules);
+
+        $partErp = PartErp::findOrFail($id);
+        $currentStock = (int) $partErp->stock;
+        $qty = (int) $validated['quantity'];
+
+        if ($validated['type'] === 'out') {
+            if ($qty > $currentStock) {
+                return redirect()->back()->with('error', 'Jumlah keluar tidak boleh melebihi stok saat ini (' . $currentStock . ').');
+            }
+            $quantitySigned = -$qty;
+            $balanceAfter = $currentStock - $qty;
+        } else {
+            $quantitySigned = $qty;
+            $balanceAfter = $currentStock + $qty;
+        }
+
+        $docType = $validated['document_type'] ?? null;
+        $docNumber = isset($validated['document_number']) ? trim($validated['document_number']) : null;
+        if ($referenceType && $referenceType !== 'manual') {
+            if ($referenceType === 'downtime_erp2') {
+                $ref = DowntimeErp2::find($validated['reference_id'] ?? 0);
+                if (!$ref) {
+                    return redirect()->back()->with('error', 'Downtime ERP2 tidak ditemukan.');
+                }
+                if (!$docNumber) {
+                    $docNumber = 'DT2-' . $ref->id;
+                }
+            } elseif ($referenceType === 'downtime_erp') {
+                $ref = DowntimeErp::find($validated['reference_id'] ?? 0);
+                if (!$ref) {
+                    return redirect()->back()->with('error', 'Downtime ERP tidak ditemukan.');
+                }
+                if (!$docNumber) {
+                    $docNumber = 'DT-' . $ref->id;
+                }
+            } elseif ($referenceType === 'preventive_maintenance_execution') {
+                $ref = PreventiveMaintenanceExecution::find($validated['reference_id'] ?? 0);
+                if (!$ref) {
+                    return redirect()->back()->with('error', 'Preventive Maintenance Execution tidak ditemukan.');
+                }
+                if (!$docNumber) {
+                    $docNumber = 'PM-' . $ref->id;
+                }
+            } elseif ($referenceType === 'work_order') {
+                $ref = WorkOrder::find($validated['reference_id'] ?? 0);
+                if (!$ref) {
+                    return redirect()->back()->with('error', 'Work Order tidak ditemukan.');
+                }
+                if (!$docNumber) {
+                    $docNumber = 'WO-' . $ref->id;
+                }
+            }
+        }
+
+        DB::beginTransaction();
+        try {
+            PartErpStockMovement::create([
+                'part_erp_id' => $partErp->id,
+                'type' => $validated['type'],
+                'document_type' => $docType,
+                'document_number' => $docNumber,
+                'quantity' => $quantitySigned,
+                'balance_after' => $balanceAfter,
+                'notes' => $validated['notes'] ?? null,
+                'user_id' => auth()->id(),
+                'reference_type' => $referenceType && $referenceType !== 'manual' ? $referenceType : null,
+                'reference_id' => ($referenceType && $referenceType !== 'manual' && !empty($validated['reference_id'])) ? $validated['reference_id'] : null,
+            ]);
+
+            $partErp->update(['stock' => $balanceAfter]);
+
+            $lowStockService = new SparepartLowStockService();
+            $lowStockService->checkAndSendAlerts($partErp->fresh());
+
+            DB::commit();
+
+            $typeLabel = $validated['type'] === 'in' ? 'Tambah' : 'Kurangi';
+            $refLabel = $referenceType && $referenceType !== 'manual' ? " (relasi: {$referenceType} #" . ($validated['reference_id'] ?? '') . ')' : " {$docType} #{$docNumber}";
+            return redirect()->back()->with('success', "Stok berhasil di{$typeLabel}{$refLabel}. Stok sekarang: {$balanceAfter}");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Part ERP store stock movement: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal menyimpan pergerakan stok: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Report: part usage / stock movements with relation to downtime, PM, work order.
+     */
+    public function stockMovementReport(Request $request)
+    {
+        $dateFrom = $request->get('date_from');
+        $dateTo = $request->get('date_to');
+        // Default to current month when no date filter
+        if (!$dateFrom && !$dateTo) {
+            $dateFrom = now()->startOfMonth()->format('Y-m-d');
+            $dateTo = now()->format('Y-m-d');
+        }
+
+        $query = PartErpStockMovement::with(['partErp', 'user'])
+            ->orderBy('created_at', 'desc');
+
+        if ($dateFrom) {
+            $query->whereDate('created_at', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->whereDate('created_at', '<=', $dateTo);
+        }
+        if ($request->filled('part_erp_id')) {
+            $query->where('part_erp_id', $request->part_erp_id);
+        }
+        if ($request->filled('reference_type')) {
+            $query->where('reference_type', $request->reference_type);
+        }
+        if ($request->filled('type')) {
+            if ($request->type === 'out') {
+                $query->where('quantity', '<', 0);
+            } elseif ($request->type === 'in') {
+                $query->where('quantity', '>', 0);
+            }
+        }
+
+        // Summary totals (same filters, no pagination)
+        $summaryQuery = PartErpStockMovement::query();
+        if ($dateFrom) $summaryQuery->whereDate('created_at', '>=', $dateFrom);
+        if ($dateTo) $summaryQuery->whereDate('created_at', '<=', $dateTo);
+        if ($request->filled('part_erp_id')) $summaryQuery->where('part_erp_id', $request->part_erp_id);
+        if ($request->filled('reference_type')) $summaryQuery->where('reference_type', $request->reference_type);
+        if ($request->filled('type')) {
+            if ($request->type === 'out') $summaryQuery->where('quantity', '<', 0);
+            elseif ($request->type === 'in') $summaryQuery->where('quantity', '>', 0);
+        }
+        $totalMasuk = (clone $summaryQuery)->where('quantity', '>', 0)->sum('quantity');
+        $totalKeluar = abs((clone $summaryQuery)->where('quantity', '<', 0)->sum('quantity'));
+        $summary = ['total_masuk' => $totalMasuk, 'total_keluar' => $totalKeluar];
+
+        $movements = $query->paginate(25)->withQueryString();
+        $parts = PartErp::orderBy('name')->get(['id', 'part_number', 'name']);
+        return view('part_erp.stock_movement_report', compact('movements', 'parts', 'summary', 'dateFrom', 'dateTo'));
+    }
+
+    /**
+     * Export stock movement report to Excel.
+     */
+    public function stockMovementReportExport(Request $request)
+    {
+        $dateFrom = $request->get('date_from');
+        $dateTo = $request->get('date_to');
+        if (!$dateFrom && !$dateTo) {
+            $dateFrom = now()->startOfMonth()->format('Y-m-d');
+            $dateTo = now()->format('Y-m-d');
+        }
+
+        $query = PartErpStockMovement::with(['partErp', 'user'])
+            ->orderBy('created_at', 'desc');
+        if ($dateFrom) $query->whereDate('created_at', '>=', $dateFrom);
+        if ($dateTo) $query->whereDate('created_at', '<=', $dateTo);
+        if ($request->filled('part_erp_id')) $query->where('part_erp_id', $request->part_erp_id);
+        if ($request->filled('reference_type')) $query->where('reference_type', $request->reference_type);
+        if ($request->filled('type')) {
+            if ($request->type === 'out') $query->where('quantity', '<', 0);
+            elseif ($request->type === 'in') $query->where('quantity', '>', 0);
+        }
+        $movements = $query->limit(10000)->get();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Penggunaan Part');
+
+        $headers = ['Tanggal', 'Part Number', 'Nama Part', 'Tipe', 'Dokumen/Relasi', 'Qty', 'Stok Akhir', 'User'];
+        $sheet->fromArray($headers, null, 'A1');
+        $sheet->getStyle('A1:H1')->applyFromArray([
+            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '2563EB']],
+            'font' => ['color' => ['rgb' => 'FFFFFF'], 'bold' => true],
+        ]);
+
+        $row = 2;
+        foreach ($movements as $m) {
+            $refLabel = $m->reference_type && $m->reference_id
+                ? $m->getReferenceLabel()
+                : ($m->document_type ?? '-') . ' #' . ($m->document_number ?? '-');
+            $tipe = $m->quantity > 0 ? 'Masuk' : 'Keluar';
+            $sheet->fromArray([
+                $m->created_at->format('d/m/Y H:i'),
+                $m->partErp->part_number ?? '-',
+                $m->partErp->name ?? '-',
+                $tipe,
+                $refLabel,
+                $m->quantity > 0 ? '+' . $m->quantity : $m->quantity,
+                $m->balance_after ?? '-',
+                $m->user->name ?? '-',
+            ], null, 'A' . $row);
+            $row++;
+        }
+
+        foreach (range('A', 'H') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $filename = 'Laporan_Penggunaan_Part_' . now()->format('Y-m-d_His') . '.xlsx';
+        $tempFile = sys_get_temp_dir() . '/part_report_' . uniqid() . '.xlsx';
+        $writer = new Xlsx($spreadsheet);
+        $writer->save($tempFile);
+        return response()->download($tempFile, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
     }
 
     /**
@@ -117,6 +393,7 @@ class PartErpController extends Controller
             'brand' => 'nullable|string|max:255',
             'unit' => 'nullable|string|max:255',
             'stock' => 'nullable|integer',
+            'minimum_stock' => 'nullable|integer|min:0',
             'price' => 'nullable|numeric',
             'machine_type_ids' => 'nullable|array',
             'machine_type_ids.*' => 'exists:machine_types,id',
@@ -131,6 +408,7 @@ class PartErpController extends Controller
             'brand' => $validated['brand'] ?? null,
             'unit' => $validated['unit'] ?? null,
             'stock' => $validated['stock'] ?? 0,
+            'minimum_stock' => $validated['minimum_stock'] ?? 0,
             'price' => $validated['price'] ?? null,
         ];
 
@@ -384,6 +662,135 @@ class PartErpController extends Controller
         } catch (\Exception $e) {
             \Log::error('Error downloading Excel file: ' . $e->getMessage());
             return back()->withErrors(['error' => 'Error generating Excel file: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Preview Part ERP data from downtime tables before extraction.
+     */
+    public function previewFromDowntime(Request $request)
+    {
+        if (auth()->user()->email !== 'wahid@tpmcmms.id') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized. Only admin can access this feature.'], 403);
+        }
+        $dataSource = $request->input('data_source');
+        try {
+            $uniqueParts = [];
+            $existingNames = PartErp::pluck('name')->map(fn ($n) => strtolower(trim($n)))->toArray();
+            if ($dataSource === 'downtime_erp') {
+                $rows = DowntimeErp::select('Part')->whereNotNull('Part')->where('Part', '!=', '')->distinct()->get();
+                foreach ($rows as $r) {
+                    $name = trim($r->Part);
+                    if ($name === '') continue;
+                    $key = strtolower($name);
+                    if (!isset($uniqueParts[$key])) $uniqueParts[$key] = ['name' => $name];
+                }
+            } elseif ($dataSource === 'downtime_erp2') {
+                $rows = DowntimeErp2::select('Part')->whereNotNull('Part')->where('Part', '!=', '')->distinct()->get();
+                foreach ($rows as $r) {
+                    $name = trim($r->Part);
+                    if ($name === '') continue;
+                    $key = strtolower($name);
+                    if (!isset($uniqueParts[$key])) $uniqueParts[$key] = ['name' => $name];
+                }
+            } else {
+                return response()->json(['success' => false, 'message' => 'Invalid data source'], 400);
+            }
+            $totalUnique = count($uniqueParts);
+            $newCount = 0;
+            $existingCount = 0;
+            $sampleData = [];
+            foreach ($uniqueParts as $p) {
+                if (in_array(strtolower(trim($p['name'])), $existingNames)) {
+                    $existingCount++;
+                } else {
+                    $newCount++;
+                    if (count($sampleData) < 20) $sampleData[] = $p;
+                }
+            }
+            return response()->json([
+                'success' => true,
+                'total_unique' => $totalUnique,
+                'new_count' => $newCount,
+                'existing_count' => $existingCount,
+                'sample_data' => array_values($sampleData),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Part ERP preview from downtime: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Extract unique Part ERP from downtime tables.
+     */
+    public function extractFromDowntime(Request $request)
+    {
+        if (auth()->user()->email !== 'wahid@tpmcmms.id') {
+            return redirect()->route('part-erp.index')->with('error', 'Unauthorized. Only admin can access this feature.');
+        }
+        $dataSource = $request->input('data_source');
+        DB::beginTransaction();
+        try {
+            $uniqueParts = [];
+            if ($dataSource === 'downtime_erp') {
+                $rows = DowntimeErp::select('Part')->whereNotNull('Part')->where('Part', '!=', '')->distinct()->get();
+                foreach ($rows as $r) {
+                    $name = trim($r->Part);
+                    if ($name === '') continue;
+                    $uniqueParts[strtolower($name)] = $name;
+                }
+            } elseif ($dataSource === 'downtime_erp2') {
+                $rows = DowntimeErp2::select('Part')->whereNotNull('Part')->where('Part', '!=', '')->distinct()->get();
+                foreach ($rows as $r) {
+                    $name = trim($r->Part);
+                    if ($name === '') continue;
+                    $uniqueParts[strtolower($name)] = $name;
+                }
+            } else {
+                return redirect()->route('part-erp.index')->with('error', 'Invalid data source.');
+            }
+            $created = 0;
+            $skipped = 0;
+            $errors = [];
+            foreach ($uniqueParts as $name) {
+                try {
+                    $exists = PartErp::whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($name))])->exists();
+                    if ($exists) {
+                        $skipped++;
+                        continue;
+                    }
+                    $partNumber = 'PART-' . strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $name), 0, 12));
+                    $counter = 0;
+                    while (PartErp::where('part_number', $partNumber)->exists()) {
+                        $counter++;
+                        $partNumber = 'PART-' . strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $name), 0, 8)) . '-' . $counter;
+                    }
+                    PartErp::create([
+                        'part_number' => $partNumber,
+                        'name' => $name,
+                        'description' => null,
+                        'category' => null,
+                        'brand' => null,
+                        'unit' => null,
+                        'stock' => 0,
+                        'minimum_stock' => 0,
+                        'price' => null,
+                    ]);
+                    $created++;
+                } catch (\Exception $e) {
+                    $skipped++;
+                    $errors[] = $name . ': ' . $e->getMessage();
+                }
+            }
+            DB::commit();
+            return redirect()->route('part-erp.index')
+                ->with('success', "Extraction completed. Created: {$created}, Skipped: {$skipped}.")
+                ->with('extraction_details', ['created' => $created, 'skipped' => $skipped, 'errors' => $errors]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Part ERP extract from downtime: ' . $e->getMessage());
+            return redirect()->route('part-erp.index')->with('error', 'Error: ' . $e->getMessage());
         }
     }
 }

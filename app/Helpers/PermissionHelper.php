@@ -92,6 +92,7 @@ class PermissionHelper
         'summary-downtime' => ['allowed_roles' => ['group_leader', 'coordinator', 'ast_manager', 'manager', 'general_manager']],
         'mechanic-performance' => ['allowed_roles' => ['group_leader', 'coordinator', 'ast_manager', 'manager', 'general_manager']],
         'root-cause-analysis' => ['allowed_roles' => ['group_leader', 'coordinator', 'ast_manager', 'manager', 'general_manager']],
+        'oee' => ['allowed_roles' => ['group_leader', 'coordinator', 'ast_manager', 'manager', 'general_manager']],
         
         // Part ERP
         'part-erp' => ['allowed_roles' => ['coordinator', 'ast_manager', 'manager', 'general_manager']],

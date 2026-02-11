@@ -180,6 +180,18 @@ class RoleMiddleware
             'part-erp.edit' => 'part-erp',
             'part-erp.update' => 'part-erp',
             'part-erp.destroy' => 'part-erp',
+            'part-erp.stock-movement.store' => 'part-erp',
+            'part-erp.upload' => 'part-erp',
+            'part-erp.download' => 'part-erp',
+            'part-erp.stock-movement-report' => 'part-erp',
+            'part-erp.stock-movement-report.export' => 'part-erp',
+            // Report and Analytics
+            'mttr_mtbf.index' => 'mttr-mtbf',
+            'pareto-machine.index' => 'pareto-machine',
+            'summary_downtime.index' => 'summary-downtime',
+            'mechanic_performance.index' => 'mechanic-performance',
+            'root-cause-analysis.index' => 'root-cause-analysis',
+            'oee.index' => 'oee',
         ];
 
         return $routeMenuMap[$routeName] ?? null;

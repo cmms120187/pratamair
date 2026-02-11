@@ -21,9 +21,20 @@ Route::middleware(['auth', 'role:group_leader,coordinator,ast_manager,manager,ge
     Route::post('mutasi-bulk/store-simple', [\App\Http\Controllers\MutasiController::class, 'bulkStoreSimple'])->name('mutasi.bulk-store-simple');
 });
 
-// Part ERP Routes - Coordinator and above
+// Part ERP Upload/Download - Admin only (MUST be before resource route to avoid {part_erp} catching "download"/"upload")
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::post('part-erp/upload', [\App\Http\Controllers\PartErpController::class, 'upload'])->name('part-erp.upload');
+    Route::get('part-erp/download', [\App\Http\Controllers\PartErpController::class, 'download'])->name('part-erp.download');
+});
+
+// Part ERP Routes - Coordinator and above (static routes MUST be before resource so they are not matched as {part_erp})
 Route::middleware(['auth', 'role:coordinator,ast_manager,manager,general_manager'])->group(function () {
+    Route::get('part-erp/stock-movement-report', [\App\Http\Controllers\PartErpController::class, 'stockMovementReport'])->name('part-erp.stock-movement-report');
+    Route::get('part-erp/stock-movement-report/export', [\App\Http\Controllers\PartErpController::class, 'stockMovementReportExport'])->name('part-erp.stock-movement-report.export');
+    Route::post('part-erp/preview-from-downtime', [\App\Http\Controllers\PartErpController::class, 'previewFromDowntime'])->name('part-erp.preview-from-downtime');
+    Route::post('part-erp/extract-from-downtime', [\App\Http\Controllers\PartErpController::class, 'extractFromDowntime'])->name('part-erp.extract-from-downtime');
     Route::resource('part-erp', \App\Http\Controllers\PartErpController::class);
+    Route::post('part-erp/{part_erp}/stock-movement', [\App\Http\Controllers\PartErpController::class, 'storeStockMovement'])->name('part-erp.stock-movement.store');
 });
 
 // Machinary routes

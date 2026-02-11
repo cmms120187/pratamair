@@ -6,8 +6,11 @@ use Illuminate\Http\Request;
 use App\Models\RoomErp;
 use App\Models\Line;
 use App\Models\DowntimeErp2;
+use App\Models\DowntimeErp;
 use App\Models\MachineErp;
 use App\Models\Activity;
+use App\Models\Plant;
+use App\Models\Process;
 use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -476,6 +479,288 @@ class RoomErpController extends Controller
         } catch (\Exception $e) {
             \Log::error('Error downloading Excel file: ' . $e->getMessage());
             return back()->withErrors(['error' => 'Error generating Excel file: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Preview data from downtime tables before extraction
+     */
+    public function previewFromDowntime(Request $request)
+    {
+        // Check if user is admin
+        if (auth()->user()->email !== 'wahid@tpmcmms.id') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only admin can access this feature.'
+            ], 403);
+        }
+
+        $dataSource = $request->input('data_source');
+
+        try {
+            $uniqueRooms = [];
+            $existingRoomNames = RoomErp::pluck('name')->map(function($name) {
+                return strtolower(trim($name));
+            })->toArray();
+
+            if ($dataSource === 'downtime_erp') {
+                $rooms = DowntimeErp::select('roomName', 'plant', 'process', 'line')
+                    ->whereNotNull('roomName')
+                    ->where('roomName', '!=', '')
+                    ->distinct()
+                    ->get();
+
+                foreach ($rooms as $room) {
+                    $roomName = trim($room->roomName);
+                    $plant = trim($room->plant ?? '');
+                    $process = trim($room->process ?? '');
+                    $line = trim($room->line ?? '');
+
+                    if (empty($roomName)) continue;
+
+                    $key = strtolower($roomName . '|' . $plant . '|' . $process . '|' . $line);
+                    if (!isset($uniqueRooms[$key])) {
+                        $uniqueRooms[$key] = [
+                            'kode_room' => null,
+                            'name' => $roomName,
+                            'plant_name' => $plant,
+                            'process_name' => $process,
+                            'line_name' => $line,
+                        ];
+                    }
+                }
+            } else if ($dataSource === 'downtime_erp2') {
+                $rooms = DowntimeErp2::select('kode_room', 'roomName', 'plant', 'process', 'line')
+                    ->whereNotNull('roomName')
+                    ->where('roomName', '!=', '')
+                    ->distinct()
+                    ->get();
+
+                foreach ($rooms as $room) {
+                    $kodeRoom = trim($room->kode_room ?? '');
+                    $roomName = trim($room->roomName);
+                    $plant = trim($room->plant ?? '');
+                    $process = trim($room->process ?? '');
+                    $line = trim($room->line ?? '');
+
+                    if (empty($roomName)) continue;
+
+                    // Use kode_room if available, otherwise use combination
+                    $key = !empty($kodeRoom) ? strtolower($kodeRoom) : strtolower($roomName . '|' . $plant . '|' . $process . '|' . $line);
+                    if (!isset($uniqueRooms[$key])) {
+                        $uniqueRooms[$key] = [
+                            'kode_room' => !empty($kodeRoom) ? $kodeRoom : null,
+                            'name' => $roomName,
+                            'plant_name' => $plant,
+                            'process_name' => $process,
+                            'line_name' => $line,
+                        ];
+                    }
+                }
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid data source'
+                ], 400);
+            }
+
+            $totalUnique = count($uniqueRooms);
+            $newCount = 0;
+            $existingCount = 0;
+            $sampleData = [];
+
+            foreach ($uniqueRooms as $room) {
+                $roomNameLower = strtolower(trim($room['name']));
+                if (in_array($roomNameLower, $existingRoomNames)) {
+                    $existingCount++;
+                } else {
+                    $newCount++;
+                    if (count($sampleData) < 20) {
+                        $sampleData[] = $room;
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'total_unique' => $totalUnique,
+                'new_count' => $newCount,
+                'existing_count' => $existingCount,
+                'sample_data' => array_values($sampleData)
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error previewing Room ERP from downtime: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error previewing data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Extract unique Room ERP data from downtime tables
+     */
+    public function extractFromDowntime(Request $request)
+    {
+        // Check if user is admin
+        if (auth()->user()->email !== 'wahid@tpmcmms.id') {
+            return redirect()->route('room-erp.index')
+                ->with('error', 'Unauthorized. Only admin can access this feature.');
+        }
+
+        $dataSource = $request->input('data_source');
+
+        DB::beginTransaction();
+        try {
+            $uniqueRooms = [];
+            $created = 0;
+            $skipped = 0;
+            $errors = [];
+
+            if ($dataSource === 'downtime_erp') {
+                $rooms = DowntimeErp::select('roomName', 'plant', 'process', 'line')
+                    ->whereNotNull('roomName')
+                    ->where('roomName', '!=', '')
+                    ->distinct()
+                    ->get();
+
+                foreach ($rooms as $room) {
+                    $roomName = trim($room->roomName);
+                    $plant = trim($room->plant ?? '');
+                    $process = trim($room->process ?? '');
+                    $line = trim($room->line ?? '');
+
+                    if (empty($roomName)) continue;
+
+                    $key = strtolower($roomName . '|' . $plant . '|' . $process . '|' . $line);
+                    if (!isset($uniqueRooms[$key])) {
+                        $uniqueRooms[$key] = [
+                            'kode_room' => null,
+                            'name' => $roomName,
+                            'plant_name' => $plant,
+                            'process_name' => $process,
+                            'line_name' => $line,
+                        ];
+                    }
+                }
+            } else if ($dataSource === 'downtime_erp2') {
+                $rooms = DowntimeErp2::select('kode_room', 'roomName', 'plant', 'process', 'line')
+                    ->whereNotNull('roomName')
+                    ->where('roomName', '!=', '')
+                    ->distinct()
+                    ->get();
+
+                foreach ($rooms as $room) {
+                    $kodeRoom = trim($room->kode_room ?? '');
+                    $roomName = trim($room->roomName);
+                    $plant = trim($room->plant ?? '');
+                    $process = trim($room->process ?? '');
+                    $line = trim($room->line ?? '');
+
+                    if (empty($roomName)) continue;
+
+                    $key = !empty($kodeRoom) ? strtolower($kodeRoom) : strtolower($roomName . '|' . $plant . '|' . $process . '|' . $line);
+                    if (!isset($uniqueRooms[$key])) {
+                        $uniqueRooms[$key] = [
+                            'kode_room' => !empty($kodeRoom) ? $kodeRoom : null,
+                            'name' => $roomName,
+                            'plant_name' => $plant,
+                            'process_name' => $process,
+                            'line_name' => $line,
+                        ];
+                    }
+                }
+            } else {
+                return redirect()->route('room-erp.index')
+                    ->with('error', 'Invalid data source.');
+            }
+
+            foreach ($uniqueRooms as $roomData) {
+                try {
+                    // Check if room already exists by name (case-insensitive)
+                    $existingRoom = RoomErp::whereRaw('LOWER(name) = ?', [strtolower(trim($roomData['name']))])
+                        ->first();
+
+                    if ($existingRoom) {
+                        $skipped++;
+                        continue;
+                    }
+
+                    // Find or create Plant
+                    $plant = null;
+                    if (!empty($roomData['plant_name'])) {
+                        $plant = Plant::firstOrCreate(
+                            ['name' => $roomData['plant_name']],
+                            ['name' => $roomData['plant_name']]
+                        );
+                    }
+
+                    // Find or create Process
+                    $process = null;
+                    if (!empty($roomData['process_name']) && $plant) {
+                        $process = Process::firstOrCreate(
+                            [
+                                'name' => $roomData['process_name'],
+                                'plant_id' => $plant->id
+                            ],
+                            [
+                                'name' => $roomData['process_name'],
+                                'plant_id' => $plant->id
+                            ]
+                        );
+                    }
+
+                    // Find or create Line
+                    $line = null;
+                    if (!empty($roomData['line_name']) && $process && $plant) {
+                        $line = Line::firstOrCreate(
+                            [
+                                'name' => $roomData['line_name'],
+                                'process_id' => $process->id,
+                                'plant_id' => $plant->id
+                            ],
+                            [
+                                'name' => $roomData['line_name'],
+                                'process_id' => $process->id,
+                                'plant_id' => $plant->id
+                            ]
+                        );
+                    }
+
+                    // Create Room ERP
+                    RoomErp::create([
+                        'kode_room' => $roomData['kode_room'],
+                        'name' => $roomData['name'],
+                        'plant_name' => $roomData['plant_name'],
+                        'process_name' => $roomData['process_name'],
+                        'line_name' => $roomData['line_name'],
+                        'category' => null,
+                        'description' => null,
+                    ]);
+
+                    $created++;
+                } catch (\Exception $e) {
+                    $skipped++;
+                    $errors[] = "Error creating room '{$roomData['name']}': " . $e->getMessage();
+                    \Log::error('Error creating Room ERP: ' . $e->getMessage(), ['room_data' => $roomData]);
+                }
+            }
+
+            DB::commit();
+
+            $message = "Extraction completed. Created: {$created}, Skipped: {$skipped}.";
+            return redirect()->route('room-erp.index')
+                ->with('success', $message)
+                ->with('extraction_details', [
+                    'created' => $created,
+                    'skipped' => $skipped,
+                    'errors' => $errors
+                ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error extracting Room ERP from downtime: ' . $e->getMessage());
+            return redirect()->route('room-erp.index')
+                ->with('error', 'Error extracting data: ' . $e->getMessage());
         }
     }
 }

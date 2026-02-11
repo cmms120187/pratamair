@@ -26,7 +26,7 @@
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1">Date</label>
                     <div class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 text-gray-900">
-                        {{ $downtimeErp2->date }}
+                        {{ $downtimeErp2->date ? \Carbon\Carbon::parse($downtimeErp2->date)->format('Y-m-d') : '-' }}
                     </div>
                 </div>
                 <div>
@@ -106,25 +106,25 @@
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1">Stop Production</label>
                     <div class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 text-gray-900">
-                        {{ $downtimeErp2->stopProduction }}
+                        {{ $downtimeErp2->stopProduction ? \Carbon\Carbon::parse($downtimeErp2->stopProduction)->format('H:i') : '-' }}
                     </div>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1">Respon Mechanic</label>
                     <div class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 text-gray-900">
-                        {{ $downtimeErp2->responMechanic }}
+                        {{ $downtimeErp2->responMechanic ? \Carbon\Carbon::parse($downtimeErp2->responMechanic)->format('H:i') : '-' }}
                     </div>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1">Start Production</label>
                     <div class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 text-gray-900">
-                        {{ $downtimeErp2->startProduction }}
+                        {{ $downtimeErp2->startProduction ? \Carbon\Carbon::parse($downtimeErp2->startProduction)->format('H:i') : '-' }}
                     </div>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1">Duration</label>
                     <div class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 text-gray-900">
-                        {{ $downtimeErp2->duration }}
+                        {{ $downtimeErp2->duration ?? '-' }}
                     </div>
                 </div>
                 <div>

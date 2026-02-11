@@ -17,6 +17,10 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <!-- Alpine.js x-cloak style -->
+        <style>
+            [x-cloak] { display: none !important; }
+        </style>
         <!-- Alpine.js CDN Fallback (for production) -->
         <script>
             // Check if Alpine is loaded after a delay, if not load from CDN

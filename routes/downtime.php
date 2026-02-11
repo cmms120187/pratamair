@@ -21,9 +21,15 @@ Route::middleware('auth')->group(function () {
     Route::resource('downtimes', DowntimeController::class);
     
     Route::post('downtime_erp/search-machine', [DowntimeErpController::class, 'searchMachine'])->name('downtime_erp.search-machine');
+    Route::post('problems/preview-from-downtime', [ProblemController::class, 'previewFromDowntime'])->name('problems.preview-from-downtime');
+    Route::post('problems/extract-from-downtime', [ProblemController::class, 'extractFromDowntime'])->name('problems.extract-from-downtime');
     Route::resource('problems', ProblemController::class);
     Route::resource('problem-mms', ProblemMmController::class);
+    Route::post('reasons/preview-from-downtime', [ReasonController::class, 'previewFromDowntime'])->name('reasons.preview-from-downtime');
+    Route::post('reasons/extract-from-downtime', [ReasonController::class, 'extractFromDowntime'])->name('reasons.extract-from-downtime');
     Route::resource('reasons', ReasonController::class);
+    Route::post('actions/preview-from-downtime', [ActionController::class, 'previewFromDowntime'])->name('actions.preview-from-downtime');
+    Route::post('actions/extract-from-downtime', [ActionController::class, 'extractFromDowntime'])->name('actions.extract-from-downtime');
     Route::resource('actions', ActionController::class);
     
     // Downtime ERP2 Routes - Custom routes must be BEFORE resource route to avoid conflicts

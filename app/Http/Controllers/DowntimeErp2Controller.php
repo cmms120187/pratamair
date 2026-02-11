@@ -195,6 +195,7 @@ class DowntimeErp2Controller extends Controller
                 'name' => $part->name ?? '',
                 'description' => $part->description ?? '', // description is used as specification
                 'category' => $part->category ?? '', // category stores nama_sistem
+                'stock' => (int) ($part->stock ?? 0),
             ];
         }
         
@@ -247,6 +248,8 @@ class DowntimeErp2Controller extends Controller
             'reasonDowntime' => 'required|string|max:255',
             'actionDowtime' => 'required|string|max:255',
             'Part' => 'nullable|string|max:255',
+            'part_select' => 'nullable|exists:part_erps,id',
+            'part_quantity' => 'nullable|integer|min:0',
             'idMekanik' => 'required|string|max:255',
             'nameMekanik' => 'required|string|max:255',
             'idLeader' => 'required|string|max:255',
@@ -261,14 +264,12 @@ class DowntimeErp2Controller extends Controller
 
         // Handle checkbox (include_oee)
         $validated['include_oee'] = $request->has('include_oee') ? true : false;
-        
-        // Remove system_select, problem_select, reason_select, action_select, and part_select from validated data (they are only for filtering)
-        unset($validated['system_select']);
-        unset($validated['problem_select']);
-        unset($validated['reason_select']);
-        unset($validated['action_select']);
-        unset($validated['part_select']);
-        
+
+        // Map part_select to part_erp_id; store part_quantity (stok part otomatis berkurang saat create downtime)
+        $validated['part_erp_id'] = !empty($validated['part_select']) ? $validated['part_select'] : null;
+        $validated['part_quantity'] = isset($validated['part_quantity']) ? (int) $validated['part_quantity'] : 0;
+        unset($validated['system_select'], $validated['problem_select'], $validated['reason_select'], $validated['action_select'], $validated['part_select']);
+
         // Ensure system_id is null if empty or not set
         if (!isset($validated['system_id']) || $validated['system_id'] === '' || $validated['system_id'] === '0') {
             $validated['system_id'] = null;
@@ -286,8 +287,39 @@ class DowntimeErp2Controller extends Controller
         $validated['stopProduction'] = $date . ' ' . $stopTime;
         $validated['responMechanic'] = $date . ' ' . $responTime;
         $validated['startProduction'] = $date . ' ' . $startTime;
-        
-        DowntimeErp2::create($validated);
+
+        $downtime = DowntimeErp2::create($validated);
+
+        // Auto reduce part stock when part and quantity are set (perbaikan: stok berkurang dari sini, tidak dari menu Part ERP). Stok boleh minus jika kebutuhan > stok.
+        if (!empty($downtime->part_erp_id) && $downtime->part_quantity > 0) {
+            $partErp = PartErp::find($downtime->part_erp_id);
+            if ($partErp) {
+                $currentStock = (int) $partErp->stock;
+                $qty = (int) $downtime->part_quantity;
+                $newStock = $currentStock - $qty;
+                \Illuminate\Support\Facades\DB::beginTransaction();
+                try {
+                    \App\Models\PartErpStockMovement::create([
+                        'part_erp_id' => $partErp->id,
+                        'type' => 'out',
+                        'document_type' => null,
+                        'document_number' => 'DT2-' . $downtime->id,
+                        'quantity' => -$qty,
+                        'balance_after' => $newStock,
+                        'notes' => 'Otomatis dari Create Downtime ERP2 #' . $downtime->id,
+                        'user_id' => auth()->id(),
+                        'reference_type' => 'downtime_erp2',
+                        'reference_id' => $downtime->id,
+                    ]);
+                    $partErp->update(['stock' => $newStock]);
+                    \Illuminate\Support\Facades\DB::commit();
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\DB::rollBack();
+                    \Log::error('Auto reduce stock on Downtime ERP2 create: ' . $e->getMessage());
+                }
+            }
+        }
+
         return redirect()->route('downtime-erp2.index')->with('success', 'Downtime ERP2 created successfully.');
     }
     
@@ -475,6 +507,7 @@ class DowntimeErp2Controller extends Controller
                 'name' => $part->name ?? '',
                 'description' => $part->description ?? '',
                 'category' => $part->category ?? '',
+                'stock' => (int) ($part->stock ?? 0),
             ];
         }
         

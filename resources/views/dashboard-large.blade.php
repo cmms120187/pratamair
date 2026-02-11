@@ -1,18 +1,20 @@
 @extends('layouts.app')
 @section('content')
 <style>
-    /* Fullscreen layout - no scroll */
+    /* Fullscreen layout - no scroll, full viewport */
     body {
         overflow: hidden;
         margin: 0;
         padding: 0;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
+    main { overflow: hidden !important; height: 100vh; }
     
     .dashboard-container {
         width: 100%;
         max-width: 100%;
         height: 100vh;
+        min-height: 100vh;
         overflow: hidden;
         position: relative;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -33,10 +35,14 @@
     }
     
     #page-3 {
+        background: linear-gradient(135deg, #7c2d12 0%, #9a3412 30%, #c2410c 60%, #ea580c 100%);
+    }
+    
+    #page-4 {
         background: linear-gradient(135deg, #065f46 0%, #047857 30%, #059669 60%, #10b981 100%);
     }
     
-    /* Page container - fullscreen */
+    /* Page container - fullscreen, satu halaman penuh tanpa scroll */
     .page-container {
         position: absolute;
         top: 0;
@@ -44,14 +50,16 @@
         width: 100%;
         max-width: 100%;
         height: 100%;
+        min-height: 100%;
         opacity: 0;
         visibility: hidden;
-        transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), visibility 1s cubic-bezier(0.4, 0, 0.2, 1), transform 1s cubic-bezier(0.4, 0, 0.2, 1);
-        overflow-y: auto;
-        overflow-x: hidden;
-        padding: 1.5rem 2rem;
+        transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+        padding: 0.5rem 1rem;
         box-sizing: border-box;
-        transform: scale(0.95);
+        transform: scale(0.98);
+        display: flex;
+        flex-direction: column;
     }
     
     .page-container.active {
@@ -60,30 +68,21 @@
         transform: scale(1);
     }
     
-    /* Custom scrollbar */
-    .page-container::-webkit-scrollbar {
-        width: 8px;
+    .page-container .page-content-fill {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
     }
     
-    .page-container::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-    }
-    
-    .page-container::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.3);
-        border-radius: 10px;
-    }
-    
-    .page-container::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.5);
-    }
-    
-    /* Page indicator */
+    /* Page indicator - dipindah ke bawah */
     .page-indicator {
         position: fixed;
         top: 20px;
-        right: 20px;
+        left: 50%;
+        transform: translateX(-50%);
         z-index: 1000;
         display: flex;
         gap: 12px;
@@ -132,14 +131,15 @@
         transform: scale(1.2);
     }
     
-    /* Header */
+    /* Header - compact untuk full page */
     .page-header {
+        flex-shrink: 0;
         background: rgba(255, 255, 255, 1);
         backdrop-filter: blur(20px);
-        padding: 2rem 2.5rem;
-        border-radius: 20px;
-        margin-bottom: 2rem;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25), 0 0 0 2px rgba(255, 255, 255, 0.8);
+        padding: 0.5rem 1rem;
+        border-radius: 12px;
+        margin-bottom: 0.5rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), 0 0 0 2px rgba(255, 255, 255, 0.8);
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -154,7 +154,7 @@
         top: 0;
         left: 0;
         right: 0;
-        height: 4px;
+        height: 3px;
         background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #4facfe);
         background-size: 200% 100%;
         animation: gradientShift 3s ease infinite;
@@ -166,7 +166,7 @@
     }
     
     .page-title {
-        font-size: 2.5rem;
+        font-size: 1.35rem;
         font-weight: 800;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
         -webkit-background-clip: text;
@@ -174,229 +174,270 @@
         background-clip: text;
         margin: 0;
         letter-spacing: -0.5px;
-        text-shadow: 0 2px 10px rgba(102, 126, 234, 0.2);
     }
     
     .page-subtitle {
-        font-size: 1.1rem;
+        font-size: 0.75rem;
         color: #666;
-        margin-top: 0.5rem;
+        margin-top: 0.15rem;
         font-weight: 500;
     }
     
     .datetime-display {
         text-align: right;
-        font-size: 1rem;
+        font-size: 0.8rem;
         color: #333;
         font-weight: 600;
     }
     
     .datetime-display div:first-child {
-        font-size: 0.9rem;
+        font-size: 0.7rem;
         color: #667eea;
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.1rem;
     }
     
-    /* Grid layouts */
+    /* Grid standar: 6 kolom x 2 baris, maksimal 12 info card */
     .stats-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
+        grid-template-columns: repeat(6, 1fr);
+        grid-template-rows: repeat(2, auto);
+        gap: 0.6rem;
         width: 100%;
         max-width: 100%;
         box-sizing: border-box;
+        flex-shrink: 0;
+    }
+    .stats-grid .stat-card:nth-child(n+13) {
+        display: none;
+    }
+    @media (max-width: 1600px) {
+        .stats-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (max-width: 1200px) {
+        .stats-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 768px) {
+        .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    
+    /* Glow animations untuk stat cards - seperti halaman Report */
+    @keyframes glow-1 {
+        0%, 100% { box-shadow: 0 0 15px rgba(102, 126, 234, 0.4), 0 0 30px rgba(118, 75, 162, 0.2); }
+        50% { box-shadow: 0 0 25px rgba(102, 126, 234, 0.6), 0 0 50px rgba(118, 75, 162, 0.4); }
+    }
+    @keyframes glow-2 {
+        0%, 100% { box-shadow: 0 0 15px rgba(79, 172, 254, 0.4), 0 0 30px rgba(0, 242, 254, 0.2); }
+        50% { box-shadow: 0 0 25px rgba(79, 172, 254, 0.6), 0 0 50px rgba(0, 242, 254, 0.4); }
+    }
+    @keyframes glow-3 {
+        0%, 100% { box-shadow: 0 0 15px rgba(67, 233, 123, 0.4), 0 0 30px rgba(56, 249, 215, 0.2); }
+        50% { box-shadow: 0 0 25px rgba(67, 233, 123, 0.6), 0 0 50px rgba(56, 249, 215, 0.4); }
+    }
+    @keyframes glow-4 {
+        0%, 100% { box-shadow: 0 0 15px rgba(250, 112, 154, 0.4), 0 0 30px rgba(254, 225, 64, 0.2); }
+        50% { box-shadow: 0 0 25px rgba(250, 112, 154, 0.6), 0 0 50px rgba(254, 225, 64, 0.4); }
+    }
+    @keyframes glow-5 {
+        0%, 100% { box-shadow: 0 0 15px rgba(48, 207, 208, 0.4), 0 0 30px rgba(51, 8, 103, 0.2); }
+        50% { box-shadow: 0 0 25px rgba(48, 207, 208, 0.6), 0 0 50px rgba(51, 8, 103, 0.4); }
+    }
+    @keyframes glow-6 {
+        0%, 100% { box-shadow: 0 0 15px rgba(251, 191, 36, 0.4), 0 0 30px rgba(245, 158, 11, 0.2); }
+        50% { box-shadow: 0 0 25px rgba(251, 191, 36, 0.6), 0 0 50px rgba(245, 158, 11, 0.4); }
+    }
+    @keyframes shimmer {
+        0% { left: -100%; }
+        100% { left: 100%; }
     }
     
     .stat-card {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(20px);
-        padding: 2rem;
-        border-radius: 20px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.8);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 1.5rem 1.75rem;
+        border-radius: 14px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         position: relative;
         overflow: hidden;
-        border: 2px solid rgba(255, 255, 255, 0.5);
+        background-size: 200% 200%;
+        color: white;
+        min-height: 150px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
     }
     
+    .stat-card .stat-content {
+        flex: 1;
+        text-align: right;
+    }
+    
+    /* Shimmer effect on hover */
     .stat-card::before {
         content: '';
         position: absolute;
         top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
-        transform: scaleX(0);
-        transform-origin: left;
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        transition: left 0.6s;
+    }
+    .stat-card:hover::before {
+        animation: shimmer 0.8s ease forwards;
+    }
+    
+    /* Radial glow on hover */
+    .stat-card::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+        opacity: 0;
+        transition: opacity 0.4s;
+    }
+    .stat-card:hover::after {
+        opacity: 1;
     }
     
     .stat-card:hover {
-        transform: translateY(-8px) scale(1.02);
-        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(102, 126, 234, 0.5);
-        border-color: rgba(102, 126, 234, 0.5);
-        background: rgba(255, 255, 255, 1);
+        transform: translateY(-8px) scale(1.03);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
     }
     
-    .stat-card:hover::before {
-        transform: scaleX(1);
-    }
-    
-    /* Colorful card backgrounds with better contrast */
+    /* Colorful gradient backgrounds - seperti halaman MTTR & Mechanic Performance */
     .stat-card:nth-child(1) { 
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.98) 100%);
-        border-left: 4px solid #667eea;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        animation: glow-1 3s ease-in-out infinite;
     }
     .stat-card:nth-child(2) { 
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.98) 100%);
-        border-left: 4px solid #4facfe;
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        animation: glow-2 3s ease-in-out infinite 0.3s;
     }
     .stat-card:nth-child(3) { 
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.98) 100%);
-        border-left: 4px solid #43e97b;
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        animation: glow-3 3s ease-in-out infinite 0.6s;
     }
     .stat-card:nth-child(4) { 
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.98) 100%);
-        border-left: 4px solid #fa709a;
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        animation: glow-4 3s ease-in-out infinite 0.9s;
     }
     .stat-card:nth-child(5) { 
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.98) 100%);
-        border-left: 4px solid #30cfd0;
+        background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+        animation: glow-5 3s ease-in-out infinite 1.2s;
     }
     .stat-card:nth-child(6) { 
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.98) 100%);
-        border-left: 4px solid #fbbf24;
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        animation: glow-6 3s ease-in-out infinite 1.5s;
     }
     .stat-card:nth-child(7) { 
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.98) 100%);
-        border-left: 4px solid #8b5cf6;
+        background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+        animation: glow-1 3s ease-in-out infinite 1.8s;
     }
     .stat-card:nth-child(8) { 
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.98) 100%);
-        border-left: 4px solid #ec4899;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        animation: glow-4 3s ease-in-out infinite 2.1s;
     }
     .stat-card:nth-child(9) { 
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.98) 100%);
-        border-left: 4px solid #10b981;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        animation: glow-3 3s ease-in-out infinite 2.4s;
     }
     .stat-card:nth-child(10) { 
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.98) 100%);
-        border-left: 4px solid #f59e0b;
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        animation: glow-6 3s ease-in-out infinite 2.7s;
     }
     .stat-card:nth-child(11) { 
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.98) 100%);
-        border-left: 4px solid #06b6d4;
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        animation: glow-2 3s ease-in-out infinite 3s;
     }
     .stat-card:nth-child(12) { 
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.98) 100%);
-        border-left: 4px solid #6366f1;
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        animation: glow-1 3s ease-in-out infinite 3.3s;
     }
     
+    /* Icon dengan glass-morphism - seperti halaman Report */
     .stat-icon {
-        width: 60px;
-        height: 60px;
-        border-radius: 15px;
+        width: 56px;
+        height: 56px;
+        min-width: 56px;
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 1rem;
-        font-size: 2rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-size: 1.75rem;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
         color: white;
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        border: 2px solid rgba(255, 255, 255, 0.3);
+        transition: all 0.3s ease;
+        flex-shrink: 0;
     }
     
-    /* Different icon colors for variety */
-    .stat-card:nth-child(1) .stat-icon { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-    .stat-card:nth-child(2) .stat-icon { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-    .stat-card:nth-child(3) .stat-icon { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-    .stat-card:nth-child(4) .stat-icon { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-    .stat-card:nth-child(5) .stat-icon { background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); }
-    .stat-card:nth-child(6) .stat-icon { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); }
-    .stat-card:nth-child(7) .stat-icon { background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); }
-    .stat-card:nth-child(8) .stat-icon { background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%); }
-    .stat-card:nth-child(9) .stat-icon { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
-    .stat-card:nth-child(10) .stat-icon { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
-    .stat-card:nth-child(11) .stat-icon { background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); }
-    .stat-card:nth-child(12) .stat-icon { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); }
+    .stat-card:hover .stat-icon {
+        transform: rotate(5deg) scale(1.1);
+        background: rgba(255, 255, 255, 0.3);
+    }
     
     .stat-value {
-        font-size: 3rem;
+        font-size: 2.25rem;
         font-weight: 800;
-        color: #1f2937;
-        margin: 0.5rem 0;
+        color: white;
         line-height: 1;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
-    
-    /* Colorful stat values matching icon colors */
-    .stat-card:nth-child(1) .stat-value { color: #667eea; }
-    .stat-card:nth-child(2) .stat-value { color: #4facfe; }
-    .stat-card:nth-child(3) .stat-value { color: #43e97b; }
-    .stat-card:nth-child(4) .stat-value { color: #fa709a; }
-    .stat-card:nth-child(5) .stat-value { color: #30cfd0; }
-    .stat-card:nth-child(6) .stat-value { color: #fbbf24; }
-    .stat-card:nth-child(7) .stat-value { color: #8b5cf6; }
-    .stat-card:nth-child(8) .stat-value { color: #ec4899; }
-    .stat-card:nth-child(9) .stat-value { color: #10b981; }
-    .stat-card:nth-child(10) .stat-value { color: #f59e0b; }
-    .stat-card:nth-child(11) .stat-value { color: #06b6d4; }
-    .stat-card:nth-child(12) .stat-value { color: #6366f1; }
     
     .stat-label {
         font-size: 0.85rem;
-        color: #374151;
+        color: rgba(255, 255, 255, 0.95);
         text-transform: uppercase;
-        letter-spacing: 1px;
-        font-weight: 700;
-        margin-top: 0.5rem;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+        margin-top: 0.4rem;
+    }
+    
+    .stat-unit {
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.85);
+        margin-top: 0.2rem;
+        font-weight: 500;
     }
     
     .chart-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 1.5rem;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
         width: 100%;
         max-width: 100%;
         box-sizing: border-box;
-        align-items: stretch;
+        flex: 1;
+        min-height: 0;
     }
     
-    @media (max-width: 1400px) {
-        .chart-grid {
-            grid-template-columns: 1fr;
-        }
+    @media (max-width: 1200px) {
+        .chart-grid { grid-template-columns: 1fr; }
     }
     
     .chart-card {
         background: rgba(255, 255, 255, 1);
         backdrop-filter: blur(20px);
-        padding: 2rem;
-        border-radius: 20px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 0 2px rgba(255, 255, 255, 0.8);
-        min-height: 450px;
-        height: 100%;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 1rem 1.25rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), 0 0 0 2px rgba(255, 255, 255, 0.8);
+        min-height: 250px;
+        transition: all 0.3s ease;
         position: relative;
-        overflow: visible;
-        border: 2px solid rgba(255, 255, 255, 0.8);
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.8);
         display: flex;
         flex-direction: column;
     }
     
     .chart-card canvas {
         width: 100% !important;
-        max-height: 400px !important;
-    }
-    
-    .chart-card {
-        max-height: 500px;
-        overflow: hidden;
-    }
+        flex: 1;
+        min-height: 200px;
+     }
     
     .chart-card::before {
         content: '';
@@ -421,36 +462,50 @@
     }
     
     .chart-title {
-        font-size: 1.4rem;
+        font-size: 1rem;
         font-weight: 700;
-        margin-bottom: 1.5rem;
+        margin-bottom: 0.75rem;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: 0.5rem;
+        flex-shrink: 0;
     }
     
     .chart-title::before {
         content: '';
         width: 4px;
-        height: 24px;
+        height: 18px;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border-radius: 2px;
     }
     
-    /* Table styles */
+    /* Chart content wrapper */
+    .chart-content {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 0;
+    }
+    
+    /* Table styles - compact */
     .data-table {
         background: rgba(255, 255, 255, 1);
         backdrop-filter: blur(20px);
-        border-radius: 20px;
-        padding: 2rem;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 0 2px rgba(255, 255, 255, 0.8);
-        overflow-x: auto;
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), 0 0 0 2px rgba(255, 255, 255, 0.8);
+        overflow: hidden;
         position: relative;
-        border: 2px solid rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        flex: 1;
+        min-height: 250px;
+        display: flex;
+        flex-direction: column;
     }
     
     .data-table::before {
@@ -464,6 +519,12 @@
         border-radius: 20px 20px 0 0;
     }
     
+    .data-table .table-wrapper {
+        flex: 1;
+        overflow-y: auto;
+        min-height: 0;
+    }
+    
     table {
         width: 100%;
         border-collapse: separate;
@@ -471,9 +532,10 @@
     }
     
     th, td {
-        padding: 1.25rem 1rem;
+        padding: 0.4rem 0.6rem;
         text-align: left;
         border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        font-size: 0.75rem;
     }
     
     th {
@@ -481,12 +543,13 @@
         font-weight: 700;
         color: #333;
         text-transform: uppercase;
-        font-size: 0.8rem;
-        letter-spacing: 1px;
+        font-size: 0.7rem;
+        letter-spacing: 0.5px;
         position: sticky;
         top: 0;
         z-index: 10;
     }
+    
     
     tr {
         transition: all 0.3s ease;
@@ -519,13 +582,11 @@
     }
     
     /* Responsive */
-    @media (max-width: 1920px) {
-        .page-title {
-            font-size: 1.5rem;
-        }
-        .stat-value {
-            font-size: 2rem;
-        }
+    @media (max-width: 1400px) {
+        .page-title { font-size: 1.15rem; }
+        .stat-value { font-size: 1.5rem; }
+        .chart-card { max-height: 200px; min-height: 160px; }
+        .chart-card canvas { max-height: 140px !important; height: 140px !important; }
     }
 </style>
 
@@ -535,7 +596,8 @@
         <div class="page-dot active" data-page="0" title="Database Mesin & Lokasi"></div>
         <div class="page-dot" data-page="1" title="Jadwal Maintenance"></div>
         <div class="page-dot" data-page="2" title="Informasi Downtime"></div>
-        <div class="page-dot" data-page="3" title="Spareparts & Standards"></div>
+        <div class="page-dot" data-page="3" title="Informasi User / Skill Matrix"></div>
+        <div class="page-dot" data-page="4" title="Spareparts & Standards"></div>
     </div>
     
     <!-- PAGE 1: Database Mesin dan Lokasi -->
@@ -559,67 +621,92 @@
             </div>
         </div>
         
+        <div class="page-content-fill">
         <!-- Statistics Grid -->
         <div class="stats-grid">
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">🏭</div>
-                <div class="stat-value">{{ number_format($totalMachines) }}</div>
-                <div class="stat-label">Total Mesin</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($totalMachines) }}</div>
+                    <div class="stat-label">Total Mesin</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">🏢</div>
-                <div class="stat-value">{{ number_format($totalPlants) }}</div>
-                <div class="stat-label">Total Plant</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($totalPlants) }}</div>
+                    <div class="stat-label">Total Plant</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">⚙️</div>
-                <div class="stat-value">{{ number_format($totalProcesses) }}</div>
-                <div class="stat-label">Total Process</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($totalProcesses) }}</div>
+                    <div class="stat-label">Total Process</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">📊</div>
-                <div class="stat-value">{{ number_format($totalLines) }}</div>
-                <div class="stat-label">Total Line</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($totalLines) }}</div>
+                    <div class="stat-label">Total Line</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">🚪</div>
-                <div class="stat-value">{{ number_format($totalRooms) }}</div>
-                <div class="stat-label">Total Room</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($totalRooms) }}</div>
+                    <div class="stat-label">Total Room</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">🔧</div>
-                <div class="stat-value">{{ number_format($totalMachineTypes) }}</div>
-                <div class="stat-label">Machine Types</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($totalMachineTypes) }}</div>
+                    <div class="stat-label">Machine Types</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">🏷️</div>
-                <div class="stat-value">{{ number_format($totalBrands) }}</div>
-                <div class="stat-label">Total Brands</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($totalBrands) }}</div>
+                    <div class="stat-label">Total Brands</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">📦</div>
-                <div class="stat-value">{{ number_format($totalModels) }}</div>
-                <div class="stat-label">Total Models</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($totalModels) }}</div>
+                    <div class="stat-label">Total Models</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">🔗</div>
-                <div class="stat-value">{{ number_format($totalSystems) }}</div>
-                <div class="stat-label">Total Systems</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($totalSystems) }}</div>
+                    <div class="stat-label">Total Systems</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">👥</div>
-                <div class="stat-value">{{ number_format($totalGroups) }}</div>
-                <div class="stat-label">Total Groups</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($totalGroups) }}</div>
+                    <div class="stat-label">Total Groups</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">✅</div>
-                <div class="stat-value">{{ number_format($machinesWithBrand) }}</div>
-                <div class="stat-label">Mesin dengan Brand</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($machinesWithBrand) }}</div>
+                    <div class="stat-label">Mesin dengan Brand</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">📋</div>
-                <div class="stat-value">{{ number_format($machinesWithModel) }}</div>
-                <div class="stat-label">Mesin dengan Model</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($machinesWithModel) }}</div>
+                    <div class="stat-label">Mesin dengan Model</div>
+                </div>
             </div>
         </div>
         
@@ -631,13 +718,14 @@
             </div>
             <div class="chart-card">
                 <h3 class="chart-title">Mesin dengan PM</h3>
-                <div style="font-size: 3rem; text-align: center; padding: 2rem; color: #667eea;">
+                <div style="font-size: 1.75rem; text-align: center; padding: 0.5rem; color: #667eea;">
                     {{ number_format($machinesWithPM) }}
                 </div>
-                <div style="text-align: center; color: #666;">
+                <div style="text-align: center; color: #666; font-size: 0.8rem;">
                     dari {{ number_format($totalMachines) }} mesin
                 </div>
             </div>
+        </div>
         </div>
     </div>
     
@@ -662,67 +750,92 @@
             </div>
         </div>
         
+        <div class="page-content-fill">
         <!-- PM Statistics -->
         <div class="stats-grid">
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">📅</div>
-                <div class="stat-value">{{ number_format($pmSchedulesThisMonth) }}</div>
-                <div class="stat-label">PM This Month</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($pmSchedulesThisMonth) }}</div>
+                    <div class="stat-label">PM This Month</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">⏳</div>
-                <div class="stat-value">{{ number_format($pmSchedulesPending) }}</div>
-                <div class="stat-label">PM Pending</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($pmSchedulesPending) }}</div>
+                    <div class="stat-label">PM Pending</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">⚙️</div>
-                <div class="stat-value">{{ number_format($pmSchedulesInProgress) }}</div>
-                <div class="stat-label">PM In Progress</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($pmSchedulesInProgress) }}</div>
+                    <div class="stat-label">PM In Progress</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">✅</div>
-                <div class="stat-value">{{ number_format($pmSchedulesCompleted) }}</div>
-                <div class="stat-label">PM Completed</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($pmSchedulesCompleted) }}</div>
+                    <div class="stat-label">PM Completed</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">📊</div>
-                <div class="stat-value">{{ number_format($pmCompletionRate, 1) }}%</div>
-                <div class="stat-label">PM Completion Rate</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($pmCompletionRate, 1) }}%</div>
+                    <div class="stat-label">PM Completion Rate</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">🔮</div>
-                <div class="stat-value">{{ number_format($pdmSchedulesThisMonth) }}</div>
-                <div class="stat-label">PdM This Month</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($pdmSchedulesThisMonth) }}</div>
+                    <div class="stat-label">PdM This Month</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">⏰</div>
-                <div class="stat-value">{{ number_format($pdmSchedulesPending) }}</div>
-                <div class="stat-label">PdM Pending</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($pdmSchedulesPending) }}</div>
+                    <div class="stat-label">PdM Pending</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">✔️</div>
-                <div class="stat-value">{{ number_format($pdmSchedulesCompleted) }}</div>
-                <div class="stat-label">PdM Completed</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($pdmSchedulesCompleted) }}</div>
+                    <div class="stat-label">PdM Completed</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">📈</div>
-                <div class="stat-value">{{ number_format($pdmCompletionRate, 1) }}%</div>
-                <div class="stat-label">PdM Completion Rate</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($pdmCompletionRate, 1) }}%</div>
+                    <div class="stat-label">PdM Completion Rate</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">📋</div>
-                <div class="stat-value">{{ number_format($workOrdersTotal) }}</div>
-                <div class="stat-label">Work Orders Total</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($workOrdersTotal) }}</div>
+                    <div class="stat-label">Work Orders Total</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">📆</div>
-                <div class="stat-value">{{ number_format($workOrdersThisMonth) }}</div>
-                <div class="stat-label">WO This Month</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($workOrdersThisMonth) }}</div>
+                    <div class="stat-label">WO This Month</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">🎯</div>
-                <div class="stat-value">{{ number_format($workOrdersCompleted) }}</div>
-                <div class="stat-label">WO Completed</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($workOrdersCompleted) }}</div>
+                    <div class="stat-label">WO Completed</div>
+                </div>
             </div>
         </div>
         
@@ -782,6 +895,7 @@
                 </table>
             </div>
         </div>
+        </div>
     </div>
     
     <!-- PAGE 3: Informasi Downtime -->
@@ -805,57 +919,78 @@
             </div>
         </div>
         
+        <div class="page-content-fill">
         <!-- Downtime Statistics -->
         <div class="stats-grid">
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">⚠️</div>
-                <div class="stat-value">{{ number_format($monthDowntimeCount) }}</div>
-                <div class="stat-label">Total Downtime</div>
-                <div style="font-size: 0.75rem; color: #999; margin-top: 0.25rem;">incidents</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($monthDowntimeCount) }}</div>
+                    <div class="stat-label">Total Downtime</div>
+                    <div class="stat-unit">incidents</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">⏱️</div>
-                <div class="stat-value">{{ number_format($monthDowntime, 0) }}</div>
-                <div class="stat-label">Total Duration</div>
-                <div style="font-size: 0.75rem; color: #999; margin-top: 0.25rem;">minutes</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($monthDowntime, 0) }}</div>
+                    <div class="stat-label">Total Duration</div>
+                    <div class="stat-unit">minutes</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">📊</div>
-                <div class="stat-value">{{ number_format($avgDowntimeDuration, 1) }}</div>
-                <div class="stat-label">Avg Duration</div>
-                <div style="font-size: 0.75rem; color: #999; margin-top: 0.25rem;">min/incident</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($avgDowntimeDuration, 1) }}</div>
+                    <div class="stat-label">Avg Duration</div>
+                    <div class="stat-unit">min/incident</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">📅</div>
-                <div class="stat-value">{{ number_format($avgDowntimePerDay, 1) }}</div>
-                <div class="stat-label">Avg per Day</div>
-                <div style="font-size: 0.75rem; color: #999; margin-top: 0.25rem;">min/day</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($avgDowntimePerDay, 1) }}</div>
+                    <div class="stat-label">Avg per Day</div>
+                    <div class="stat-unit">min/day</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">🔧</div>
-                <div class="stat-value">{{ number_format($monthDowntimeCount > 0 ? $monthDowntimeCount / $daysInMonth : 0, 1) }}</div>
-                <div class="stat-label">Breakdowns/Day</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($monthDowntimeCount > 0 ? $monthDowntimeCount / $daysInMonth : 0, 1) }}</div>
+                    <div class="stat-label">Breakdowns/Day</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">🏆</div>
-                <div class="stat-value" style="font-size: 1.5rem;">
-                    {{ $mostProblematicMachine->idMachine ?? 'N/A' }}
-                </div>
-                <div class="stat-label">Top Machine</div>
-                <div style="font-size: 0.75rem; color: #999; margin-top: 0.25rem;">
-                    {{ $mostProblematicMachine ? number_format((float)($mostProblematicMachine->total_duration ?? 0), 0) . ' min' : '' }}
+                <div class="stat-content">
+                    <div class="stat-value" style="font-size: 1.25rem;">{{ $mostProblematicMachine->idMachine ?? 'N/A' }}</div>
+                    <div class="stat-label">Top Machine</div>
+                    <div class="stat-unit">{{ $mostProblematicMachine ? number_format((float)($mostProblematicMachine->total_duration ?? 0), 0) . ' min' : '' }}</div>
                 </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">⏰</div>
-                <div class="stat-value">{{ $longestDowntime ? number_format((float)($longestDowntime->duration ?? 0), 0) : '-' }}</div>
-                <div class="stat-label">Longest DT</div>
-                <div style="font-size: 0.75rem; color: #999; margin-top: 0.25rem;">minutes</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ $longestDowntime ? number_format((float)($longestDowntime->duration ?? 0), 0) : '-' }}</div>
+                    <div class="stat-label">Longest DT</div>
+                    <div class="stat-unit">minutes</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">👷</div>
-                <div class="stat-value">{{ number_format($activeMechanics) }}</div>
-                <div class="stat-label">Active Mechanics</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($activeMechanics) }}</div>
+                    <div class="stat-label">Active Mechanics</div>
+                </div>
+            </div>
+            <div class="stat-card fade-in-up">
+                <div class="stat-icon">📍</div>
+                <div class="stat-content">
+                    <div class="stat-value" style="font-size: 1.25rem;">{{ $topLines->first()->line ?? 'N/A' }}</div>
+                    <div class="stat-label">Top Line</div>
+                    <div class="stat-unit">{{ $topLines->first() ? number_format((float)($topLines->first()->total_duration ?? 0), 0) . ' min' : '' }}</div>
+                </div>
             </div>
         </div>
         
@@ -864,10 +999,6 @@
             <div class="chart-card">
                 <h3 class="chart-title">Top 10 Machine (Downtime)</h3>
                 <canvas id="machineDowntimeChart"></canvas>
-            </div>
-            <div class="chart-card">
-                <h3 class="chart-title">Top 5 MTTR</h3>
-                <canvas id="mttrChart"></canvas>
             </div>
             <div class="chart-card">
                 <h3 class="chart-title">Top 5 Plant (Downtime)</h3>
@@ -882,72 +1013,124 @@
                 <canvas id="problemsChart"></canvas>
             </div>
         </div>
-        
-        <!-- Top Lists -->
-        <div class="chart-grid">
-            <div class="data-table">
-                <h3 class="chart-title">Top Mekanik</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>No</th>
-                            <th>Nama</th>
-                            <th>Downtime Count</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($topMekanik->take(5) as $index => $mekanik)
-                        <tr>
-                            <td>{{ $index + 1 }}</td>
-                            <td>{{ $mekanik->nameMekanik ?? 'N/A' }}</td>
-                            <td>{{ $mekanik->downtime_count }}</td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="3" style="text-align: center; color: #999;">No data</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+        </div>
+    </div>
+    
+    <!-- PAGE 4: Informasi User / Skill Matrix -->
+    <div class="page-container" id="page-3">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Informasi User / Skill Matrix</h1>
+                <p class="page-subtitle">Kemampuan mekanik per tipe mesin berdasarkan riwayat perbaikan</p>
             </div>
-            
-            <div class="data-table">
-                <h3 class="chart-title">Top Lines</h3>
+            <div class="datetime-display">
+                <div id="current-datetime-3"></div>
+                <div>{{ \Carbon\Carbon::create($filterYear, $filterMonth, 1)->locale('id')->translatedFormat('F Y') }}</div>
+                @if(Auth::check() && Auth::user()->isAdmin())
+                <div style="margin-top: 0.5rem;">
+                    <a href="{{ route('mechanic_performance.index', ['month' => $filterMonth, 'year' => $filterYear]) }}" class="text-xs text-blue-600 hover:text-blue-800 font-semibold underline">📊 Detail Kinerja Mekanik</a>
+                </div>
+                @endif
+            </div>
+        </div>
+        
+        <div class="page-content-fill">
+        <div class="stats-grid">
+            <div class="stat-card fade-in-up">
+                <div class="stat-icon">👷</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($mechanicStats->count()) }}</div>
+                    <div class="stat-label">Mekanik Aktif</div>
+                </div>
+            </div>
+            <div class="stat-card fade-in-up">
+                <div class="stat-icon">🔧</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($mechanicStats->sum('total_repairs')) }}</div>
+                    <div class="stat-label">Total Perbaikan</div>
+                </div>
+            </div>
+            <div class="stat-card fade-in-up">
+                <div class="stat-icon">⏱️</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($mechanicStats->sum('total_duration'), 0) }}</div>
+                    <div class="stat-label">Total Durasi (min)</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- MTTR & MTBF Charts -->
+        <div class="chart-grid">
+            <div class="chart-card">
+                <h3 class="chart-title">Top 10 MTTR (Highest)</h3>
+                <canvas id="mttrChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3 class="chart-title">Top 10 MTBF (Highest)</h3>
+                <canvas id="mtbfChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="chart-grid" style="grid-template-columns: 1fr;">
+            <div class="data-table" style="max-height: none;">
+                <h3 class="chart-title">Skill Matrix per Mekanik</h3>
                 <table>
                     <thead>
                         <tr>
-                            <th>No</th>
-                            <th>Line</th>
-                            <th>Duration (min)</th>
+                            <th>Mekanik</th>
+                            <th>Tipe Mesin</th>
+                            <th>Level</th>
+                            <th>Perbaikan</th>
+                            <th>Rata-rata (min)</th>
+                            <th>ID Mesin</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($topLines->take(5) as $index => $line)
-                        <tr>
-                            <td>{{ $index + 1 }}</td>
-                            <td>{{ $line->line ?? 'N/A' }}</td>
-                            <td>{{ number_format((float)($line->total_duration ?? 0), 0) }}</td>
-                        </tr>
+                        @forelse($mechanicStats as $stat)
+                            @php $skills = $skillMatrix->get($stat->idMekanik) ?? collect(); @endphp
+                            @forelse($skills as $idx => $sm)
+                                @php
+                                    $repairCount = $sm->repair_count ?? 0;
+                                    $skillLabel = $repairCount >= 20 ? 'Expert' : ($repairCount >= 10 ? 'Advance' : ($repairCount >= 5 ? 'Intermediate' : 'Beginner'));
+                                    $skillClass = $repairCount >= 20 ? 'bg-green-100 text-green-800' : ($repairCount >= 10 ? 'bg-blue-100 text-blue-800' : ($repairCount >= 5 ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-800'));
+                                @endphp
+                                <tr>
+                                    @if($idx === 0)
+                                    <td rowspan="{{ $skills->count() }}" style="vertical-align: top; font-weight: 600;">{{ $stat->nameMekanik }}<br><span class="text-xs text-gray-500">({{ $stat->idMekanik }})</span></td>
+                                    @endif
+                                    <td>{{ $sm->typeMachine ?? '-' }}</td>
+                                    <td><span class="px-2 py-0.5 rounded text-xs font-semibold {{ $skillClass }}">{{ $skillLabel }}</span></td>
+                                    <td>{{ $repairCount }}x</td>
+                                    <td>{{ number_format($sm->avg_duration ?? 0, 1) }}</td>
+                                    <td style="font-size: 0.65rem;">{{ isset($sm->machines_list) && count($sm->machines_list) > 0 ? implode(', ', array_slice($sm->machines_list, 0, 5)) . (count($sm->machines_list) > 5 ? '...' : '') : '-' }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td>{{ $stat->nameMekanik }} ({{ $stat->idMekanik }})</td>
+                                    <td colspan="5" style="text-align: center; color: #999;">Belum ada data skill</td>
+                                </tr>
+                            @endforelse
                         @empty
                         <tr>
-                            <td colspan="3" style="text-align: center; color: #999;">No data</td>
+                            <td colspan="6" style="text-align: center; color: #999;">Tidak ada data mekanik untuk periode ini</td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
+        </div>
     </div>
     
-    <!-- PAGE 4: Spareparts & Standards -->
-    <div class="page-container" id="page-3">
+    <!-- PAGE 5: Spareparts & Standards -->
+    <div class="page-container" id="page-4">
         <div class="page-header">
             <div>
                 <h1 class="page-title">Spareparts & Standards</h1>
                 <p class="page-subtitle">Informasi inventory spareparts dan standards</p>
             </div>
             <div class="datetime-display">
-                <div id="current-datetime-3"></div>
+                <div id="current-datetime-4"></div>
                 <div>{{ \Carbon\Carbon::create($filterYear, $filterMonth, 1)->locale('id')->translatedFormat('F Y') }}</div>
                 @if(Auth::check() && Auth::user()->isAdmin())
                 <div style="margin-top: 0.5rem;">
@@ -960,57 +1143,78 @@
             </div>
         </div>
         
+        <div class="page-content-fill">
         <!-- Statistics -->
         <div class="stats-grid">
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">📦</div>
-                <div class="stat-value">{{ number_format($totalSpareparts) }}</div>
-                <div class="stat-label">Total Spareparts</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($totalSpareparts) }}</div>
+                    <div class="stat-label">Total Spareparts</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">🔴</div>
-                <div class="stat-value" style="color: #ef4444;">{{ number_format($lowStockSpareparts) }}</div>
-                <div class="stat-label">Low Stock Alert</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($lowStockSpareparts) }}</div>
+                    <div class="stat-label">Low Stock Alert</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">💰</div>
-                <div class="stat-value" style="font-size: 2rem;">Rp {{ number_format($totalStockValue, 0, ',', '.') }}</div>
-                <div class="stat-label">Total Stock Value</div>
+                <div class="stat-content">
+                    <div class="stat-value" style="font-size: 1.5rem;">Rp {{ number_format($totalStockValue, 0, ',', '.') }}</div>
+                    <div class="stat-label">Total Stock Value</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">📋</div>
-                <div class="stat-value">{{ number_format($totalStandards) }}</div>
-                <div class="stat-label">Total Standards</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($totalStandards) }}</div>
+                    <div class="stat-label">Total Standards</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">✅</div>
-                <div class="stat-value">{{ number_format($activeStandards) }}</div>
-                <div class="stat-label">Active Standards</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($activeStandards) }}</div>
+                    <div class="stat-label">Active Standards</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">🚨</div>
-                <div class="stat-value" style="color: #ef4444;">{{ number_format($redStatusCount) }}</div>
-                <div class="stat-label">Red Status</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($redStatusCount) }}</div>
+                    <div class="stat-label">Red Status</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">⚠️</div>
-                <div class="stat-value" style="color: #ef4444;">{{ number_format($redStatusThisMonth) }}</div>
-                <div class="stat-label">Red This Month</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($redStatusThisMonth) }}</div>
+                    <div class="stat-label">Red This Month</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">❌</div>
-                <div class="stat-value">{{ number_format($uniqueProblems) }}</div>
-                <div class="stat-label">Unique Problems</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($uniqueProblems) }}</div>
+                    <div class="stat-label">Unique Problems</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">❓</div>
-                <div class="stat-value">{{ number_format($uniqueReasons) }}</div>
-                <div class="stat-label">Unique Reasons</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($uniqueReasons) }}</div>
+                    <div class="stat-label">Unique Reasons</div>
+                </div>
             </div>
             <div class="stat-card fade-in-up">
                 <div class="stat-icon">🔧</div>
-                <div class="stat-value">{{ number_format($uniqueActions) }}</div>
-                <div class="stat-label">Unique Actions</div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ number_format($uniqueActions) }}</div>
+                    <div class="stat-label">Unique Actions</div>
+                </div>
             </div>
         </div>
         
@@ -1049,6 +1253,7 @@
                 </table>
             </div>
         </div>
+        </div>
     </div>
 </div>
 
@@ -1058,11 +1263,11 @@
     const chartInstances = {};
     const chartInitialized = {};
     
-    // Auto-rotate pages
-    const PAGE_ROTATE_INTERVAL = 30000; // 30 seconds
+    // Auto-rotate pages (rotasi otomatis setiap 25 detik)
+    const PAGE_ROTATE_INTERVAL = 25000;
     let currentPage = 0;
-    const totalPages = 4;
-    let rotateTimer;
+    const totalPages = 5;
+    let rotateTimer = null;
     
     function showPage(pageIndex) {
         // Hide all pages
@@ -1089,22 +1294,34 @@
             setTimeout(() => {
                 initializeMachineDistributionChart();
             }, 300);
-        } else if (pageIndex === 2) {
+        } else if (pageIndex === 2) {  // Informasi Downtime
             // Destroy existing charts from other pages
             Object.keys(chartInstances).forEach(chartId => {
-                if (!chartId.includes('Downtime') && !chartId.includes('mttr') && !chartId.includes('plant') && !chartId.includes('trend') && !chartId.includes('problems')) {
+                if (!chartId.includes('Downtime') && !chartId.includes('plant') && !chartId.includes('trend') && !chartId.includes('problems')) {
                     destroyChart(chartId);
                 }
             });
             // Reset all downtime chart flags
             chartInitialized['downtimeCharts'] = false;
             chartInitialized['machineDowntimeChart'] = false;
-            chartInitialized['mttrChart'] = false;
             chartInitialized['plantDowntimeChart'] = false;
             chartInitialized['downtimeTrendChart'] = false;
             chartInitialized['problemsChart'] = false;
             setTimeout(() => {
                 initializeDowntimeCharts();
+            }, 300);
+        } else if (pageIndex === 3) {  // Skill Matrix
+            // Destroy existing charts from other pages
+            Object.keys(chartInstances).forEach(chartId => {
+                if (!chartId.includes('mttr') && !chartId.includes('mtbf')) {
+                    destroyChart(chartId);
+                }
+            });
+            // Reset MTTR/MTBF chart flags
+            chartInitialized['mttrChart'] = false;
+            chartInitialized['mtbfChart'] = false;
+            setTimeout(() => {
+                initializeSkillMatrixCharts();
             }, 300);
         } else {
             // Destroy all charts when on other pages
@@ -1120,18 +1337,22 @@
     }
     
     function startAutoRotate() {
-        rotateTimer = setInterval(nextPage, PAGE_ROTATE_INTERVAL);
+        stopAutoRotate();
+        rotateTimer = setInterval(function() {
+            nextPage();
+        }, PAGE_ROTATE_INTERVAL);
     }
     
     function stopAutoRotate() {
         if (rotateTimer) {
             clearInterval(rotateTimer);
+            rotateTimer = null;
         }
     }
     
-    // Page dot click handlers
-    document.querySelectorAll('.page-dot').forEach((dot, index) => {
-        dot.addEventListener('click', () => {
+    // Page dot click: pindah halaman lalu jalankan lagi rotasi
+    document.querySelectorAll('.page-dot').forEach(function(dot, index) {
+        dot.addEventListener('click', function() {
             stopAutoRotate();
             showPage(index);
             startAutoRotate();
@@ -1158,11 +1379,14 @@
         }
     }
     
-    // Initialize
+    // Initialize: tampilkan halaman 0, jalankan rotasi otomatis, update jam
     showPage(0);
-    startAutoRotate();
     updateDateTime();
     setInterval(updateDateTime, 1000);
+    // Mulai rotasi setelah chart init agar tidak ganggu
+    setTimeout(function() {
+        startAutoRotate();
+    }, 2000);
     
     // Destroy existing chart if exists
     function destroyChart(chartId) {
@@ -1262,71 +1486,6 @@
                 } else {
                     // Show message if no data
                     machineCtx.parentElement.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666; font-size: 1.2rem;">Tidak ada data downtime mesin</div>';
-                }
-            }
-            
-            // MTTR Chart
-            const mttrCtx = document.getElementById('mttrChart');
-            if (mttrCtx) {
-                destroyChart('mttrChart');
-                const mttrData = @json($topMTTR ?? []);
-                console.log('MTTR data:', mttrData);
-                if (mttrData && mttrData.length > 0) {
-                const labels = mttrData.map(m => m.idMachine || 'N/A');
-                const mttrValues = mttrData.map(m => parseFloat(m.mttr) || 0);
-                
-                chartInstances['mttrChart'] = new Chart(mttrCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'MTTR (minutes)',
-                            data: mttrValues,
-                            backgroundColor: 'rgba(239, 68, 68, 0.8)',
-                            borderColor: 'rgba(239, 68, 68, 1)',
-                            borderWidth: 2,
-                            borderRadius: 8
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        aspectRatio: 1.8,
-                        indexAxis: 'y',
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                padding: 12
-                            }
-                        },
-                        scales: {
-                            x: {
-                                beginAtZero: true,
-                                grid: {
-                                    color: 'rgba(0, 0, 0, 0.05)'
-                                }
-                            },
-                            y: {
-                                grid: { display: false },
-                                ticks: {
-                                    font: { size: 11 }
-                                }
-                            }
-                        },
-                        animation: {
-                            duration: 1500,
-                            easing: 'easeOutQuart'
-                        },
-                        onResize: function(chart, size) {
-                            // Handle resize
-                        }
-                    }
-                });
-                chartInitialized['mttrChart'] = true;
-                } else {
-                    // Show message if no data
-                    mttrCtx.parentElement.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666; font-size: 1.2rem;">Tidak ada data MTTR</div>';
                 }
             }
             
@@ -1576,6 +1735,131 @@
             chartInitialized['downtimeCharts'] = true;
             console.log('Downtime charts initialization completed');
         }, 500); // Wait 500ms for page transition to complete
+    }
+    
+    // Initialize MTTR and MTBF charts for Skill Matrix page
+    function initializeSkillMatrixCharts() {
+        console.log('Initializing Skill Matrix charts (MTTR/MTBF)...');
+        
+        setTimeout(() => {
+            // MTTR Chart
+            const mttrCtx = document.getElementById('mttrChart');
+            if (mttrCtx) {
+                destroyChart('mttrChart');
+                const mttrData = @json($topMTTR ?? []);
+                console.log('MTTR data for Skill Matrix:', mttrData);
+                if (mttrData && mttrData.length > 0) {
+                    const labels = mttrData.map(m => m.idMachine || 'N/A');
+                    const mttrValues = mttrData.map(m => parseFloat(m.mttr) || 0);
+                    
+                    chartInstances['mttrChart'] = new Chart(mttrCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'MTTR (minutes)',
+                                data: mttrValues,
+                                backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                                borderColor: 'rgba(239, 68, 68, 1)',
+                                borderWidth: 2,
+                                borderRadius: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            aspectRatio: 1.8,
+                            indexAxis: 'y',
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    padding: 12
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    beginAtZero: true,
+                                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                                },
+                                y: {
+                                    grid: { display: false },
+                                    ticks: { font: { size: 11 } }
+                                }
+                            },
+                            animation: {
+                                duration: 1500,
+                                easing: 'easeOutQuart'
+                            }
+                        }
+                    });
+                    chartInitialized['mttrChart'] = true;
+                    console.log('MTTR chart initialized successfully');
+                } else {
+                    mttrCtx.parentElement.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666; font-size: 1.2rem;">Tidak ada data MTTR</div>';
+                }
+            }
+            
+            // MTBF Chart
+            const mtbfCtx = document.getElementById('mtbfChart');
+            if (mtbfCtx) {
+                destroyChart('mtbfChart');
+                const mtbfData = @json($topMTBF ?? []);
+                console.log('MTBF data for Skill Matrix:', mtbfData);
+                if (mtbfData && mtbfData.length > 0) {
+                    const labels = mtbfData.map(m => m.idMachine || 'N/A');
+                    const mtbfValues = mtbfData.map(m => parseFloat(m.mtbf) || 0);
+                    
+                    chartInstances['mtbfChart'] = new Chart(mtbfCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'MTBF (minutes)',
+                                data: mtbfValues,
+                                backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                                borderColor: 'rgba(34, 197, 94, 1)',
+                                borderWidth: 2,
+                                borderRadius: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            aspectRatio: 1.8,
+                            indexAxis: 'y',
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    padding: 12
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    beginAtZero: true,
+                                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                                },
+                                y: {
+                                    grid: { display: false },
+                                    ticks: { font: { size: 11 } }
+                                }
+                            },
+                            animation: {
+                                duration: 1500,
+                                easing: 'easeOutQuart'
+                            }
+                        }
+                    });
+                    chartInitialized['mtbfChart'] = true;
+                    console.log('MTBF chart initialized successfully');
+                } else {
+                    mtbfCtx.parentElement.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666; font-size: 1.2rem;">Tidak ada data MTBF</div>';
+                }
+            }
+            
+            console.log('Skill Matrix charts initialization completed');
+        }, 500);
     }
     
     // Initialize machine distribution chart for page 1

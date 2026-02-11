@@ -10,6 +10,7 @@ return [
             'children' => [
                 ['name' => 'Dashboard Normal', 'route' => 'dashboard', 'icon' => 'home', 'menu_key' => 'dashboard'],
                 ['name' => 'Dashboard Large', 'route' => 'dashboard.large', 'icon' => 'tv', 'menu_key' => 'dashboard-large'],
+                ['name' => 'Dashboard Portrait', 'route' => 'dashboard.portrait', 'icon' => 'mobile', 'menu_key' => 'dashboard-portrait'],
                 ['name' => 'Dashboard Settings', 'route' => 'dashboard-settings.index', 'icon' => 'cog', 'menu_key' => 'dashboard-settings', 'admin_only' => true],
             ]
         ],
@@ -105,7 +106,7 @@ return [
             'children' => [
                 ['name' => 'Standards', 'route' => 'standards.index', 'icon' => 'clipboard-check', 'menu_key' => 'standards'],
                 ['name' => 'Scheduling PdM', 'route' => 'predictive-maintenance.scheduling.index', 'icon' => 'calendar', 'menu_key' => 'predictive-scheduling'],
-                ['name' => 'Controlling PdM', 'route' => 'predictive-maintenance.ctrl.index', 'icon' => 'cog', 'menu_key' => 'predictive-controlling'],
+                ['name' => 'Controlling PdM', 'route' => 'predictive-maintenance.controlling.index', 'icon' => 'cog', 'menu_key' => 'predictive-controlling'],
                 ['name' => 'Monitoring PdM', 'route' => 'predictive-maintenance.monitoring.index', 'icon' => 'chart', 'menu_key' => 'predictive-monitoring'],
                 ['name' => 'Updating PdM', 'route' => 'predictive-maintenance.updating.index', 'icon' => 'edit', 'menu_key' => 'predictive-updating'],
                 ['name' => 'Reporting PdM', 'route' => 'predictive-maintenance.reporting.index', 'icon' => 'document', 'menu_key' => 'predictive-reporting'],
@@ -171,6 +172,13 @@ return [
                     'icon' => 'chart-line',
                     'type' => 'single',
                     'menu_key' => 'oee'
+                ],
+                [
+                    'name' => 'Detail Penggunaan Part',
+                    'route' => 'part-erp.stock-movement-report',
+                    'icon' => 'document',
+                    'type' => 'single',
+                    'menu_key' => 'part-erp'
                 ],
             ]
         ],

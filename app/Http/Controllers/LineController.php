@@ -3,6 +3,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\DowntimeErp;
+use App\Models\DowntimeErp2;
+use App\Models\Line;
+use App\Models\Plant;
+use App\Models\Process;
+use Illuminate\Support\Facades\DB;
 
 class LineController extends Controller
 {
@@ -168,6 +174,248 @@ class LineController extends Controller
         } catch (\Exception $e) {
             \Log::error('Error importing lines from room_erp: ' . $e->getMessage());
             return redirect()->route('lines.index')->withErrors(['error' => 'Error importing lines: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Preview unique lines from downtime erp or downtime erp2
+     */
+    public function previewFromDowntime(Request $request)
+    {
+        // Only allow admin (wahid@tpmcmms.id) to access this feature
+        if (auth()->user()->email !== 'wahid@tpmcmms.id') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only admin can access this feature.',
+            ], 403);
+        }
+
+        $request->validate([
+            'data_source' => 'required|in:downtime_erp,downtime_erp2',
+        ]);
+
+        $dataSource = $request->data_source;
+
+        try {
+            if ($dataSource === 'downtime_erp') {
+                $uniqueLines = DowntimeErp::whereNotNull('line')
+                    ->where('line', '!=', '')
+                    ->whereNotNull('plant')
+                    ->where('plant', '!=', '')
+                    ->select('line', 'plant', 'process')
+                    ->distinct()
+                    ->get()
+                    ->map(function($item) {
+                        return [
+                            'line' => trim($item->line),
+                            'plant' => trim($item->plant),
+                            'process' => trim($item->process ?? ''),
+                        ];
+                    })
+                    ->filter(function($item) {
+                        return !empty($item['line']) && !empty($item['plant']);
+                    })
+                    ->unique(function($item) {
+                        return strtolower($item['line']) . '|' . strtolower($item['plant']) . '|' . strtolower($item['process']);
+                    })
+                    ->values();
+            } else {
+                $uniqueLines = DowntimeErp2::whereNotNull('line')
+                    ->where('line', '!=', '')
+                    ->whereNotNull('plant')
+                    ->where('plant', '!=', '')
+                    ->select('line', 'plant', 'process')
+                    ->distinct()
+                    ->get()
+                    ->map(function($item) {
+                        return [
+                            'line' => trim($item->line),
+                            'plant' => trim($item->plant),
+                            'process' => trim($item->process ?? ''),
+                        ];
+                    })
+                    ->filter(function($item) {
+                        return !empty($item['line']) && !empty($item['plant']);
+                    })
+                    ->unique(function($item) {
+                        return strtolower($item['line']) . '|' . strtolower($item['plant']) . '|' . strtolower($item['process']);
+                    })
+                    ->values();
+            }
+
+            // Check existing lines
+            $existingCount = 0;
+            $newCount = 0;
+            foreach ($uniqueLines as $lineData) {
+                $plant = Plant::whereRaw('LOWER(name) = ?', [strtolower($lineData['plant'])])->first();
+                if (!$plant) {
+                    $newCount++;
+                    continue;
+                }
+
+                $process = null;
+                if (!empty($lineData['process'])) {
+                    $process = Process::whereRaw('LOWER(name) = ?', [strtolower($lineData['process'])])->first();
+                }
+
+                $existingLine = Line::where('plant_id', $plant->id)
+                    ->whereRaw('LOWER(name) = ?', [strtolower($lineData['line'])]);
+                
+                if ($process) {
+                    $existingLine->where('process_id', $process->id);
+                } else {
+                    $existingLine->whereNull('process_id');
+                }
+
+                if ($existingLine->exists()) {
+                    $existingCount++;
+                } else {
+                    $newCount++;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data_source' => $dataSource,
+                'total_unique' => $uniqueLines->count(),
+                'existing_count' => $existingCount,
+                'new_count' => $newCount,
+                'sample_data' => $uniqueLines->take(20)->toArray(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Preview failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Extract unique lines from downtime erp or downtime erp2
+     */
+    public function extractFromDowntime(Request $request)
+    {
+        // Only allow admin (wahid@tpmcmms.id) to access this feature
+        if (auth()->user()->email !== 'wahid@tpmcmms.id') {
+            return redirect()->route('lines.index')
+                ->with('error', 'Unauthorized. Only admin can access this feature.');
+        }
+
+        $request->validate([
+            'data_source' => 'required|in:downtime_erp,downtime_erp2',
+        ]);
+
+        $dataSource = $request->data_source;
+        $created = 0;
+        $skipped = 0;
+        $errors = [];
+
+        try {
+            if ($dataSource === 'downtime_erp') {
+                $uniqueLines = DowntimeErp::whereNotNull('line')
+                    ->where('line', '!=', '')
+                    ->whereNotNull('plant')
+                    ->where('plant', '!=', '')
+                    ->select('line', 'plant', 'process')
+                    ->distinct()
+                    ->get()
+                    ->map(function($item) {
+                        return [
+                            'line' => trim($item->line),
+                            'plant' => trim($item->plant),
+                            'process' => trim($item->process ?? ''),
+                        ];
+                    })
+                    ->filter(function($item) {
+                        return !empty($item['line']) && !empty($item['plant']);
+                    })
+                    ->unique(function($item) {
+                        return strtolower($item['line']) . '|' . strtolower($item['plant']) . '|' . strtolower($item['process']);
+                    })
+                    ->values();
+            } else {
+                $uniqueLines = DowntimeErp2::whereNotNull('line')
+                    ->where('line', '!=', '')
+                    ->whereNotNull('plant')
+                    ->where('plant', '!=', '')
+                    ->select('line', 'plant', 'process')
+                    ->distinct()
+                    ->get()
+                    ->map(function($item) {
+                        return [
+                            'line' => trim($item->line),
+                            'plant' => trim($item->plant),
+                            'process' => trim($item->process ?? ''),
+                        ];
+                    })
+                    ->filter(function($item) {
+                        return !empty($item['line']) && !empty($item['plant']);
+                    })
+                    ->unique(function($item) {
+                        return strtolower($item['line']) . '|' . strtolower($item['plant']) . '|' . strtolower($item['process']);
+                    })
+                    ->values();
+            }
+
+            DB::beginTransaction();
+
+            foreach ($uniqueLines as $lineData) {
+                try {
+                    // Find or create Plant
+                    $plant = Plant::whereRaw('LOWER(name) = ?', [strtolower($lineData['plant'])])->first();
+                    if (!$plant) {
+                        $plant = Plant::create(['name' => $lineData['plant']]);
+                    }
+
+                    // Find or create Process (if provided)
+                    $process = null;
+                    if (!empty($lineData['process'])) {
+                        $process = Process::whereRaw('LOWER(name) = ?', [strtolower($lineData['process'])])->first();
+                        if (!$process) {
+                            $process = Process::create(['name' => $lineData['process']]);
+                        }
+                    }
+
+                    // Check if line already exists
+                    $existingLine = Line::where('plant_id', $plant->id)
+                        ->whereRaw('LOWER(name) = ?', [strtolower($lineData['line'])]);
+                    
+                    if ($process) {
+                        $existingLine->where('process_id', $process->id);
+                    } else {
+                        $existingLine->whereNull('process_id');
+                    }
+
+                    if ($existingLine->exists()) {
+                        $skipped++;
+                        continue;
+                    }
+
+                    // Create new line
+                    Line::create([
+                        'name' => $lineData['line'],
+                        'plant_id' => $plant->id,
+                        'process_id' => $process ? $process->id : null,
+                    ]);
+                    $created++;
+                } catch (\Exception $e) {
+                    $errors[] = "Failed to create line '{$lineData['line']}' (Plant: {$lineData['plant']}, Process: {$lineData['process']}): " . $e->getMessage();
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->route('lines.index')
+                ->with('success', "Extracted {$created} new lines from {$dataSource}. {$skipped} already existed.")
+                ->with('extraction_details', [
+                    'created' => $created,
+                    'skipped' => $skipped,
+                    'errors' => $errors,
+                ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route('lines.index')
+                ->with('error', 'Extraction failed: ' . $e->getMessage());
         }
     }
 }

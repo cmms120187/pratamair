@@ -270,6 +270,15 @@
                         @error('part_select')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                         <!-- Hidden field for Part (auto-filled from part_select) -->
                         <input type="hidden" name="Part" id="Part" value="{{ old('Part') }}">
+                        <div class="mt-2">
+                            <label for="part_quantity" class="block text-sm font-semibold text-gray-700 mb-1">Jumlah Part (yang dipakai)</label>
+                            <input type="number" name="part_quantity" id="part_quantity" min="0" value="{{ old('part_quantity', 0) }}" placeholder="0"
+                                   class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                            <p class="text-xs text-gray-500 mt-1">Isi jika part dipakai untuk perbaikan; stok part akan otomatis berkurang.</p>
+                            <div id="part_stock_notif" class="hidden mt-2 p-3 rounded-lg border bg-amber-50 border-amber-300 text-amber-800 text-sm">
+                                <strong>Stok tidak mencukupi.</strong> Stok saat ini: <span id="part_stock_current">0</span>, Kebutuhan perbaikan: <span id="part_stock_need">0</span>. Tetap bisa diproses (stok boleh minus).
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <label for="system_id" class="block text-sm font-semibold text-gray-700 mb-2">System</label>
@@ -1256,6 +1265,7 @@ if (systemSelect) {
                 option.textContent = displayText;
                 option.setAttribute('data-part-name', part.name);
                 option.setAttribute('data-part-description', part.description || '');
+                option.setAttribute('data-stock', String(part.stock ?? 0));
                 partSelect.appendChild(option);
             });
             
@@ -1263,7 +1273,37 @@ if (systemSelect) {
             partSelect.disabled = false;
             partSelect.classList.remove('bg-gray-100');
         }
+        updatePartStockNotif();
     });
+}
+
+// Notifikasi stok kurang dari kebutuhan perbaikan (tetap bisa diproses, stok boleh minus)
+function updatePartStockNotif() {
+    const partSelectEl = document.getElementById('part_select');
+    const partQtyEl = document.getElementById('part_quantity');
+    const notifEl = document.getElementById('part_stock_notif');
+    const currentEl = document.getElementById('part_stock_current');
+    const needEl = document.getElementById('part_stock_need');
+    if (!partSelectEl || !partQtyEl || !notifEl || !currentEl || !needEl) return;
+    const selectedOption = partSelectEl.options[partSelectEl.selectedIndex];
+    const stock = selectedOption && selectedOption.getAttribute('data-stock') !== null
+        ? parseInt(selectedOption.getAttribute('data-stock'), 10) : 0;
+    const qty = parseInt(partQtyEl.value, 10) || 0;
+    if (qty > 0 && qty > stock) {
+        currentEl.textContent = stock;
+        needEl.textContent = qty;
+        notifEl.classList.remove('hidden');
+    } else {
+        notifEl.classList.add('hidden');
+    }
+}
+if (partSelect) {
+    partSelect.addEventListener('change', updatePartStockNotif);
+}
+const partQuantityInput = document.getElementById('part_quantity');
+if (partQuantityInput) {
+    partQuantityInput.addEventListener('input', updatePartStockNotif);
+    partQuantityInput.addEventListener('change', updatePartStockNotif);
 }
 
 // Auto-fill problemDowntime and enable reason when problem is selected

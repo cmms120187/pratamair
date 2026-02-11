@@ -30,6 +30,8 @@ class DowntimeErp2 extends Model
         'reasonDowntime',
         'actionDowtime',
         'Part',
+        'part_erp_id',
+        'part_quantity',
         'idMekanik',
         'nameMekanik',
         'idLeader',
@@ -52,5 +54,13 @@ class DowntimeErp2 extends Model
     public function system()
     {
         return $this->belongsTo(System::class);
+    }
+
+    /**
+     * Get the part (PartErp) used in this downtime.
+     */
+    public function partErp()
+    {
+        return $this->belongsTo(PartErp::class, 'part_erp_id');
     }
 }

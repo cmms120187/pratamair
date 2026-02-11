@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\DowntimeErp;
+use App\Models\DowntimeErp2;
+use App\Models\Plant;
+use Illuminate\Support\Facades\DB;
 
 class PlantController extends Controller
 {
@@ -130,6 +134,158 @@ class PlantController extends Controller
         } catch (\Exception $e) {
             \Log::error('Error importing plants from room_erp: ' . $e->getMessage());
             return redirect()->route('plants.index')->withErrors(['error' => 'Error importing plants: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Preview unique plants from downtime erp or downtime erp2
+     */
+    public function previewFromDowntime(Request $request)
+    {
+        // Only allow admin (wahid@tpmcmms.id) to access this feature
+        if (auth()->user()->email !== 'wahid@tpmcmms.id') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Only admin can access this feature.',
+            ], 403);
+        }
+
+        $request->validate([
+            'data_source' => 'required|in:downtime_erp,downtime_erp2',
+        ]);
+
+        $dataSource = $request->data_source;
+
+        try {
+            if ($dataSource === 'downtime_erp') {
+                $uniquePlants = DowntimeErp::whereNotNull('plant')
+                    ->where('plant', '!=', '')
+                    ->distinct()
+                    ->pluck('plant')
+                    ->filter()
+                    ->map(function($name) {
+                        return trim($name);
+                    })
+                    ->unique()
+                    ->values();
+            } else {
+                $uniquePlants = DowntimeErp2::whereNotNull('plant')
+                    ->where('plant', '!=', '')
+                    ->distinct()
+                    ->pluck('plant')
+                    ->filter()
+                    ->map(function($name) {
+                        return trim($name);
+                    })
+                    ->unique()
+                    ->values();
+            }
+
+            $existingPlants = Plant::whereIn('name', $uniquePlants->toArray())->pluck('name')->toArray();
+            $newPlants = $uniquePlants->filter(function($name) use ($existingPlants) {
+                return !in_array($name, $existingPlants);
+            })->values();
+
+            return response()->json([
+                'success' => true,
+                'data_source' => $dataSource,
+                'total_unique' => $uniquePlants->count(),
+                'existing_count' => count($existingPlants),
+                'new_count' => $newPlants->count(),
+                'sample_data' => $uniquePlants->take(20)->toArray(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Preview failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Extract unique plants from downtime erp or downtime erp2
+     */
+    public function extractFromDowntime(Request $request)
+    {
+        // Only allow admin (wahid@tpmcmms.id) to access this feature
+        if (auth()->user()->email !== 'wahid@tpmcmms.id') {
+            return redirect()->route('plants.index')
+                ->with('error', 'Unauthorized. Only admin can access this feature.');
+        }
+
+        $request->validate([
+            'data_source' => 'required|in:downtime_erp,downtime_erp2',
+        ]);
+
+        $dataSource = $request->data_source;
+        $created = 0;
+        $skipped = 0;
+        $errors = [];
+
+        try {
+            if ($dataSource === 'downtime_erp') {
+                $uniquePlants = DowntimeErp::whereNotNull('plant')
+                    ->where('plant', '!=', '')
+                    ->distinct()
+                    ->pluck('plant')
+                    ->filter()
+                    ->map(function($name) {
+                        return trim($name);
+                    })
+                    ->unique()
+                    ->values();
+            } else {
+                $uniquePlants = DowntimeErp2::whereNotNull('plant')
+                    ->where('plant', '!=', '')
+                    ->distinct()
+                    ->pluck('plant')
+                    ->filter()
+                    ->map(function($name) {
+                        return trim($name);
+                    })
+                    ->unique()
+                    ->values();
+            }
+
+            DB::beginTransaction();
+
+            foreach ($uniquePlants as $plantName) {
+                if (empty($plantName)) {
+                    continue;
+                }
+
+                // Check if plant already exists (case-insensitive)
+                $existingPlant = Plant::whereRaw('LOWER(name) = ?', [strtolower($plantName)])->first();
+
+                if ($existingPlant) {
+                    $skipped++;
+                    continue;
+                }
+
+                // Create new plant
+                try {
+                    Plant::create([
+                        'name' => $plantName,
+                    ]);
+                    $created++;
+                } catch (\Exception $e) {
+                    $errors[] = "Failed to create plant '{$plantName}': " . $e->getMessage();
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->route('plants.index')
+                ->with('success', "Extracted {$created} new plants from {$dataSource}. {$skipped} already existed.")
+                ->with('extraction_details', [
+                    'created' => $created,
+                    'skipped' => $skipped,
+                    'errors' => $errors,
+                ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route('plants.index')
+                ->with('error', 'Extraction failed: ' . $e->getMessage());
         }
     }
 }

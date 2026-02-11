@@ -37,4 +37,12 @@ class PartErp extends Model
     {
         return $this->belongsToMany(MachineType::class, 'part_erp_machine_type', 'part_erp_id', 'machine_type_id');
     }
+
+    /**
+     * Stock movements (in/out) with document number (MR/PO/MO)
+     */
+    public function stockMovements()
+    {
+        return $this->hasMany(PartErpStockMovement::class)->orderBy('created_at', 'desc');
+    }
 }
